@@ -1,19 +1,13 @@
 "use client"
 
+import { DialogTrigger } from "@/components/ui/dialog"
+
 import { RoleNav } from "@/components/role-nav"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
   TrendingUp,
-  TrendingDown,
   AlertTriangle,
   Package,
   ShoppingCart,
@@ -22,8 +16,8 @@ import {
   DollarSign,
   Lightbulb,
   Activity,
-  Heart,
   Target,
+  Calendar,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -72,73 +66,189 @@ export default function ManagerDashboard() {
   const [showPerformanceDialog, setShowPerformanceDialog] = useState(true)
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="revolut-card p-8 mb-6 border border-border/50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div className="relative">
-              <svg className="w-32 h-32 transform -rotate-90">
-                <circle
-                  cx="64"
-                  cy="64"
-                  r="56"
-                  stroke="currentColor"
-                  strokeWidth="8"
-                  fill="none"
-                  className="text-muted/30"
-                />
-                <circle
-                  cx="64"
-                  cy="64"
-                  r="56"
-                  stroke="currentColor"
-                  strokeWidth="8"
-                  fill="none"
-                  strokeDasharray={`${(87 / 100) * 352} 352`}
-                  className="text-primary transition-all duration-1000"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <p className="text-4xl font-bold text-foreground">87</p>
-                  <p className="text-xs text-muted-foreground">/100</p>
-                </div>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-3xl font-bold text-foreground mb-2">Score de gestion</h3>
-              <p className="text-muted-foreground text-base mb-3">Excellente performance cette semaine</p>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                <span className="text-sm text-primary font-semibold">+5 points vs semaine dernière</span>
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center p-4 bg-primary/5 rounded-xl border border-primary/20">
-              <p className="text-2xl font-bold text-primary">92%</p>
-              <p className="text-xs text-muted-foreground mt-1">Gestion stocks</p>
-            </div>
-            <div className="text-center p-4 bg-accent/5 rounded-xl border border-accent/20">
-              <p className="text-2xl font-bold text-accent">85%</p>
-              <p className="text-xs text-muted-foreground mt-1">Rentabilité</p>
-            </div>
-            <div className="text-center p-4 bg-blue-500/5 rounded-xl border border-blue-500/20">
-              <p className="text-2xl font-bold text-blue-500">88%</p>
-              <p className="text-xs text-muted-foreground mt-1">Prévisions</p>
-            </div>
-            <div className="text-center p-4 bg-green-500/5 rounded-xl border border-green-500/20">
-              <p className="text-2xl font-bold text-green-500">83%</p>
-              <p className="text-xs text-muted-foreground mt-1">Anti-gaspillage</p>
-            </div>
-          </div>
-        </div>
+    <div className="p-8">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-foreground mb-2">Dashboard</h1>
+        <p className="text-muted-foreground">Vue d'ensemble de votre restaurant</p>
       </div>
 
-      {/* Pop-up de performance */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Carte principale Balance (équivalent au solde) */}
+        <Card className="lg:col-span-1 p-6 bg-card border-border hover:shadow-xl transition-all duration-300">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <p className="text-muted-foreground text-sm mb-1">Valeur du Stock</p>
+              <h2 className="text-3xl font-bold text-foreground">22 450€</h2>
+            </div>
+            <Package className="h-6 w-6 text-primary" />
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-sm text-muted-foreground">Surgelé: 8 450€</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-success" />
+              <span className="text-sm text-muted-foreground">Frais: 9 200€</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-chart-4" />
+              <span className="text-sm text-muted-foreground">Sec: 4 800€</span>
+            </div>
+          </div>
+        </Card>
+
+        {/* Budget (équivalent à Transactions) */}
+        <Card className="lg:col-span-1 p-6 bg-card border-border hover:shadow-xl transition-all duration-300">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <p className="text-muted-foreground text-sm mb-1">Gaspillage du jour</p>
+              <h2 className="text-3xl font-bold text-destructive">- 42€</h2>
+            </div>
+            <AlertTriangle className="h-6 w-6 text-destructive" />
+          </div>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Frites</span>
+              <span className="text-sm font-semibold text-destructive">- 18€</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Pain</span>
+              <span className="text-sm font-semibold text-destructive">- 12€</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Autre</span>
+              <span className="text-sm font-semibold text-destructive">- 12€</span>
+            </div>
+          </div>
+        </Card>
+
+        {/* Graphique (équivalent au graphique de l'image) */}
+        <Card className="lg:col-span-1 p-6 bg-card border-border hover:shadow-xl transition-all duration-300">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <p className="text-muted-foreground text-sm mb-1">Évolution Gaspillage</p>
+              <h2 className="text-2xl font-bold text-success">-15%</h2>
+            </div>
+            <BarChart3 className="h-6 w-6 text-primary" />
+          </div>
+          <div className="flex items-end justify-between gap-2 h-32">
+            {[45, 52, 38, 41, 35, 48, 33].map((value, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                <div
+                  className="w-full bg-primary rounded-t-lg transition-all duration-300 hover:bg-primary/80"
+                  style={{ height: `${(value / 60) * 100}%` }}
+                />
+                <span className="text-xs text-muted-foreground">{["L", "M", "M", "J", "V", "S", "D"][i]}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Abonnements (équivalent à Commandes) */}
+        <Card className="lg:col-span-1 p-6 bg-card border-border hover:shadow-xl transition-all duration-300">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <p className="text-muted-foreground text-sm mb-1">Commandes en cours</p>
+              <h2 className="text-3xl font-bold text-foreground">3</h2>
+            </div>
+            <ShoppingCart className="h-6 w-6 text-primary" />
+          </div>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Fournisseur A</span>
+              <span className="text-xs px-2 py-1 rounded-full bg-chart-4/20 text-chart-4">En attente</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Fournisseur B</span>
+              <span className="text-xs px-2 py-1 rounded-full bg-success/20 text-success">Confirmé</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Fournisseur C</span>
+              <span className="text-xs px-2 py-1 rounded-full bg-primary/20 text-primary">En livraison</span>
+            </div>
+          </div>
+        </Card>
+
+        {/* Savings (équivalent à Prévisions) */}
+        <Card className="lg:col-span-1 p-6 bg-card border-border hover:shadow-xl transition-all duration-300">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <p className="text-muted-foreground text-sm mb-1">Prévisions Demain</p>
+              <h2 className="text-3xl font-bold text-foreground">245</h2>
+              <p className="text-sm text-muted-foreground">clients attendus</p>
+            </div>
+            <Target className="h-6 w-6 text-success" />
+          </div>
+          <div className="relative h-20 flex items-center justify-center">
+            <svg className="w-20 h-20 transform -rotate-90">
+              <circle
+                cx="40"
+                cy="40"
+                r="32"
+                stroke="currentColor"
+                strokeWidth="6"
+                fill="none"
+                className="text-muted/30"
+              />
+              <circle
+                cx="40"
+                cy="40"
+                r="32"
+                stroke="currentColor"
+                strokeWidth="6"
+                fill="none"
+                strokeDasharray={`${(75 / 100) * 201} 201`}
+                className="text-primary"
+                strokeLinecap="round"
+              />
+            </svg>
+            <div className="absolute text-center">
+              <p className="text-xl font-bold text-foreground">75%</p>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground text-center mt-2">Fiabilité de la prévision</p>
+        </Card>
+
+        {/* Financial Advice (équivalent aux Actions Rapides) */}
+        <Card className="lg:col-span-1 p-6 bg-card border-border hover:shadow-xl transition-all duration-300">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <p className="text-muted-foreground text-sm mb-1">Actions Rapides</p>
+            </div>
+            <Lightbulb className="h-6 w-6 text-primary" />
+          </div>
+          <div className="space-y-2">
+            <Button
+              variant="outline"
+              className="w-full justify-start text-left hover:bg-primary/10 hover:text-primary hover:border-primary bg-transparent"
+              onClick={() => router.push("/manager/stock")}
+            >
+              <Package className="h-4 w-4 mr-2" />
+              Voir les stocks
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start text-left hover:bg-primary/10 hover:text-primary hover:border-primary bg-transparent"
+              onClick={() => router.push("/manager/forecasts")}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Prévisions
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start text-left hover:bg-primary/10 hover:text-primary hover:border-primary bg-transparent"
+              onClick={() => router.push("/manager/orders")}
+            >
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Commander
+            </Button>
+          </div>
+        </Card>
+      </div>
+
       <Dialog open={showPerformanceDialog} onOpenChange={setShowPerformanceDialog}>
-        <DialogContent className="revolut-popup sm:max-w-lg bg-card border-border">
+        <DialogContent className="sm:max-w-lg bg-card border-border rounded-2xl">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
               <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
@@ -148,148 +258,27 @@ export default function ManagerDashboard() {
                 <span className="inline-block px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-semibold mb-2">
                   Performance hebdomadaire
                 </span>
-                <DialogTitle className="text-3xl font-bold text-foreground">
-                  Grâce à cette application, vous avez généré +482€
+                <DialogTitle className="text-2xl font-bold text-foreground">
+                  Grâce à cette application, vous avez généré
                 </DialogTitle>
               </div>
             </div>
-            <DialogDescription className="text-base text-muted-foreground pt-2">
-              Cette semaine, StockGuard vous a aidé à économiser et optimiser vos opérations
-            </DialogDescription>
+            <DialogDescription className="text-4xl font-bold text-success mt-4">+482€</DialogDescription>
           </DialogHeader>
-
-          <div className="space-y-6 py-4">
-            <div className="text-center space-y-3">
-              <p className="text-4xl font-bold text-primary">
-                {weeklyPerformance === "positive" ? "+482 €" : "-317 €"}
-              </p>
-
-              <p className="text-lg text-foreground">
-                {weeklyPerformance === "positive"
-                  ? "Grâce à cette application, vous avez généré cette économie cette semaine"
-                  : "Cette semaine, vous avez perdu"}
-              </p>
-
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {weeklyPerformance === "positive"
-                  ? "Meilleure gestion des portions, baisse du gaspillage et commandes optimisées."
-                  : "Causes principales : surconsommation, commandes excessives, baisse de marge."}
-              </p>
-            </div>
-
-            {/* Prévisions pour demain */}
-            <div className="bg-background/60 rounded-lg p-4 space-y-3 border border-primary/10">
-              <h4 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                Prévisions pour demain
-              </h4>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-card/50 rounded p-3 space-y-1">
-                  <p className="text-xs text-muted-foreground">Clients attendus</p>
-                  <p className="text-2xl font-bold text-primary">127</p>
-                </div>
-
-                <div className="bg-card/50 rounded p-3 space-y-1">
-                  <p className="text-xs text-muted-foreground">Économies prévues</p>
-                  <p className="text-2xl font-bold text-primary">+65€</p>
-                </div>
+          <div className="mt-6 space-y-4">
+            <div className="p-4 bg-muted/30 rounded-xl border border-border">
+              <p className="text-sm text-muted-foreground mb-2">Prévisions pour demain</p>
+              <div className="flex justify-between items-center">
+                <span className="text-foreground font-semibold">245 clients attendus</span>
+                <span className="text-success font-semibold">+32€ économies prévues</span>
               </div>
             </div>
-
-            <Button
-              onClick={() => setShowPerformanceDialog(false)}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
+            <Button onClick={() => setShowPerformanceDialog(false)} className="w-full bg-primary hover:bg-primary/90">
               Continuer
             </Button>
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Carte de performance hebdomadaire existante - simplifiée */}
-      <Card className="group hover:shadow-xl transition-all duration-300 border-primary/20 bg-gradient-to-br from-card/50 to-background">
-        <div className="flex items-start justify-between mb-6">
-          <div className="flex-1">
-            <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-2 mb-4">
-              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <span className="text-sm font-medium text-primary">
-                {weeklyPerformance === "positive" ? "Excellente semaine" : "Semaine difficile"}
-              </span>
-            </div>
-
-            <p className="text-2xl font-semibold text-foreground mb-3">
-              {weeklyPerformance === "positive"
-                ? "Grâce à cette application, vous avez généré +482 €"
-                : "Cette semaine : -317 €"}
-            </p>
-
-            <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-              {weeklyPerformance === "positive"
-                ? "Meilleure gestion des portions, baisse du gaspillage et commandes optimisées."
-                : "Causes principales : surconsommation, commandes excessives, baisse de marge."}
-            </p>
-
-            {weeklyPerformance === "positive" ? (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/30 cursor-pointer hover:bg-primary/20 transition-all">
-                    <TrendingUp className="h-5 w-5 text-primary" />
-                    <span className="text-lg font-semibold text-primary">À ce rythme : +1 930 € par mois</span>
-                  </div>
-                </DialogTrigger>
-                <DialogContent className="revolut-popup sm:max-w-md bg-card border-border">
-                  <DialogHeader>
-                    <DialogTitle className="text-2xl text-primary flex items-center gap-2">
-                      <TrendingUp className="h-6 w-6" />
-                      Projection mensuelle
-                    </DialogTitle>
-                    <DialogDescription className="text-base text-muted-foreground pt-4">
-                      Si vous maintenez ce rythme, voici vos économies projetées :
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 pt-4">
-                    <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
-                      <span className="text-muted-foreground">Ce mois</span>
-                      <span className="text-2xl font-bold text-primary">+1 930 €</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
-                      <span className="text-muted-foreground">Dans 3 mois</span>
-                      <span className="text-2xl font-bold text-primary">+5 790 €</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
-                      <span className="text-muted-foreground">Sur 1 an</span>
-                      <span className="text-2xl font-bold text-primary">+23 160 €</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground italic pt-2">
-                      Ces projections sont basées sur vos performances actuelles et peuvent varier.
-                    </p>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            ) : (
-              <Button
-                onClick={() => router.push("/manager/reports")}
-                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-              >
-                Voir comment corriger
-              </Button>
-            )}
-          </div>
-
-          <div
-            className={`h-24 w-24 rounded-2xl flex items-center justify-center ${
-              weeklyPerformance === "positive" ? "bg-primary/20" : "bg-destructive/20"
-            }`}
-          >
-            {weeklyPerformance === "positive" ? (
-              <TrendingUp className="h-12 w-12 text-primary" />
-            ) : (
-              <TrendingDown className="h-12 w-12 text-destructive" />
-            )}
-          </div>
-        </div>
-      </Card>
 
       <RoleNav role="manager" />
 
@@ -513,126 +502,35 @@ export default function ManagerDashboard() {
 
         <Card className="p-6 mb-8 bg-card border-border animate-in fade-in slide-in-from-bottom-6 duration-500 delay-250">
           <div className="flex items-start gap-4 mb-6">
-            <div className="h-14 w-14 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-              <Lightbulb className="h-7 w-7 text-blue-500" />
-            </div>
             <div>
-              <h3 className="text-2xl font-bold text-foreground mb-1">Et si...</h3>
-              <p className="text-muted-foreground">Testez vos décisions avant de les appliquer</p>
+              <p className="text-muted-foreground text-sm mb-1">Actions Rapides</p>
             </div>
+            <Lightbulb className="h-6 w-6 text-primary" />
           </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="space-y-2">
             <Button
-              onClick={() => router.push("/manager/scenarios")}
               variant="outline"
-              className="h-auto p-5 border-2 hover:bg-primary/5 hover:border-primary/50 flex-col items-start gap-2 group transition-all duration-300"
-            >
-              <p className="font-semibold text-foreground">Réduire les portions de 10%</p>
-              <p className="text-sm text-muted-foreground">Impact estimé : +280€/mois</p>
-            </Button>
-
-            <Button
-              onClick={() => router.push("/manager/scenarios")}
-              variant="outline"
-              className="h-auto p-5 border-2 hover:bg-accent/5 hover:border-accent/50 flex-col items-start gap-2 group transition-all duration-300"
-            >
-              <p className="font-semibold text-foreground">Augmenter un prix de 0,50€</p>
-              <p className="text-sm text-muted-foreground">Impact estimé : +340€/mois</p>
-            </Button>
-
-            <Button
-              onClick={() => router.push("/manager/scenarios")}
-              variant="outline"
-              className="h-auto p-5 border-2 hover:bg-blue-500/5 hover:border-blue-500/50 flex-col items-start gap-2 group transition-all duration-300"
-            >
-              <p className="font-semibold text-foreground">Fermer le lundi</p>
-              <p className="text-sm text-muted-foreground">Impact estimé : -120€/semaine</p>
-            </Button>
-
-            <Button
-              onClick={() => router.push("/manager/scenarios")}
-              variant="outline"
-              className="h-auto p-5 border-2 hover:bg-primary/5 hover:border-primary/50 flex-col items-start gap-2 group transition-all duration-300"
-            >
-              <p className="font-semibold text-foreground">Changer de fournisseur</p>
-              <p className="text-sm text-muted-foreground">Impact estimé : +450€/mois</p>
-            </Button>
-          </div>
-        </Card>
-
-        {/* Actions rapides */}
-        <div className="animate-in fade-in slide-in-from-bottom-8 duration-500 delay-300">
-          <h3 className="text-2xl font-bold text-foreground mb-4">Actions Rapides</h3>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Button
+              className="w-full justify-start text-left hover:bg-primary/10 hover:text-primary hover:border-primary bg-transparent"
               onClick={() => router.push("/manager/stock")}
-              className="h-auto p-6 bg-primary hover:bg-primary/90 text-primary-foreground flex-col items-start gap-3 group hover:scale-105 transition-all duration-300"
             >
-              <Package className="h-8 w-8 mb-2 group-hover:scale-110 transition-transform" />
-              <div className="text-left">
-                <p className="font-bold text-lg mb-1">Gérer les</p>
-                <p className="text-sm opacity-90">stocks</p>
-              </div>
+              <Package className="h-4 w-4 mr-2" />
+              Voir les stocks
             </Button>
-
             <Button
+              variant="outline"
+              className="w-full justify-start text-left hover:bg-primary/10 hover:text-primary hover:border-primary bg-transparent"
               onClick={() => router.push("/manager/forecasts")}
-              className="h-auto p-6 bg-accent hover:bg-accent/90 text-accent-foreground flex-col items-start gap-3 group hover:scale-105 transition-all duration-300"
             >
-              <BarChart3 className="h-8 w-8 mb-2 group-hover:scale-110 transition-transform" />
-              <div className="text-left">
-                <p className="font-bold text-lg mb-1">Voir les</p>
-                <p className="text-sm opacity-90">prévisions</p>
-              </div>
+              <Calendar className="h-4 w-4 mr-2" />
+              Prévisions
             </Button>
-
             <Button
+              variant="outline"
+              className="w-full justify-start text-left hover:bg-primary/10 hover:text-primary hover:border-primary bg-transparent"
               onClick={() => router.push("/manager/orders")}
-              variant="outline"
-              className="h-auto p-6 border-2 border-border hover:border-primary/50 hover:bg-primary/5 flex-col items-start gap-3 group hover:scale-105 transition-all duration-300"
             >
-              <ShoppingCart className="h-8 w-8 mb-2 text-primary group-hover:scale-110 transition-transform" />
-              <div className="text-left">
-                <p className="font-bold text-lg mb-1">Créer une</p>
-                <p className="text-sm text-muted-foreground">commande</p>
-              </div>
-            </Button>
-
-            <Button
-              onClick={() => router.push("/manager/reports")}
-              variant="outline"
-              className="h-auto p-6 border-2 border-border hover:border-accent/50 hover:bg-accent/5 flex-col items-start gap-3 group hover:scale-105 transition-all duration-300"
-            >
-              <BarChart3 className="h-8 w-8 mb-2 text-accent group-hover:scale-110 transition-transform" />
-              <div className="text-left">
-                <p className="font-bold text-lg mb-1">Rapports</p>
-                <p className="text-sm text-muted-foreground">financiers</p>
-              </div>
-            </Button>
-          </div>
-        </div>
-
-        {/* Feedbacks Employés */}
-        <Card className="mt-8 p-6 bg-primary/5 border-primary/20 hover:border-primary/40 transition-all duration-300 animate-in fade-in duration-500 delay-350">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="h-14 w-14 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-                <Heart className="h-7 w-7 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-foreground mb-1">Feedbacks Positifs Employés</h3>
-                <p className="text-sm text-muted-foreground">
-                  Suivez l'engagement de votre équipe • 98 feedbacks ce mois-ci
-                </p>
-              </div>
-            </div>
-            <Button
-              onClick={() => router.push("/manager/feedback")}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              Voir les feedbacks
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Commander
             </Button>
           </div>
         </Card>
