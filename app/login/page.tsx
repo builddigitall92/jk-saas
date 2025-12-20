@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,7 +9,7 @@ import Link from "next/link"
 import { login, signup } from "./actions"
 import { useSearchParams } from "next/navigation"
 
-export default function LoginPage() {
+function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSignup, setIsSignup] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -206,5 +206,31 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+function LoginLoading() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="banking-card p-6 animate-pulse">
+          <div className="h-8 bg-secondary rounded w-32 mb-4"></div>
+          <div className="h-4 bg-secondary rounded w-48 mb-6"></div>
+          <div className="space-y-4">
+            <div className="h-11 bg-secondary rounded"></div>
+            <div className="h-11 bg-secondary rounded"></div>
+            <div className="h-12 bg-secondary rounded"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginLoading />}>
+      <LoginForm />
+    </Suspense>
   )
 }
