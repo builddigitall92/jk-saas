@@ -135,22 +135,34 @@
   }
 }
 
-/* Ajout des animations style Revolut */
-@keyframes slide-up {
+/* Ajout des animations style Revolut avec effets wow */
+@keyframes revolut-slide-up {
   0% {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(40px) scale(0.96);
   }
   100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
-@keyframes fade-in-scale {
+@keyframes revolut-fade-in {
   0% {
     opacity: 0;
-    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes revolut-scale-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  60% {
+    transform: scale(1.02);
   }
   100% {
     opacity: 1;
@@ -158,30 +170,166 @@
   }
 }
 
-.animate-slide-up {
-  animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(255, 140, 66, 0.3), 0 0 40px rgba(255, 140, 66, 0.15), 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(255, 140, 66, 0.5), 0 0 60px rgba(255, 140, 66, 0.25), 0 6px 16px rgba(0, 0, 0, 0.4);
+  }
 }
 
-.animate-fade-in-scale {
-  animation: fade-in-scale 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
 }
 
-/* Amélioration des styles Revolut avec plus de finesse */
+@keyframes bounce-subtle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* Classes d'animation */
+.animate-revolut-slide-up {
+  animation: revolut-slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-revolut-fade-in {
+  animation: revolut-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-revolut-scale-in {
+  animation: revolut-scale-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Style Revolut pour les cartes avec effets premium */
 .revolut-card {
-  background: linear-gradient(145deg, rgba(30, 30, 30, 0.98), rgba(26, 26, 26, 0.95));
-  border-radius: 20px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(0, 0, 0, 0.04);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background: linear-gradient(145deg, rgba(42, 31, 26, 0.98), rgba(35, 25, 21, 0.95));
+  border-radius: 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.08), 0 8px 16px
+    rgba(0, 0, 0, 0.06);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(255, 140, 66, 0.1);
 }
 
 .revolut-card:hover {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.08), 0 8px 16px rgba(0, 0, 0, 0.06), 0 0 0 1px
-    rgba(10, 113, 74, 0.1);
-  transform: translateY(-2px);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.14),
+    0 4px 8px rgba(0, 0, 0, 0.12),
+    0 8px 16px rgba(0, 0, 0, 0.1),
+    0 16px 32px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(255, 140, 66, 0.2),
+    0 0 20px rgba(255, 140, 66, 0.15);
+  transform: translateY(-4px) scale(1.01);
+  border-color: rgba(255, 140, 66, 0.3);
 }
 
-/* Style pour les pop-ups style Revolut */
+/* Boutons avec glow externe style Revolut */
+.revolut-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(255, 140, 66, 0.25), 0 4px 16px rgba(255, 140, 66, 0.15), inset 0 1px 0
+    rgba(255, 255, 255, 0.1);
+}
+
+.revolut-button:hover {
+  box-shadow: 0 4px 16px rgba(255, 140, 66, 0.4), 0 8px 32px rgba(255, 140, 66, 0.25), 0 0 40px rgba(255, 140, 66, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.revolut-button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.revolut-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.revolut-button:hover::before {
+  left: 100%;
+}
+
+/* Pop-ups premium style Revolut */
 .revolut-popup {
-  animation: fade-in-scale 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  border-radius: 24px;
+  animation: revolut-scale-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  border-radius: 28px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 16px 64px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 140, 66, 0.1);
+  border: 1px solid rgba(255, 140, 66, 0.2);
+  backdrop-filter: blur(20px);
+}
+
+/* Effet de glow sur les icônes */
+.icon-glow {
+  filter: drop-shadow(0 0 8px rgba(255, 140, 66, 0.4)) drop-shadow(0 0 16px rgba(255, 140, 66, 0.2));
+}
+
+/* Badges animés style Revolut */
+.revolut-badge {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(255, 140, 66, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* Progress bar animée */
+@keyframes progress-fill {
+  0% {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  100% {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+}
+
+.progress-animated {
+  animation: progress-fill 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

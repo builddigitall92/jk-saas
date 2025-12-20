@@ -11,9 +11,9 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-6xl">
-        <div className="text-center mb-16 animate-in fade-in slide-in-from-top duration-700">
-          <div className="inline-flex items-center justify-center gap-3 mb-6">
-            <Shield className="h-16 w-16 text-primary" strokeWidth={1.5} />
+        <div className="text-center mb-16 animate-revolut-fade-in">
+          <div className="inline-flex items-center justify-center gap-3 mb-6 animate-float">
+            <Shield className="h-16 w-16 text-primary icon-glow" strokeWidth={1.5} />
           </div>
           <h1 className="text-6xl font-bold text-foreground mb-4 tracking-tight">StockGuard</h1>
           <p className="text-xl text-muted-foreground">Système de gestion de stock et réduction du gaspillage</p>
@@ -21,12 +21,13 @@ export default function HomePage() {
 
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           <Card
-            className="p-8 bg-card border-2 border-border hover:border-primary/50 transition-all duration-300 cursor-pointer group animate-in fade-in slide-in-from-left duration-700 delay-200 hover:scale-105"
+            className="revolut-card p-8 border-2 border-border hover:border-primary/50 cursor-pointer group animate-revolut-slide-up"
             onClick={() => router.push("/manager")}
+            style={{ animationDelay: "0.2s" }}
           >
             <div className="flex flex-col items-center text-center space-y-6">
-              <div className="h-24 w-24 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-all duration-300">
-                <Shield className="h-12 w-12 text-primary" strokeWidth={1.5} />
+              <div className="h-24 w-24 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-all duration-300 group-hover:scale-110">
+                <Shield className="h-12 w-12 text-primary group-hover:icon-glow transition-all" strokeWidth={1.5} />
               </div>
 
               <div className="space-y-3">
@@ -36,7 +37,7 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <Button className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-lg group-hover:gap-4 transition-all duration-300">
+              <Button className="revolut-button w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-lg group-hover:gap-4 transition-all duration-300">
                 Accéder
                 <ArrowRight className="h-5 w-5" />
               </Button>
@@ -44,12 +45,13 @@ export default function HomePage() {
           </Card>
 
           <Card
-            className="p-8 bg-card border-2 border-border hover:border-accent/50 transition-all duration-300 cursor-pointer group animate-in fade-in slide-in-from-right duration-700 delay-300 hover:scale-105"
+            className="revolut-card p-8 border-2 border-border hover:border-accent/50 cursor-pointer group animate-revolut-slide-up"
             onClick={() => router.push("/employee")}
+            style={{ animationDelay: "0.3s" }}
           >
             <div className="flex flex-col items-center text-center space-y-6">
-              <div className="h-24 w-24 rounded-2xl bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-all duration-300">
-                <Users className="h-12 w-12 text-accent" strokeWidth={1.5} />
+              <div className="h-24 w-24 rounded-2xl bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-all duration-300 group-hover:scale-110">
+                <Users className="h-12 w-12 text-accent group-hover:icon-glow transition-all" strokeWidth={1.5} />
               </div>
 
               <div className="space-y-3">
@@ -59,7 +61,7 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <Button className="w-full gap-2 bg-accent text-accent-foreground hover:bg-accent/90 h-12 text-lg group-hover:gap-4 transition-all duration-300">
+              <Button className="revolut-button w-full gap-2 bg-accent text-accent-foreground hover:bg-accent/90 h-12 text-lg group-hover:gap-4 transition-all duration-300">
                 Accéder
                 <ArrowRight className="h-5 w-5" />
               </Button>
@@ -67,7 +69,10 @@ export default function HomePage() {
           </Card>
         </div>
 
-        <div className="text-center mt-12 text-sm text-muted-foreground animate-in fade-in duration-700 delay-500">
+        <div
+          className="text-center mt-12 text-sm text-muted-foreground animate-revolut-fade-in"
+          style={{ animationDelay: "0.5s" }}
+        >
           Sélectionnez votre rôle pour commencer
         </div>
       </div>

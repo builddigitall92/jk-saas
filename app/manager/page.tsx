@@ -67,20 +67,96 @@ export default function ManagerDashboard() {
 
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-foreground mb-2">Dashboard</h1>
-        <p className="text-muted-foreground">Vue d'ensemble de votre restaurant</p>
+      <div className="mb-8 animate-revolut-slide-up">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-4xl font-bold text-foreground mb-2">Tableau de Bord</h2>
+            <p className="text-muted-foreground text-lg">Votre coach business silencieux</p>
+          </div>
+          <div className="revolut-badge inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30">
+            <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+            <span className="text-sm font-semibold text-primary">En temps réel</span>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Carte principale Balance (équivalent au solde) */}
-        <Card className="lg:col-span-1 p-6 bg-card border-border hover:shadow-xl transition-all duration-300">
+      <Card className="revolut-card p-6 mb-8 border-2 border-primary/30 hover:border-primary/50 animate-revolut-fade-in">
+        <div className="flex items-center gap-6">
+          <div className="relative">
+            <svg className="w-32 h-32 transform -rotate-90">
+              <circle
+                cx="64"
+                cy="64"
+                r="56"
+                stroke="currentColor"
+                strokeWidth="8"
+                fill="none"
+                className="text-muted/20"
+              />
+              <circle
+                cx="64"
+                cy="64"
+                r="56"
+                stroke="currentColor"
+                strokeWidth="8"
+                fill="none"
+                strokeDasharray={`${(87 / 100) * 352} 352`}
+                className="text-primary progress-animated"
+                strokeLinecap="round"
+                style={{
+                  filter: "drop-shadow(0 0 8px rgba(255, 140, 66, 0.6))",
+                }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <p className="text-3xl font-bold text-foreground">87</p>
+              <p className="text-xs text-muted-foreground">/100</p>
+            </div>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-2xl font-bold text-foreground mb-4">Score de Gestion</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-primary" />
+                <span className="text-sm text-muted-foreground">
+                  Gestion stocks: <strong className="text-foreground">92%</strong>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-success" />
+                <span className="text-sm text-muted-foreground">
+                  Rentabilité: <strong className="text-foreground">85%</strong>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-chart-4" />
+                <span className="text-sm text-muted-foreground">
+                  Prévisions: <strong className="text-foreground">88%</strong>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-chart-2" />
+                <span className="text-sm text-muted-foreground">
+                  Anti-gaspillage: <strong className="text-foreground">83%</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <div className="grid lg:grid-cols-3 gap-6 mb-8">
+        {/* Stocks Card */}
+        <Card
+          className="revolut-card lg:col-span-1 p-6 border-border animate-revolut-slide-up"
+          style={{ animationDelay: "0.1s" }}
+        >
           <div className="flex justify-between items-start mb-6">
             <div>
               <p className="text-muted-foreground text-sm mb-1">Valeur du Stock</p>
               <h2 className="text-3xl font-bold text-foreground">22 450€</h2>
             </div>
-            <Package className="h-6 w-6 text-primary" />
+            <Package className="h-6 w-6 text-primary icon-glow" />
           </div>
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -98,14 +174,17 @@ export default function ManagerDashboard() {
           </div>
         </Card>
 
-        {/* Budget (équivalent à Transactions) */}
-        <Card className="lg:col-span-1 p-6 bg-card border-border hover:shadow-xl transition-all duration-300">
+        {/* Gaspillage Card */}
+        <Card
+          className="revolut-card lg:col-span-1 p-6 border-border animate-revolut-slide-up"
+          style={{ animationDelay: "0.2s" }}
+        >
           <div className="flex justify-between items-start mb-6">
             <div>
               <p className="text-muted-foreground text-sm mb-1">Gaspillage du jour</p>
               <h2 className="text-3xl font-bold text-destructive">- 42€</h2>
             </div>
-            <AlertTriangle className="h-6 w-6 text-destructive" />
+            <AlertTriangle className="h-6 w-6 text-destructive icon-glow" />
           </div>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
@@ -123,21 +202,27 @@ export default function ManagerDashboard() {
           </div>
         </Card>
 
-        {/* Graphique (équivalent au graphique de l'image) */}
-        <Card className="lg:col-span-1 p-6 bg-card border-border hover:shadow-xl transition-all duration-300">
+        {/* Graphique Card */}
+        <Card
+          className="revolut-card lg:col-span-1 p-6 border-border animate-revolut-slide-up"
+          style={{ animationDelay: "0.3s" }}
+        >
           <div className="flex justify-between items-start mb-6">
             <div>
               <p className="text-muted-foreground text-sm mb-1">Évolution Gaspillage</p>
               <h2 className="text-2xl font-bold text-success">-15%</h2>
             </div>
-            <BarChart3 className="h-6 w-6 text-primary" />
+            <BarChart3 className="h-6 w-6 text-primary icon-glow" />
           </div>
           <div className="flex items-end justify-between gap-2 h-32">
             {[45, 52, 38, 41, 35, 48, 33].map((value, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
                 <div
-                  className="w-full bg-primary rounded-t-lg transition-all duration-300 hover:bg-primary/80"
-                  style={{ height: `${(value / 60) * 100}%` }}
+                  className="w-full bg-primary rounded-t-lg transition-all duration-500 hover:bg-primary/80 progress-animated"
+                  style={{
+                    height: `${(value / 60) * 100}%`,
+                    animationDelay: `${i * 0.1}s`,
+                  }}
                 />
                 <span className="text-xs text-muted-foreground">{["L", "M", "M", "J", "V", "S", "D"][i]}</span>
               </div>
@@ -145,14 +230,17 @@ export default function ManagerDashboard() {
           </div>
         </Card>
 
-        {/* Abonnements (équivalent à Commandes) */}
-        <Card className="lg:col-span-1 p-6 bg-card border-border hover:shadow-xl transition-all duration-300">
+        {/* Commandes Card */}
+        <Card
+          className="revolut-card lg:col-span-1 p-6 border-border animate-revolut-slide-up"
+          style={{ animationDelay: "0.4s" }}
+        >
           <div className="flex justify-between items-start mb-6">
             <div>
               <p className="text-muted-foreground text-sm mb-1">Commandes en cours</p>
               <h2 className="text-3xl font-bold text-foreground">3</h2>
             </div>
-            <ShoppingCart className="h-6 w-6 text-primary" />
+            <ShoppingCart className="h-6 w-6 text-primary icon-glow" />
           </div>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
@@ -170,15 +258,18 @@ export default function ManagerDashboard() {
           </div>
         </Card>
 
-        {/* Savings (équivalent à Prévisions) */}
-        <Card className="lg:col-span-1 p-6 bg-card border-border hover:shadow-xl transition-all duration-300">
+        {/* Prévisions Card */}
+        <Card
+          className="revolut-card lg:col-span-1 p-6 border-border animate-revolut-slide-up"
+          style={{ animationDelay: "0.5s" }}
+        >
           <div className="flex justify-between items-start mb-6">
             <div>
               <p className="text-muted-foreground text-sm mb-1">Prévisions Demain</p>
               <h2 className="text-3xl font-bold text-foreground">245</h2>
               <p className="text-sm text-muted-foreground">clients attendus</p>
             </div>
-            <Target className="h-6 w-6 text-success" />
+            <Target className="h-6 w-6 text-success icon-glow" />
           </div>
           <div className="relative h-20 flex items-center justify-center">
             <svg className="w-20 h-20 transform -rotate-90">
@@ -199,8 +290,11 @@ export default function ManagerDashboard() {
                 strokeWidth="6"
                 fill="none"
                 strokeDasharray={`${(75 / 100) * 201} 201`}
-                className="text-primary"
+                className="text-primary progress-animated"
                 strokeLinecap="round"
+                style={{
+                  filter: "drop-shadow(0 0 4px rgba(255, 140, 66, 0.5))",
+                }}
               />
             </svg>
             <div className="absolute text-center">
@@ -210,18 +304,21 @@ export default function ManagerDashboard() {
           <p className="text-xs text-muted-foreground text-center mt-2">Fiabilité de la prévision</p>
         </Card>
 
-        {/* Financial Advice (équivalent aux Actions Rapides) */}
-        <Card className="lg:col-span-1 p-6 bg-card border-border hover:shadow-xl transition-all duration-300">
+        {/* Actions Rapides Card */}
+        <Card
+          className="revolut-card lg:col-span-1 p-6 border-border animate-revolut-slide-up"
+          style={{ animationDelay: "0.6s" }}
+        >
           <div className="flex justify-between items-start mb-6">
             <div>
               <p className="text-muted-foreground text-sm mb-1">Actions Rapides</p>
             </div>
-            <Lightbulb className="h-6 w-6 text-primary" />
+            <Lightbulb className="h-6 w-6 text-primary icon-glow" />
           </div>
           <div className="space-y-2">
             <Button
               variant="outline"
-              className="w-full justify-start text-left hover:bg-primary/10 hover:text-primary hover:border-primary bg-transparent"
+              className="revolut-button w-full justify-start text-left hover:bg-primary/10 hover:text-primary hover:border-primary bg-transparent"
               onClick={() => router.push("/manager/stock")}
             >
               <Package className="h-4 w-4 mr-2" />
@@ -229,7 +326,7 @@ export default function ManagerDashboard() {
             </Button>
             <Button
               variant="outline"
-              className="w-full justify-start text-left hover:bg-primary/10 hover:text-primary hover:border-primary bg-transparent"
+              className="revolut-button w-full justify-start text-left hover:bg-primary/10 hover:text-primary hover:border-primary bg-transparent"
               onClick={() => router.push("/manager/forecasts")}
             >
               <Calendar className="h-4 w-4 mr-2" />
@@ -237,7 +334,7 @@ export default function ManagerDashboard() {
             </Button>
             <Button
               variant="outline"
-              className="w-full justify-start text-left hover:bg-primary/10 hover:text-primary hover:border-primary bg-transparent"
+              className="revolut-button w-full justify-start text-left hover:bg-primary/10 hover:text-primary hover:border-primary bg-transparent"
               onClick={() => router.push("/manager/orders")}
             >
               <ShoppingCart className="h-4 w-4 mr-2" />
@@ -248,14 +345,14 @@ export default function ManagerDashboard() {
       </div>
 
       <Dialog open={showPerformanceDialog} onOpenChange={setShowPerformanceDialog}>
-        <DialogContent className="sm:max-w-lg bg-card border-border rounded-2xl">
+        <DialogContent className="revolut-popup sm:max-w-lg bg-card border-primary/30">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
-              <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
+              <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center animate-bounce-subtle icon-glow">
                 <TrendingUp className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <span className="inline-block px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-semibold mb-2">
+                <span className="revolut-badge inline-block px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-semibold mb-2">
                   Performance hebdomadaire
                 </span>
                 <DialogTitle className="text-2xl font-bold text-foreground">
@@ -263,17 +360,22 @@ export default function ManagerDashboard() {
                 </DialogTitle>
               </div>
             </div>
-            <DialogDescription className="text-4xl font-bold text-success mt-4">+482€</DialogDescription>
+            <DialogDescription className="text-5xl font-bold text-success mt-4 animate-revolut-scale-in">
+              +482€
+            </DialogDescription>
           </DialogHeader>
           <div className="mt-6 space-y-4">
-            <div className="p-4 bg-muted/30 rounded-xl border border-border">
+            <div className="p-4 bg-muted/30 rounded-xl border border-primary/20 animate-shimmer">
               <p className="text-sm text-muted-foreground mb-2">Prévisions pour demain</p>
               <div className="flex justify-between items-center">
                 <span className="text-foreground font-semibold">245 clients attendus</span>
                 <span className="text-success font-semibold">+32€ économies prévues</span>
               </div>
             </div>
-            <Button onClick={() => setShowPerformanceDialog(false)} className="w-full bg-primary hover:bg-primary/90">
+            <Button
+              onClick={() => setShowPerformanceDialog(false)}
+              className="revolut-button w-full bg-primary hover:bg-primary/90"
+            >
               Continuer
             </Button>
           </div>
@@ -501,7 +603,7 @@ export default function ManagerDashboard() {
         </div>
 
         <Card className="p-6 mb-8 bg-card border-border animate-in fade-in slide-in-from-bottom-6 duration-500 delay-250">
-          <div className="flex items-start gap-4 mb-6">
+          <div className="flex justify-between items-start mb-6">
             <div>
               <p className="text-muted-foreground text-sm mb-1">Actions Rapides</p>
             </div>
