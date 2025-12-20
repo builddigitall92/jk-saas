@@ -447,9 +447,9 @@ export default function LandingPage() {
                     {loading ? "..." : `${stats.deliveredOrders} livrées`}
                   </p>
                 </div>
-              </div>
             </div>
-            
+          </div>
+          
             <div className="absolute -right-4 top-1/2 banking-card p-4 rounded-xl shadow-2xl animate-float-delayed hidden lg:block">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
@@ -504,14 +504,14 @@ export default function LandingPage() {
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Une suite d'outils pensée pour simplifier la gestion quotidienne de votre établissement.
-            </p>
-          </div>
+          </p>
+        </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => {
               const Icon = feature.icon
               return (
-                <div 
+          <div
                   key={feature.title}
                   className="banking-card p-6 group cursor-default"
                   style={{ animationDelay: `${index * 0.1}s` }}
@@ -529,7 +529,7 @@ export default function LandingPage() {
               )
             })}
           </div>
-        </div>
+              </div>
       </section>
 
       {/* Benefits Section */}
@@ -542,11 +542,11 @@ export default function LandingPage() {
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
               Des résultats concrets
-            </h2>
+                </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Nos utilisateurs constatent des améliorations significatives dès les premières semaines.
-            </p>
-          </div>
+                </p>
+              </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {benefits.map((benefit) => {
@@ -571,7 +571,7 @@ export default function LandingPage() {
                 </div>
               )
             })}
-          </div>
+            </div>
         </div>
       </section>
 
@@ -602,8 +602,8 @@ export default function LandingPage() {
                   {[...Array(testimonial.rating)].map((_, i) => (
                     <Star key={i} className="h-5 w-5 text-primary fill-primary" />
                   ))}
-                </div>
-                
+              </div>
+
                 <blockquote className="text-foreground text-lg mb-6 leading-relaxed">
                   &ldquo;{testimonial.quote}&rdquo;
                 </blockquote>
@@ -635,11 +635,11 @@ export default function LandingPage() {
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
               Des tarifs adaptés à votre activité
-            </h2>
+                </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Choisissez le plan qui correspond à vos besoins. Essai gratuit de 14 jours sur tous les plans.
-            </p>
-          </div>
+                </p>
+              </div>
 
           {/* Pricing Cards */}
           <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto items-start">
@@ -753,8 +753,8 @@ export default function LandingPage() {
               <Link href="/login" className="block">
                 <Button className="w-full btn-primary h-12 text-base">
                   Commencer l'essai gratuit
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </Button>
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </Button>
               </Link>
             </div>
 
@@ -771,7 +771,7 @@ export default function LandingPage() {
               <div className="mb-6">
                 <span className="text-5xl font-bold text-foreground">110€</span>
                 <span className="text-muted-foreground">/mois</span>
-              </div>
+            </div>
 
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
@@ -809,8 +809,8 @@ export default function LandingPage() {
                   Contacter l'équipe commerciale
                 </Button>
               </Link>
-            </div>
           </div>
+        </div>
 
           {/* Pricing Note */}
           <p className="text-center text-muted-foreground mt-12 text-sm">
@@ -853,9 +853,9 @@ export default function LandingPage() {
               
               <p className="text-sm text-muted-foreground mt-6">
                 14 jours d'essai gratuit • Sans carte bancaire • Annulation à tout moment
-              </p>
-            </div>
-          </div>
+          </p>
+        </div>
+      </div>
         </div>
       </section>
 

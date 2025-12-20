@@ -1,246 +1,349 @@
 "use client"
 
-import { RoleNav } from "@/components/role-nav"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { PositiveFeedbackDialog } from "@/components/positive-feedback-dialog"
-import { CheckCircle, XCircle, AlertCircle, Clock } from "lucide-react"
-import { useState } from "react"
+import { Check, ChevronLeft, X, Package, ThermometerSun, ClipboardCheck, Utensils, Sparkles, Loader2 } from "lucide-react"
+import Link from "next/link"
+import { createClient } from "@/utils/supabase/client"
 
-const checkItems = [
-  { id: "fries", label: "Frites disponibles", category: "Stock" },
-  { id: "bread", label: "Pain hamburger", category: "Stock" },
-  { id: "hotdog", label: "Pain hot-dog", category: "Stock" },
-  { id: "meat", label: "Viande disponible", category: "Stock" },
-  { id: "veggies", label: "Légumes frais", category: "Hygiène" },
-  { id: "sauces", label: "Sauces complètes", category: "Matériel" },
-  { id: "cleanliness", label: "Propreté cuisine", category: "Hygiène" },
-  { id: "equipment", label: "Équipements fonctionnels", category: "Matériel" },
-]
+interface CheckItemTemplate {
+  id: string
+  item_code: string
+  item_label: string
+  icon: string
+}
 
-const previousChecks = [
-  {
-    time: "14:30",
-    status: "ok",
-    issues: 0,
-    note: "Service OK, tout est en ordre",
-  },
-  {
-    time: "12:15",
-    status: "issues",
-    issues: 2,
-    note: "Manque 2 pains hot-dog, commande effectuée",
-  },
-]
+type CheckStatus = "ok" | "manque" | null
 
-export default function EmployeeServiceCheckPage() {
-  const [checkStatus, setCheckStatus] = useState<Record<string, "ok" | "missing" | null>>(
-    checkItems.reduce((acc, item) => ({ ...acc, [item.id]: null }), {}),
-  )
-  const [notes, setNotes] = useState("")
-  const [showResult, setShowResult] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showPositiveFeedback, setShowPositiveFeedback] = useState(false)
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  Package,
+  ThermometerSun,
+  ClipboardCheck,
+  Utensils
+}
 
-  const handleCheck = (id: string, status: "ok" | "missing") => {
-    setCheckStatus((prev) => ({
-      ...prev,
-      [id]: prev[id] === status ? null : status,
-    }))
+export default function ServiceCheckPage() {
+  const supabase = createClient()
+  const [checkItems, setCheckItems] = useState<CheckItemTemplate[]>([])
+  const [checks, setChecks] = useState<Record<string, CheckStatus>>({})
+  const [inventoryDone, setInventoryDone] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [alreadyChecked, setAlreadyChecked] = useState(false)
+
+  // Charger les items de check-in et vérifier si déjà fait
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: profile } = await (supabase as any)
+          .from('profiles')
+          .select('establishment_id')
+          .eq('id', user.id)
+          .single()
+
+        if (!profile?.establishment_id) return
+
+        const today = new Date().toISOString().split('T')[0]
+
+        // Vérifier si un check-in a déjà été fait aujourd'hui
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: existingCheck } = await (supabase as any)
+          .from('service_checks')
+          .select('*')
+          .eq('performed_by', user.id)
+          .eq('check_date', today)
+          .single()
+
+        if (existingCheck) {
+          setAlreadyChecked(true)
+          setShowSuccess(true)
+          setLoading(false)
+          return
+        }
+
+        // Charger les items de check-in configurés
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: items } = await (supabase as any)
+          .from('check_item_templates')
+          .select('*')
+          .eq('establishment_id', profile.establishment_id)
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true })
+
+        if (items && items.length > 0) {
+          setCheckItems(items)
+        } else {
+          // Items par défaut si aucun n'est configuré
+          setCheckItems([
+            { id: '1', item_code: "stock-frites", item_label: "Stock frites suffisant", icon: "Package" },
+            { id: '2', item_code: "stock-pain", item_label: "Stock pain suffisant", icon: "Package" },
+            { id: '3', item_code: "stock-viande", item_label: "Stock viande suffisant", icon: "Package" },
+            { id: '4', item_code: "temp-frigo", item_label: "Température frigo OK", icon: "ThermometerSun" },
+            { id: '5', item_code: "proprete", item_label: "Propreté cuisine", icon: "ClipboardCheck" },
+            { id: '6', item_code: "materiel", item_label: "Matériel fonctionnel", icon: "Utensils" },
+          ])
+        }
+      } catch (err) {
+        console.error('Erreur chargement:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+  }, [])
+
+  const handleCheck = (id: string, status: CheckStatus) => {
+    setChecks(prev => ({ ...prev, [id]: status }))
   }
 
-  const handleSubmit = () => {
-    setIsSubmitting(true)
-    setTimeout(() => {
-      setShowResult(true)
-      setIsSubmitting(false)
-    }, 1000)
+  const allChecked = checkItems.every(item => checks[item.id])
+  const hasIssues = Object.values(checks).some(status => status === "manque")
+
+  const handleSubmit = async () => {
+    setSaving(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('establishment_id, first_name, last_name')
+        .eq('id', user.id)
+        .single()
+
+      if (!profile?.establishment_id) return
+
+      const today = new Date().toISOString().split('T')[0]
+      
+      // Créer le rapport des problèmes
+      const issues = checkItems
+        .filter(item => checks[item.id] === "manque")
+        .map(item => item.item_label)
+      
+      const notes = hasIssues 
+        ? `Problèmes signalés: ${issues.join(", ")}`
+        : "Tous les points vérifiés OK"
+
+      // Sauvegarder le check-in avec le statut inventaire
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('service_checks')
+        .insert({
+          establishment_id: profile.establishment_id,
+          performed_by: user.id,
+          check_date: today,
+          shift: 'morning',
+          is_complete: true,
+          has_issues: hasIssues,
+          inventory_done: inventoryDone,
+          notes: notes
+        })
+
+      if (error) throw error
+
+      // Si il y a des problèmes, créer une alerte pour le manager
+      if (hasIssues) {
+        const employeeName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Un employé'
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from('alerts')
+          .insert({
+            establishment_id: profile.establishment_id,
+            alert_type: 'warning',
+            category: 'service',
+            title: 'Problème signalé au check-in',
+            message: `${employeeName} a signalé: ${issues.join(", ")}`,
+            is_read: false,
+            is_dismissed: false
+          })
+      }
+
+      setShowSuccess(true)
+    } catch (err) {
+      console.error('Erreur sauvegarde:', err)
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const allChecked = Object.values(checkStatus).every((status) => status !== null)
-  const issuesCount = Object.values(checkStatus).filter((status) => status === "missing").length
-  const isAllOk = issuesCount === 0
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (showSuccess) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center px-4">
+        <div className="text-center animate-success-pop">
+          <div className={`h-24 w-24 rounded-full mx-auto mb-6 flex items-center justify-center ${
+            hasIssues ? "bg-primary/20" : "bg-accent/20"
+          }`}>
+            {hasIssues ? (
+              <ClipboardCheck className="h-12 w-12 text-primary" />
+            ) : (
+              <Sparkles className="h-12 w-12 text-accent" />
+            )}
+          </div>
+          <h2 className="text-2xl font-bold text-foreground mb-2">
+            {alreadyChecked ? "Déjà effectué" : hasIssues ? "Rapport envoyé" : "Parfait !"}
+          </h2>
+          <p className="text-muted-foreground">
+            {alreadyChecked 
+              ? "Vous avez déjà fait le check-in aujourd'hui" 
+              : hasIssues 
+                ? "Les problèmes ont été signalés au manager" 
+                : "Tout est prêt pour le service"}
+          </p>
+          <Link href="/employee">
+            <Button className="mt-6 btn-primary">Retour</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <RoleNav role="employee" />
+    <div className="px-4 py-6">
+      {/* Header */}
+      <div className="mb-6 animate-fade-up">
+        <Link href="/employee" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4">
+          <ChevronLeft className="h-5 w-5" />
+          <span>Retour</span>
+        </Link>
+        <h1 className="text-xl font-bold text-foreground mb-1">Check Service</h1>
+        <p className="text-sm text-muted-foreground">Vérifiez l'état avant ouverture</p>
+      </div>
 
-      <main className="mx-auto max-w-4xl px-6 py-8 sm:px-8">
-        <div className="mb-8 animate-in fade-in slide-in-from-top duration-500">
-          <h2 className="text-4xl font-bold text-foreground mb-2">Check du Service</h2>
-          <p className="text-muted-foreground text-lg">Vérification rapide de l'état du service</p>
+      {/* Progress */}
+      <div className="mb-6 animate-fade-up delay-1">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm text-muted-foreground">Progression</span>
+          <span className="text-sm font-medium text-foreground">
+            {Object.keys(checks).filter(k => checks[k]).length}/{checkItems.length}
+          </span>
         </div>
+        <div className="progress-bar-track">
+          <div
+            className="progress-bar-fill-orange"
+            style={{ width: `${(Object.keys(checks).filter(k => checks[k]).length / checkItems.length) * 100}%` }}
+          />
+        </div>
+      </div>
 
-        {/* Formulaire de check */}
-        <Card className="p-6 bg-card border-border mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <h3 className="text-xl font-bold text-foreground mb-6">
-            Nouveau Check - {new Date().toLocaleDateString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-          </h3>
-
-          <div className="space-y-6">
-            {["Stock", "Hygiène", "Matériel"].map((category) => (
-              <div key={category}>
-                <h4 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-                  {category}
-                </h4>
-                <div className="space-y-2">
-                  {checkItems
-                    .filter((item) => item.category === category)
-                    .map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between p-4 bg-background border border-border rounded-lg"
-                      >
-                        <span className="text-foreground font-medium">{item.label}</span>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant={checkStatus[item.id] === "ok" ? "default" : "outline"}
-                            className={`gap-2 ${
-                              checkStatus[item.id] === "ok"
-                                ? "bg-primary hover:bg-primary/90 text-primary-foreground"
-                                : "border-border hover:bg-primary/10"
-                            }`}
-                            onClick={() => handleCheck(item.id, "ok")}
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                            OK
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant={checkStatus[item.id] === "missing" ? "default" : "outline"}
-                            className={`gap-2 ${
-                              checkStatus[item.id] === "missing"
-                                ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-                                : "border-border hover:bg-destructive/10"
-                            }`}
-                            onClick={() => handleCheck(item.id, "missing")}
-                          >
-                            <XCircle className="h-4 w-4" />
-                            Manque
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+      {/* Check Items */}
+      <div className="space-y-3 animate-fade-up delay-2">
+        {checkItems.map((item) => {
+          const Icon = iconMap[item.icon] || Package
+          const status = checks[item.id]
+          
+          return (
+            <div
+              key={item.id}
+              className={`banking-card p-4 transition-all ${
+                status === "ok" ? "border-accent/50" :
+                status === "manque" ? "border-destructive/50" : ""
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${
+                  status === "ok" ? "bg-accent/20" :
+                  status === "manque" ? "bg-destructive/20" : "bg-secondary"
+                }`}>
+                  <Icon className={`h-6 w-6 ${
+                    status === "ok" ? "text-accent" :
+                    status === "manque" ? "text-destructive" : "text-muted-foreground"
+                  }`} />
+                </div>
+                <p className="flex-1 font-medium text-foreground">{item.item_label}</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleCheck(item.id, "ok")}
+                    className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${
+                      status === "ok"
+                        ? "bg-accent text-white"
+                        : "bg-secondary hover:bg-accent/20 text-muted-foreground hover:text-accent"
+                    }`}
+                  >
+                    <Check className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => handleCheck(item.id, "manque")}
+                    className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${
+                      status === "manque"
+                        ? "bg-destructive text-white"
+                        : "bg-secondary hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
+                    }`}
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
               </div>
-            ))}
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground">Notes (optionnel)</label>
-              <Textarea
-                placeholder="Ex: Manque 2 pains, commande en cours..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="min-h-[100px] bg-background border-border text-foreground resize-none"
-              />
             </div>
+          )
+        })}
+      </div>
 
-            <Button
-              onClick={handleSubmit}
-              disabled={!allChecked || isSubmitting}
-              className="w-full h-14 text-lg bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
-            >
-              {isSubmitting ? "Enregistrement..." : "Valider le Check"}
-            </Button>
+      {/* Inventaire fait */}
+      <div className="mt-6 animate-fade-up delay-3">
+        <div 
+          onClick={() => setInventoryDone(!inventoryDone)}
+          className={`banking-card p-4 cursor-pointer transition-all ${
+            inventoryDone ? "border-accent/50 bg-accent/5" : ""
+          }`}
+        >
+          <div className="flex items-center gap-4">
+            <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${
+              inventoryDone ? "bg-accent/20" : "bg-secondary"
+            }`}>
+              <Package className={`h-6 w-6 ${
+                inventoryDone ? "text-accent" : "text-muted-foreground"
+              }`} />
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-foreground">Inventaire fait</p>
+              <p className="text-xs text-muted-foreground">Cochez si vous avez mis à jour le stock</p>
+            </div>
+            <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${
+              inventoryDone 
+                ? "bg-accent text-white" 
+                : "bg-secondary text-muted-foreground"
+            }`}>
+              <Check className="h-5 w-5" />
+            </div>
           </div>
-        </Card>
+        </div>
+      </div>
 
-        {/* Résultat */}
-        <Dialog open={showResult} onOpenChange={setShowResult}>
-          <DialogContent className="bg-card border-border sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle className="text-foreground text-2xl text-center">Check Enregistré</DialogTitle>
-              <DialogDescription className="text-center">
-                <div
-                  className={`inline-flex h-20 w-20 rounded-full items-center justify-center mt-4 mb-4 ${
-                    isAllOk ? "bg-primary/10" : "bg-accent/10"
-                  }`}
-                >
-                  {isAllOk ? (
-                    <CheckCircle className="h-10 w-10 text-primary" />
-                  ) : (
-                    <AlertCircle className="h-10 w-10 text-accent" />
-                  )}
-                </div>
-                <p className={`text-2xl font-bold mb-2 ${isAllOk ? "text-primary" : "text-accent"}`}>
-                  {isAllOk
-                    ? "Service OK"
-                    : `${issuesCount} Problème${issuesCount > 1 ? "s" : ""} Détecté${issuesCount > 1 ? "s" : ""}`}
-                </p>
-                <p className="text-muted-foreground">
-                  {isAllOk ? "Tout est en ordre pour le service" : "Les alertes ont été transmises au patron"}
-                </p>
-              </DialogDescription>
-            </DialogHeader>
-
-            <Button
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12"
-              onClick={() => {
-                setShowResult(false)
-                setTimeout(() => {
-                  setShowPositiveFeedback(true)
-                }, 300)
-              }}
-            >
-              Clôturer le Service
-            </Button>
-          </DialogContent>
-        </Dialog>
-
-        <PositiveFeedbackDialog
-          open={showPositiveFeedback}
-          onClose={() => {
-            setShowPositiveFeedback(false)
-            setCheckStatus(checkItems.reduce((acc, item) => ({ ...acc, [item.id]: null }), {}))
-            setNotes("")
-          }}
-          feedbackType={isAllOk ? "positive" : "honesty"}
-        />
-
-        {/* Historique */}
-        <Card className="p-6 bg-card border-border animate-in fade-in slide-in-from-bottom-6 duration-500 delay-100">
-          <h3 className="text-xl font-bold text-foreground mb-4">Checks Précédents</h3>
-
-          <div className="space-y-3">
-            {previousChecks.map((check, idx) => (
-              <div
-                key={idx}
-                className={`flex items-start gap-4 p-4 rounded-lg border-2 ${
-                  check.status === "ok" ? "bg-primary/5 border-primary/20" : "bg-accent/5 border-accent/20"
-                }`}
-              >
-                <div
-                  className={`h-12 w-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    check.status === "ok" ? "bg-primary/10" : "bg-accent/10"
-                  }`}
-                >
-                  {check.status === "ok" ? (
-                    <CheckCircle className="h-6 w-6 text-primary" />
-                  ) : (
-                    <AlertCircle className="h-6 w-6 text-accent" />
-                  )}
-                </div>
-
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className={`font-bold ${check.status === "ok" ? "text-primary" : "text-accent"}`}>
-                      {check.status === "ok" ? "Service OK" : `${check.issues} problème(s)`}
-                    </p>
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      <span className="text-sm">{check.time}</span>
-                    </div>
-                  </div>
-                  <p className="text-sm text-foreground">{check.note}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </main>
+      {/* Submit */}
+      {allChecked && (
+        <div className="mt-6 animate-fade-up">
+          <Button
+            onClick={handleSubmit}
+            disabled={saving}
+            className={`w-full h-14 text-lg ${hasIssues ? "btn-primary" : "bg-accent hover:bg-green-500 text-white"}`}
+          >
+            {saving ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <>
+                <ClipboardCheck className="h-5 w-5 mr-2" />
+                {hasIssues ? "Envoyer le rapport" : "Valider le check"}
+              </>
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

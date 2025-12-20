@@ -1,176 +1,314 @@
-'use client'
+"use client"
 
-import { RoleNav } from '@/components/role-nav'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Trash2, Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Check, ChevronLeft, Loader2, Package, Trash2, AlertCircle } from "lucide-react"
+import Link from "next/link"
+import { useStock, type StockWithProduct } from "@/lib/hooks/use-stock"
+import { createClient } from "@/utils/supabase/client"
 
-const products = [
-  { id: 'fries', name: 'Frites', icon: '🍟' },
-  { id: 'bread', name: 'Pain', icon: '🍞' },
-  { id: 'meat', name: 'Viande', icon: '🥩' },
-  { id: 'sauce', name: 'Sauce', icon: '🥫' },
-  { id: 'drink', name: 'Boisson', icon: '🥤' },
-]
+export default function WastePage() {
+  const { stocks, loading, updateQuantity } = useStock()
+  
+  const [selectedStock, setSelectedStock] = useState<StockWithProduct | null>(null)
+  const [wasteQuantity, setWasteQuantity] = useState("")
+  const [wasteReason, setWasteReason] = useState("")
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-const quantities = ['200g', '300g', '500g', '1kg', '1 unité', '5 unités', '10 unités']
-
-const todayWaste = [
-  { time: '14:30', product: 'Frites', qty: '500g', cost: '4.00€' },
-  { time: '12:15', product: 'Pain', qty: '3 unités', cost: '2.40€' },
-  { time: '11:20', product: 'Sauce', qty: '200g', cost: '1.80€' },
-]
-
-export default function EmployeeWastePage() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState<string | null>(null)
-  const [selectedQty, setSelectedQty] = useState<string | null>(null)
-
-  const handleSubmit = () => {
-    if (selectedProduct && selectedQty) {
-      setIsDialogOpen(false)
-      setSelectedProduct(null)
-      setSelectedQty(null)
+  // Quantités prédéfinies basées sur l'unité du produit
+  const getQuantityOptions = (stock: StockWithProduct) => {
+    const unit = stock.product?.unit || 'unités'
+    const currentQty = Number(stock.quantity)
+    
+    if (unit === 'kg') {
+      return ['0.1', '0.2', '0.5', '1', '2'].filter(q => parseFloat(q) <= currentQty)
+    } else if (unit === 'g') {
+      return ['50', '100', '200', '500'].filter(q => parseFloat(q) <= currentQty)
+    } else if (unit === 'L') {
+      return ['0.25', '0.5', '1', '2'].filter(q => parseFloat(q) <= currentQty)
+    } else {
+      // unités, pièces
+      return ['1', '2', '3', '5', '10'].filter(q => parseFloat(q) <= currentQty)
     }
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <RoleNav role="employee" />
+  const handleSave = async () => {
+    if (!selectedStock || !wasteQuantity) return
+    
+    const qty = parseFloat(wasteQuantity)
+    if (qty <= 0 || qty > Number(selectedStock.quantity)) return
+    
+    setIsSubmitting(true)
+    
+    try {
+      const supabase = createClient()
       
-      <main className="mx-auto max-w-4xl px-6 py-8 sm:px-8">
-        <div className="mb-8 flex items-center justify-between animate-in fade-in slide-in-from-top duration-500">
-          <div>
-            <h2 className="text-4xl font-bold text-foreground mb-2">
-              Gaspillage
-            </h2>
-            <p className="text-muted-foreground text-lg">
-              Enregistrement ultra simple
-            </p>
+      // Récupérer l'utilisateur et son établissement
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData.user) throw new Error('Non authentifié')
+      
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('establishment_id')
+        .eq('id', userData.user.id)
+        .single()
+      
+      if (!profile?.establishment_id) throw new Error('Pas d\'établissement')
+      
+      // 1. Enregistrer le gaspillage dans la table waste_logs
+      const estimatedCost = qty * Number(selectedStock.unit_price || 0)
+      
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('waste_logs')
+        .insert({
+          establishment_id: profile.establishment_id,
+          product_id: selectedStock.product_id,
+          quantity: qty,
+          unit: selectedStock.product?.unit || 'unités',
+          estimated_cost: estimatedCost,
+          reason: wasteReason || null,
+          logged_by: userData.user.id
+        })
+      
+      // 2. Mettre à jour le stock (soustraire la quantité gaspillée)
+      const newQuantity = Number(selectedStock.quantity) - qty
+      await updateQuantity(selectedStock.id, Math.max(0, newQuantity))
+      
+      // Afficher le succès
+      setShowSuccess(true)
+      setTimeout(() => {
+        setShowSuccess(false)
+        setSelectedStock(null)
+        setWasteQuantity("")
+        setWasteReason("")
+      }, 2000)
+      
+    } catch (error) {
+      console.error('Erreur lors de l\'enregistrement du gaspillage:', error)
+    }
+    
+    setIsSubmitting(false)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (showSuccess) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center px-4">
+        <div className="text-center animate-success-pop">
+          <div className="h-24 w-24 rounded-full bg-accent/20 mx-auto mb-6 flex items-center justify-center">
+            <Check className="h-12 w-12 text-accent" />
           </div>
-
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground h-14 px-8 text-lg">
-                <Plus className="h-6 w-6" />
-                Ajouter Gaspillage
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-card border-border sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle className="text-foreground text-2xl">Nouveau Gaspillage</DialogTitle>
-                <DialogDescription className="text-muted-foreground text-base">
-                  Sélectionnez le produit et la quantité
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-6 py-4">
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold text-foreground">Produit</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {products.map((product) => (
-                      <button
-                        key={product.id}
-                        onClick={() => setSelectedProduct(product.id)}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          selectedProduct === product.id
-                            ? 'border-destructive bg-destructive/10'
-                            : 'border-border hover:border-destructive/30 bg-background'
-                        }`}
-                      >
-                        <div className="text-3xl mb-2">{product.icon}</div>
-                        <p className="font-semibold text-foreground">{product.name}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold text-foreground">Quantité</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {quantities.map((qty) => (
-                      <button
-                        key={qty}
-                        onClick={() => setSelectedQty(qty)}
-                        className={`p-3 rounded-lg border-2 transition-all font-semibold ${
-                          selectedQty === qty
-                            ? 'border-destructive bg-destructive/10 text-destructive'
-                            : 'border-border hover:border-destructive/30 bg-background text-foreground'
-                        }`}
-                      >
-                        {qty}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <Button 
-                  variant="outline" 
-                  className="flex-1 border-border h-12"
-                  onClick={() => {
-                    setIsDialogOpen(false)
-                    setSelectedProduct(null)
-                    setSelectedQty(null)
-                  }}
-                >
-                  Annuler
-                </Button>
-                <Button 
-                  className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground h-12 text-base"
-                  onClick={handleSubmit}
-                  disabled={!selectedProduct || !selectedQty}
-                >
-                  Confirmer
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Enregistré !</h2>
+          <p className="text-muted-foreground">Le stock a été mis à jour</p>
         </div>
+      </div>
+    )
+  }
 
-        <Card className="p-6 bg-card border-border animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <h3 className="text-xl font-bold text-foreground mb-6">
-            Gaspillage d'Aujourd'hui
-          </h3>
-          
-          <div className="space-y-3">
-            {todayWaste.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between p-4 bg-background border border-border rounded-lg">
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-lg bg-destructive/10 flex items-center justify-center">
-                    <Trash2 className="h-6 w-6 text-destructive" />
+  // Filtrer les stocks qui ont une quantité > 0
+  const availableStocks = stocks.filter(s => Number(s.quantity) > 0)
+
+  return (
+    <div className="px-4 py-6">
+      {/* Header */}
+      <div className="mb-6 animate-fade-up">
+        <Link href="/employee" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4">
+          <ChevronLeft className="h-5 w-5" />
+          <span>Retour</span>
+        </Link>
+        <h1 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
+          <Trash2 className="h-5 w-5 text-destructive" />
+          Enregistrer un gaspillage
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {selectedStock ? "Indiquez la quantité gaspillée" : "Sélectionnez un produit en stock"}
+        </p>
+      </div>
+
+      {!selectedStock ? (
+        <>
+          {availableStocks.length > 0 ? (
+            <div className="space-y-3 animate-fade-up delay-1">
+              {availableStocks.map((stock) => (
+                <button
+                  key={stock.id}
+                  onClick={() => setSelectedStock(stock)}
+                  className="w-full banking-card p-4 text-left transition-all hover:border-destructive/50"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl">
+                      {stock.product?.icon || <Package className="h-6 w-6 text-primary" />}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-foreground">{stock.product?.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        En stock: <span className="text-primary font-medium">{Number(stock.quantity)} {stock.product?.unit}</span>
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-muted-foreground">Valeur</p>
+                      <p className="font-semibold text-foreground">{Number(stock.total_value || 0).toFixed(2)}€</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-foreground">{item.product}</p>
-                    <p className="text-sm text-muted-foreground">{item.qty}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-destructive">{item.cost}</p>
-                  <p className="text-sm text-muted-foreground">{item.time}</p>
-                </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="banking-card p-12 text-center animate-fade-up delay-1">
+              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <p className="text-muted-foreground mb-2">Aucun produit en stock</p>
+              <p className="text-sm text-muted-foreground">Ajoutez d'abord du stock pour pouvoir enregistrer du gaspillage</p>
+              <Link href="/employee/stock-update">
+                <Button className="mt-4" variant="outline">
+                  Aller aux stocks
+                </Button>
+              </Link>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="space-y-5 animate-slide-right">
+          {/* Selected Product */}
+          <div className="banking-card-glow p-4">
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center text-3xl">
+                {selectedStock.product?.icon || <Package className="h-7 w-7 text-primary" />}
               </div>
-            ))}
-          </div>
-
-          <div className="mt-6 pt-6 border-t border-border">
-            <div className="flex items-center justify-between">
-              <span className="text-lg font-semibold text-foreground">Total du jour</span>
-              <span className="text-2xl font-bold text-destructive">8.20€</span>
+              <div className="flex-1">
+                <p className="font-bold text-foreground">{selectedStock.product?.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  En stock: <span className="text-primary font-medium">{Number(selectedStock.quantity)} {selectedStock.product?.unit}</span>
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedStock(null)} className="text-muted-foreground">
+                Changer
+              </Button>
             </div>
           </div>
-        </Card>
-      </main>
+
+          {/* Quantity Options */}
+          <div>
+            <p className="text-sm text-muted-foreground mb-3">Quantité gaspillée</p>
+            <div className="grid grid-cols-3 gap-3 mb-3">
+              {getQuantityOptions(selectedStock).map((qty) => (
+                <button
+                  key={qty}
+                  onClick={() => setWasteQuantity(qty)}
+                  className={`p-4 rounded-xl font-semibold transition-all ${
+                    wasteQuantity === qty
+                      ? "bg-destructive text-white"
+                      : "banking-card hover:border-destructive/50"
+                  }`}
+                >
+                  {qty} {selectedStock.product?.unit}
+                </button>
+              ))}
+            </div>
+            
+            {/* Custom quantity input */}
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                max={Number(selectedStock.quantity)}
+                placeholder="Autre quantité..."
+                value={wasteQuantity}
+                onChange={(e) => setWasteQuantity(e.target.value)}
+                className="flex-1"
+              />
+              <span className="text-muted-foreground">{selectedStock.product?.unit}</span>
+            </div>
+            
+            {/* Warning if quantity too high */}
+            {parseFloat(wasteQuantity) > Number(selectedStock.quantity) && (
+              <p className="text-destructive text-sm mt-2 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                Quantité supérieure au stock disponible
+              </p>
+            )}
+          </div>
+
+          {/* Reason (optional) */}
+          <div>
+            <p className="text-sm text-muted-foreground mb-2">Raison (optionnel)</p>
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              {['Périmé', 'Tombé', 'Mauvaise qualité', 'Erreur préparation'].map((reason) => (
+                <button
+                  key={reason}
+                  onClick={() => setWasteReason(reason)}
+                  className={`p-3 rounded-xl text-sm font-medium transition-all ${
+                    wasteReason === reason
+                      ? "bg-secondary text-foreground border-2 border-primary"
+                      : "banking-card hover:border-primary/50"
+                  }`}
+                >
+                  {reason}
+                </button>
+              ))}
+            </div>
+            <Input
+              type="text"
+              placeholder="Autre raison..."
+              value={wasteReason}
+              onChange={(e) => setWasteReason(e.target.value)}
+            />
+          </div>
+
+          {/* Summary & Save Button */}
+          {wasteQuantity && parseFloat(wasteQuantity) > 0 && parseFloat(wasteQuantity) <= Number(selectedStock.quantity) && (
+            <div className="pt-4 animate-fade-up">
+              <div className="banking-card p-4 mb-4 border-destructive/30">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-xl bg-destructive/10 flex items-center justify-center text-2xl">
+                    {selectedStock.product?.icon || "📦"}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-foreground">{selectedStock.product?.name}</p>
+                    <p className="text-destructive font-medium">
+                      -{wasteQuantity} {selectedStock.product?.unit}
+                    </p>
+                    {wasteReason && (
+                      <p className="text-xs text-muted-foreground">Raison: {wasteReason}</p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">Perte estimée</p>
+                    <p className="font-bold text-destructive">
+                      {(parseFloat(wasteQuantity) * Number(selectedStock.unit_price || 0)).toFixed(2)}€
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <Button 
+                onClick={handleSave} 
+                disabled={isSubmitting}
+                className="w-full h-14 text-lg bg-destructive hover:bg-red-600 text-white"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <>
+                    <Check className="h-5 w-5 mr-2" />
+                    Enregistrer le gaspillage
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

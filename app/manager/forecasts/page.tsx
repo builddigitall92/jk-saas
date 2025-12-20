@@ -1,208 +1,352 @@
-'use client'
+"use client"
 
-import { RoleNav } from '@/components/role-nav'
-import { Card } from '@/components/ui/card'
-import { Users, TrendingUp, Package, AlertTriangle, Calendar } from 'lucide-react'
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts'
-
-const trafficData = [
-  { day: 'Lun', clients: 245 },
-  { day: 'Mar', clients: 198 },
-  { day: 'Mer', clients: 223 },
-  { day: 'Jeu', clients: 267 },
-  { day: 'Ven', clients: 312 },
-  { day: 'Sam', clients: 289 },
-  { day: 'Dim', clients: 254 },
-]
+import { useState, useMemo } from "react"
+import { 
+  TrendingUp, 
+  Package, 
+  Euro, 
+  Calculator,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+  Target,
+  ShoppingCart
+} from "lucide-react"
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts"
+import { useStock, type StockWithProduct } from "@/lib/hooks/use-stock"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 
 export default function ManagerForecastsPage() {
+  const { stocks, loading } = useStock()
+  
+  // Quantités de vente prévues par produit
+  const [salesForecast, setSalesForecast] = useState<Record<string, number>>({})
+  
+  // Produits avec prix de vente défini
+  const productsWithPrice = useMemo(() => {
+    return stocks.filter(s => s.selling_price && Number(s.selling_price) > 0)
+  }, [stocks])
+
+  // Calculer les stats pour un produit
+  const getProductStats = (stock: StockWithProduct) => {
+    const unitPrice = Number(stock.unit_price) || 0
+    const sellingPrice = Number(stock.selling_price) || 0
+    const quantity = Number(stock.quantity) || 0
+    const forecastQty = salesForecast[stock.id] ?? quantity
+    
+    const marginPerUnit = sellingPrice - unitPrice
+    const marginPercent = sellingPrice > 0 ? (marginPerUnit / sellingPrice) * 100 : 0
+    
+    const potentialCA = sellingPrice * forecastQty
+    const potentialBenefice = marginPerUnit * forecastQty
+    const stockValue = unitPrice * quantity
+    
+    return {
+      unitPrice,
+      sellingPrice,
+      quantity,
+      forecastQty,
+      marginPerUnit,
+      marginPercent,
+      potentialCA,
+      potentialBenefice,
+      stockValue
+    }
+  }
+
+  // Stats totales
+  const totalStats = useMemo(() => {
+    let totalCA = 0
+    let totalBenefice = 0
+    let totalStockValue = 0
+    let totalProducts = 0
+    
+    productsWithPrice.forEach(stock => {
+      const stats = getProductStats(stock)
+      totalCA += stats.potentialCA
+      totalBenefice += stats.potentialBenefice
+      totalStockValue += stats.stockValue
+      totalProducts++
+    })
+    
+    const marginPercent = totalCA > 0 ? (totalBenefice / totalCA) * 100 : 0
+    
+    return {
+      totalCA,
+      totalBenefice,
+      totalStockValue,
+      totalProducts,
+      marginPercent
+    }
+  }, [productsWithPrice, salesForecast])
+
+  // Données pour le graphique
+  const chartData = useMemo(() => {
+    return productsWithPrice.map(stock => {
+      const stats = getProductStats(stock)
+      return {
+        name: stock.product?.name?.substring(0, 10) || 'Produit',
+        ca: stats.potentialCA,
+        benefice: stats.potentialBenefice,
+        margin: stats.marginPercent
+      }
+    }).sort((a, b) => b.ca - a.ca).slice(0, 8)
+  }, [productsWithPrice, salesForecast])
+
+  // Réinitialiser les prévisions aux quantités stock
+  const resetToStock = () => {
+    setSalesForecast({})
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-background">
-      <RoleNav role="manager" />
-      
-      <main className="mx-auto max-w-7xl px-6 py-8 sm:px-8 lg:px-12">
-        <div className="mb-8 animate-in fade-in slide-in-from-top duration-500">
-          <h2 className="text-4xl font-bold text-foreground mb-2">
-            Prévisions Clients
-          </h2>
-          <p className="text-muted-foreground text-lg">
-            Anticipez vos besoins en stock
+    <div className="p-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8 animate-fade-up">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-3">
+            <TrendingUp className="h-7 w-7 text-primary" />
+            Prévisions de Ventes
+          </h1>
+          <p className="text-muted-foreground">Simulez vos ventes et anticipez votre CA</p>
+        </div>
+        {Object.keys(salesForecast).length > 0 && (
+          <Button variant="outline" onClick={resetToStock}>
+            Réinitialiser au stock
+          </Button>
+        )}
+      </div>
+
+      {/* Stats principales */}
+      <div className="grid grid-cols-4 gap-4 mb-6 animate-fade-up delay-1">
+        <div className="banking-card-glow p-5">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Euro className="h-6 w-6 text-primary" />
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground mb-1">CA Prévisionnel</p>
+          <p className="text-3xl font-bold text-primary">{totalStats.totalCA.toFixed(2)}€</p>
+        </div>
+        
+        <div className="banking-card p-5">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="h-12 w-12 rounded-xl bg-accent/20 flex items-center justify-center">
+              <TrendingUp className="h-6 w-6 text-accent" />
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground mb-1">Bénéfice Prévu</p>
+          <p className="text-3xl font-bold text-accent">{totalStats.totalBenefice.toFixed(2)}€</p>
+        </div>
+        
+        <div className="banking-card p-5">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="h-12 w-12 rounded-xl bg-orange-500/20 flex items-center justify-center">
+              <Target className="h-6 w-6 text-orange-500" />
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground mb-1">Marge Moyenne</p>
+          <p className={`text-3xl font-bold ${totalStats.marginPercent >= 60 ? 'text-accent' : totalStats.marginPercent >= 40 ? 'text-orange-500' : 'text-destructive'}`}>
+            {totalStats.marginPercent.toFixed(1)}%
           </p>
         </div>
-
-        {/* Prévision principale */}
-        <Card className="p-8 bg-gradient-to-br from-primary/10 to-accent/5 border-primary/30 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div className="flex items-start gap-6">
-              <div className="h-20 w-20 rounded-2xl bg-primary/20 flex items-center justify-center">
-                <Calendar className="h-10 w-10 text-primary" />
-              </div>
-              
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">Demain • Vendredi 24 Nov</p>
-                <p className="text-5xl font-bold text-foreground mb-3">287 clients</p>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  <span className="text-primary font-semibold">+35% vs moyenne</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-primary/10 px-6 py-4 rounded-xl border border-primary/20">
-              <p className="text-sm text-muted-foreground mb-2">Pic d'affluence attendu</p>
-              <p className="text-2xl font-bold text-foreground">12h - 14h</p>
+        
+        <div className="banking-card p-5">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="h-12 w-12 rounded-xl bg-secondary flex items-center justify-center">
+              <Package className="h-6 w-6 text-foreground" />
             </div>
           </div>
-        </Card>
-
-        {/* Recommandations */}
-        <div className="grid lg:grid-cols-2 gap-6 mb-8 animate-in fade-in slide-in-from-bottom-6 duration-500 delay-200">
-          <Card className="p-6 bg-card border-border">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Package className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-foreground">Frites</h3>
-                <p className="text-sm text-muted-foreground">Quantité recommandée</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-muted-foreground">À préparer/commander</span>
-                  <span className="text-3xl font-bold text-primary">68 kg</span>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Stock actuel</span>
-                    <span className="text-foreground font-medium">45.5 kg</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Besoin supplémentaire</span>
-                    <span className="text-primary font-semibold">22.5 kg</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2 p-3 bg-accent/10 border border-accent/20 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Commande recommandée</p>
-                  <p className="text-xs text-muted-foreground mt-1">Stock actuel insuffisant pour demain</p>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6 bg-card border-border">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-12 w-12 rounded-xl bg-accent/10 flex items-center justify-center">
-                <Package className="h-6 w-6 text-accent" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-foreground">Pain</h3>
-                <p className="text-sm text-muted-foreground">Quantité recommandée</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-muted-foreground">Hamburger</span>
-                  <span className="text-2xl font-bold text-primary">165</span>
-                </div>
-                <div className="text-sm">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-muted-foreground">Stock : 78 unités</span>
-                    <span className="text-accent font-semibold">Suffisant</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-muted-foreground">Hot-dog</span>
-                  <span className="text-2xl font-bold text-primary">95</span>
-                </div>
-                <div className="text-sm">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-muted-foreground">Stock : 33 unités</span>
-                    <span className="text-destructive font-semibold">Commander 62</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Risque de rupture</p>
-                  <p className="text-xs text-muted-foreground mt-1">Pain hot-dog insuffisant</p>
-                </div>
-              </div>
-            </div>
-          </Card>
+          <p className="text-sm text-muted-foreground mb-1">Valeur Stock</p>
+          <p className="text-3xl font-bold text-foreground">{totalStats.totalStockValue.toFixed(2)}€</p>
         </div>
+      </div>
 
-        {/* Graphique fréquentation */}
-        <Card className="p-6 bg-card border-border animate-in fade-in slide-in-from-bottom-8 duration-500 delay-300">
-          <div className="mb-6">
-            <h3 className="text-xl font-bold text-foreground mb-1">
-              Fréquentation des 7 Derniers Jours
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Analyse des tendances hebdomadaires
-            </p>
+      {/* Graphique CA par produit */}
+      {chartData.length > 0 && (
+        <div className="banking-card p-5 mb-6 animate-fade-up delay-2">
+          <div className="mb-5">
+            <h3 className="font-semibold text-foreground">CA par produit</h3>
+            <p className="text-sm text-muted-foreground">Top 8 produits par chiffre d'affaires prévu</p>
           </div>
-          
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={trafficData}>
-              <XAxis 
-                dataKey="day" 
-                stroke="#666"
-                style={{ fontSize: '12px' }}
-              />
-              <YAxis 
-                stroke="#666"
-                style={{ fontSize: '12px' }}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1E1E1E', 
-                  border: '1px solid #333',
-                  borderRadius: '8px'
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={chartData}>
+              <XAxis dataKey="name" stroke="#8A8A8A" style={{ fontSize: "11px" }} />
+              <YAxis stroke="#8A8A8A" style={{ fontSize: "12px" }} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#1A1614",
+                  border: "1px solid #2A2420",
+                  borderRadius: "10px",
                 }}
-                labelStyle={{ color: '#fff' }}
+                labelStyle={{ color: "#F5F5F5" }}
+                formatter={(value: number, name: string) => [
+                  `${value.toFixed(2)}€`,
+                  name === 'ca' ? 'CA' : 'Bénéfice'
+                ]}
               />
-              <Bar 
-                dataKey="clients" 
-                fill="#0A714A"
-                radius={[8, 8, 0, 0]}
-              />
+              <Bar dataKey="ca" name="CA" radius={[6, 6, 0, 0]}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.margin >= 60 ? '#22C55E' : entry.margin >= 40 ? '#FF6B00' : '#EF4444'} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
-        </Card>
+        </div>
+      )}
 
-        {/* Alertes */}
-        <div className="grid md:grid-cols-2 gap-4 mt-6 animate-in fade-in slide-in-from-bottom-10 duration-500 delay-400">
-          <div className="flex gap-3 p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
-            <AlertTriangle className="h-6 w-6 text-destructive flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-foreground mb-1">Risque de Rupture</p>
-              <p className="text-sm text-muted-foreground">Pain hot-dog et frites nécessitent une commande urgente</p>
-            </div>
+      {/* Liste des produits avec simulation */}
+      <div className="banking-card p-5 animate-fade-up delay-3">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="font-semibold text-foreground flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5 text-primary" />
+              Simulateur de ventes
+            </h3>
+            <p className="text-sm text-muted-foreground">Ajustez les quantités pour prévoir votre CA</p>
           </div>
+        </div>
 
-          <div className="flex gap-3 p-4 bg-accent/10 border border-accent/30 rounded-lg">
-            <TrendingUp className="h-6 w-6 text-accent flex-shrink-0" />
+        {productsWithPrice.length > 0 ? (
+          <div className="space-y-3">
+            {/* En-tête */}
+            <div className="grid grid-cols-7 gap-4 px-4 py-2 text-xs text-muted-foreground font-medium">
+              <div className="col-span-2">Produit</div>
+              <div className="text-center">Prix vente</div>
+              <div className="text-center">Marge</div>
+              <div className="text-center">Qté à vendre</div>
+              <div className="text-center">CA</div>
+              <div className="text-center">Bénéfice</div>
+            </div>
+            
+            {productsWithPrice.map((stock) => {
+              const stats = getProductStats(stock)
+              const unit = stock.product?.unit || 'unités'
+              const hasCustomForecast = salesForecast[stock.id] !== undefined
+              
+              return (
+                <div 
+                  key={stock.id} 
+                  className={`grid grid-cols-7 gap-4 items-center p-4 rounded-xl transition-all ${
+                    hasCustomForecast ? 'bg-primary/5 border border-primary/20' : 'bg-secondary/30'
+                  }`}
+                >
+                  {/* Produit */}
+                  <div className="col-span-2 flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-xl">
+                      {stock.product?.icon || <Package className="h-5 w-5 text-primary" />}
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">{stock.product?.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Stock: {stats.quantity} {unit}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Prix vente */}
+                  <div className="text-center">
+                    <p className="font-bold text-foreground">{stats.sellingPrice.toFixed(2)}€</p>
+                    <p className="text-xs text-muted-foreground">/{unit}</p>
+                  </div>
+                  
+                  {/* Marge */}
+                  <div className="text-center">
+                    <p className={`font-bold ${stats.marginPercent >= 60 ? 'text-accent' : stats.marginPercent >= 40 ? 'text-orange-500' : 'text-destructive'}`}>
+                      {stats.marginPercent.toFixed(0)}%
+                    </p>
+                    <p className="text-xs text-muted-foreground">{stats.marginPerUnit.toFixed(2)}€/u</p>
+                  </div>
+                  
+                  {/* Quantité à vendre */}
+                  <div className="flex items-center justify-center gap-1">
+                    <button
+                      onClick={() => setSalesForecast(prev => ({
+                        ...prev,
+                        [stock.id]: Math.max(0, (prev[stock.id] ?? stats.quantity) - 1)
+                      }))}
+                      className="h-8 w-8 rounded-lg bg-secondary hover:bg-secondary/80 flex items-center justify-center"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </button>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={stats.forecastQty}
+                      onChange={(e) => setSalesForecast(prev => ({
+                        ...prev,
+                        [stock.id]: parseFloat(e.target.value) || 0
+                      }))}
+                      className="w-16 h-8 text-center text-sm font-bold"
+                    />
+                    <button
+                      onClick={() => setSalesForecast(prev => ({
+                        ...prev,
+                        [stock.id]: (prev[stock.id] ?? stats.quantity) + 1
+                      }))}
+                      className="h-8 w-8 rounded-lg bg-secondary hover:bg-secondary/80 flex items-center justify-center"
+                    >
+                      <ChevronUp className="h-4 w-4" />
+                    </button>
+                  </div>
+                  
+                  {/* CA */}
+                  <div className="text-center">
+                    <p className="font-bold text-primary text-lg">{stats.potentialCA.toFixed(2)}€</p>
+                  </div>
+                  
+                  {/* Bénéfice */}
+                  <div className="text-center">
+                    <p className={`font-bold text-lg ${stats.marginPercent >= 60 ? 'text-accent' : stats.marginPercent >= 40 ? 'text-orange-500' : 'text-destructive'}`}>
+                      {stats.potentialBenefice.toFixed(2)}€
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <Calculator className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+            <p className="text-muted-foreground mb-2">Aucun produit avec prix de vente</p>
+            <p className="text-sm text-muted-foreground">
+              Définissez des prix de vente dans le Calculateur pour voir les prévisions
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Résumé en bas */}
+      {productsWithPrice.length > 0 && (
+        <div className="mt-6 p-5 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 animate-fade-up delay-4">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="font-semibold text-foreground mb-1">Forte Affluence</p>
-              <p className="text-sm text-muted-foreground">Préparez 35% de stock supplémentaire pour demain midi</p>
+              <p className="text-sm text-muted-foreground mb-1">Résumé des prévisions</p>
+              <p className="text-foreground">
+                En vendant <span className="font-bold text-primary">{totalStats.totalProducts} produits</span>, 
+                vous générez un CA de <span className="font-bold text-primary">{totalStats.totalCA.toFixed(2)}€</span> 
+                pour un bénéfice de <span className="font-bold text-accent">{totalStats.totalBenefice.toFixed(2)}€</span>
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">ROI sur stock</p>
+              <p className="text-2xl font-bold text-primary">
+                {totalStats.totalStockValue > 0 
+                  ? ((totalStats.totalBenefice / totalStats.totalStockValue) * 100).toFixed(0)
+                  : 0}%
+              </p>
             </div>
           </div>
         </div>
-      </main>
+      )}
     </div>
   )
 }

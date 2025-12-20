@@ -1,126 +1,110 @@
-'use client'
+"use client"
 
-import { RoleNav } from '@/components/role-nav'
-import { Card } from '@/components/ui/card'
-import { AlertTriangle, AlertCircle, Clock } from 'lucide-react'
-
-const alerts = [
-  { 
-    type: 'critical', 
-    title: 'Rupture Imminente', 
-    message: 'Pain hot-dog : seulement 12 unités restantes',
-    time: 'Il y a 5 min'
-  },
-  { 
-    type: 'warning', 
-    title: 'Stock Bas', 
-    message: 'Frites : 15.5 kg restants (seuil critique atteint)',
-    time: 'Il y a 15 min'
-  },
-  { 
-    type: 'warning', 
-    title: 'Expiration Proche', 
-    message: 'Laitue : expire dans 2 jours',
-    time: 'Il y a 1h'
-  },
-  { 
-    type: 'info', 
-    title: 'Forte Affluence Prévue', 
-    message: 'Demain 12h-14h : +35% de clients attendus',
-    time: 'Il y a 2h'
-  },
-]
+import { AlertTriangle, AlertCircle, Clock, ChevronLeft, Loader2 } from "lucide-react"
+import Link from "next/link"
+import { useAlerts } from "@/lib/hooks/use-alerts"
+import { formatDistanceToNow } from "date-fns"
+import { fr } from "date-fns/locale"
 
 export default function EmployeeAlertsPage() {
-  return (
-    <div className="min-h-screen bg-background">
-      <RoleNav role="employee" />
-      
-      <main className="mx-auto max-w-4xl px-6 py-8 sm:px-8">
-        <div className="mb-8 animate-in fade-in slide-in-from-top duration-500">
-          <h2 className="text-4xl font-bold text-foreground mb-2">
-            Alertes de Rupture
-          </h2>
-          <p className="text-muted-foreground text-lg">
-            Notifications importantes du jour
-          </p>
-        </div>
+  const { alerts, loading, criticalCount } = useAlerts()
 
-        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {alerts.map((alert, idx) => {
-            const isUrgent = alert.type === 'critical'
-            const isWarning = alert.type === 'warning'
-            
+  const formatTime = (dateString: string) => {
+    try {
+      return formatDistanceToNow(new Date(dateString), { addSuffix: false, locale: fr })
+    } catch {
+      return ""
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="px-4 py-6">
+      {/* Header */}
+      <div className="mb-6 animate-fade-up">
+        <Link href="/employee" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4">
+          <ChevronLeft className="h-5 w-5" />
+          <span>Retour</span>
+        </Link>
+        <h1 className="text-xl font-bold text-foreground mb-1">Alertes</h1>
+        <p className="text-sm text-muted-foreground">Notifications importantes</p>
+      </div>
+
+      {/* Alerts */}
+      <div className="space-y-3 animate-fade-up delay-1">
+        {alerts.length === 0 ? (
+          <div className="banking-card p-8 text-center">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">Aucune alerte</p>
+          </div>
+        ) : (
+          alerts.map((alert) => {
+            const isUrgent = alert.alert_type === "critical"
+            const isWarning = alert.alert_type === "warning"
+
             return (
-              <Card 
-                key={idx} 
-                className={`p-6 border-2 transition-all duration-300 ${
-                  isUrgent 
-                    ? 'bg-destructive/5 border-destructive/30 hover:border-destructive/50' 
-                    : isWarning 
-                    ? 'bg-accent/5 border-accent/30 hover:border-accent/50'
-                    : 'bg-primary/5 border-primary/30 hover:border-primary/50'
+              <div
+                key={alert.id}
+                className={`banking-card p-4 ${
+                  isUrgent ? "border-destructive/50" :
+                  isWarning ? "border-orange-500/50" : "border-primary/50"
                 }`}
               >
                 <div className="flex items-start gap-4">
-                  <div className={`h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    isUrgent 
-                      ? 'bg-destructive/10' 
-                      : isWarning 
-                      ? 'bg-accent/10'
-                      : 'bg-primary/10'
+                  <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                    isUrgent ? "bg-destructive/20" :
+                    isWarning ? "bg-orange-500/20" : "bg-primary/20"
                   }`}>
                     {isUrgent ? (
-                      <AlertTriangle className="h-6 w-6 text-destructive" />
+                      <AlertTriangle className="h-5 w-5 text-destructive" />
                     ) : isWarning ? (
-                      <AlertCircle className="h-6 w-6 text-accent" />
+                      <AlertCircle className="h-5 w-5 text-orange-500" />
                     ) : (
-                      <AlertTriangle className="h-6 w-6 text-primary" />
+                      <AlertTriangle className="h-5 w-5 text-primary" />
                     )}
                   </div>
-                  
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className={`text-xl font-bold ${
-                        isUrgent 
-                          ? 'text-destructive' 
-                          : isWarning 
-                          ? 'text-accent'
-                          : 'text-primary'
-                      }`}>
-                        {alert.title}
-                      </h3>
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span className="text-sm">{alert.time}</span>
-                      </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className={`font-semibold ${
+                        isUrgent ? "text-destructive" :
+                        isWarning ? "text-orange-500" : "text-primary"
+                      }`}>{alert.title}</h3>
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" />{formatTime(alert.created_at)}
+                      </span>
                     </div>
-                    <p className="text-foreground text-base leading-relaxed">
-                      {alert.message}
-                    </p>
+                    <p className="text-sm text-foreground">{alert.message}</p>
                   </div>
                 </div>
-              </Card>
+              </div>
             )
-          })}
-        </div>
+          })
+        )}
+      </div>
 
-        <Card className="mt-8 p-6 bg-card border-border animate-in fade-in slide-in-from-bottom-6 duration-500 delay-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-bold text-foreground mb-1">
-                Statut Global
-              </h3>
-              <p className="text-muted-foreground">
-                2 alertes critiques à traiter
-              </p>
-            </div>
-            <div className="h-16 w-16 rounded-xl bg-destructive/10 flex items-center justify-center">
-              <span className="text-3xl font-bold text-destructive">2</span>
-            </div>
+      {/* Status */}
+      <div className="banking-card p-4 mt-6 animate-fade-up delay-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-semibold text-foreground">Statut Global</p>
+            <p className="text-sm text-muted-foreground">{criticalCount} alerte{criticalCount > 1 ? 's' : ''} critique{criticalCount > 1 ? 's' : ''}</p>
           </div>
-        </Card>
-      </main>
+          <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${
+            criticalCount > 0 ? "bg-destructive/20" : "bg-accent/20"
+          }`}>
+            <span className={`text-xl font-bold ${criticalCount > 0 ? "text-destructive" : "text-accent"}`}>
+              {criticalCount}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
