@@ -25,6 +25,7 @@ export default function EmployeeStockUpdatePage() {
   const [newItemPrice, setNewItemPrice] = useState("")
   const [newItemExpiryDate, setNewItemExpiryDate] = useState("")
   const [newItemCategory, setNewItemCategory] = useState<"surgele" | "frais" | "sec">("frais")
+  const [showNotification, setShowNotification] = useState(false)
 
   useEffect(() => {
     setStocks(stockStore.getStocks())
@@ -49,6 +50,15 @@ export default function EmployeeStockUpdatePage() {
         addedBy: "employee",
       }
       stockStore.addStock(newStock)
+
+      const audio = new Audio(
+        "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZURE=",
+      )
+      audio.play().catch((e) => console.log("[v0] Audio play failed:", e))
+
+      setShowNotification(true)
+      setTimeout(() => setShowNotification(false), 3000)
+
       setNewItemName("")
       setNewItemQty("")
       setNewItemUnit("kg")
@@ -83,14 +93,28 @@ export default function EmployeeStockUpdatePage() {
     <div className="min-h-screen bg-background">
       <RoleNav role="employee" />
 
-      <main className="mx-auto max-w-7xl px-6 py-8 sm:px-8 lg:px-12">
-        <div className="mb-8 flex items-center justify-between animate-in fade-in slide-in-from-top duration-500">
+      {showNotification && (
+        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-5 duration-300">
+          <div className="revolut-card p-4 flex items-center gap-3 bg-success/10 border-success/30">
+            <div className="h-10 w-10 rounded-full bg-success flex items-center justify-center">
+              <Check className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <p className="font-semibold text-success">Ajout validé ✓</p>
+              <p className="text-sm text-muted-foreground">Article ajouté aux stocks</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-12 py-6 md:py-8">
+        <div className="mb-6 md:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top duration-500">
           <div>
-            <h2 className="text-5xl font-bold text-foreground mb-3">Mise à Jour des Stocks</h2>
-            <p className="text-muted-foreground text-xl">Ajoutez vos achats et modifiez les quantités</p>
+            <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-2 md:mb-3">Mise à Jour des Stocks</h2>
+            <p className="text-muted-foreground text-base md:text-xl">Ajoutez vos achats et modifiez les quantités</p>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground h-14 px-8 text-lg">
@@ -215,7 +239,7 @@ export default function EmployeeStockUpdatePage() {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {stocks.map((stock) => (
             <Card
               key={stock.id}

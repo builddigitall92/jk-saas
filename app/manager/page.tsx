@@ -66,41 +66,28 @@ export default function ManagerDashboard() {
   const [showPerformanceDialog, setShowPerformanceDialog] = useState(true)
 
   return (
-    <div className="p-8">
-      <div className="mb-8 animate-revolut-slide-up">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-4xl font-bold text-foreground mb-2">Tableau de Bord</h2>
-            <p className="text-muted-foreground text-lg">Votre coach business silencieux</p>
-          </div>
-          <div className="revolut-badge inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30">
-            <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-sm font-semibold text-primary">En temps réel</span>
-          </div>
-        </div>
-      </div>
-
-      <Card className="revolut-card p-6 mb-8 border-2 border-primary/30 hover:border-primary/50 animate-revolut-fade-in">
-        <div className="flex items-center gap-6">
-          <div className="relative">
-            <svg className="w-32 h-32 transform -rotate-90">
+    <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
+      <Card className="score-card-animated p-4 md:p-6 mb-6 md:mb-8">
+        <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
+          <div className="relative flex-shrink-0">
+            <svg className="w-24 h-24 md:w-32 md:h-32 transform -rotate-90">
               <circle
-                cx="64"
-                cy="64"
-                r="56"
+                cx={window.innerWidth < 768 ? "48" : "64"}
+                cy={window.innerWidth < 768 ? "48" : "64"}
+                r={window.innerWidth < 768 ? "40" : "56"}
                 stroke="currentColor"
                 strokeWidth="8"
                 fill="none"
                 className="text-muted/20"
               />
               <circle
-                cx="64"
-                cy="64"
-                r="56"
+                cx={window.innerWidth < 768 ? "48" : "64"}
+                cy={window.innerWidth < 768 ? "48" : "64"}
+                r={window.innerWidth < 768 ? "40" : "56"}
                 stroke="currentColor"
                 strokeWidth="8"
                 fill="none"
-                strokeDasharray={`${(87 / 100) * 352} 352`}
+                strokeDasharray={`${(87 / 100) * (window.innerWidth < 768 ? 251 : 352)} ${window.innerWidth < 768 ? 251 : 352}`}
                 className="text-primary progress-animated"
                 strokeLinecap="round"
                 style={{
@@ -109,34 +96,34 @@ export default function ManagerDashboard() {
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <p className="text-3xl font-bold text-foreground">87</p>
+              <p className="text-2xl md:text-3xl font-bold text-foreground">87</p>
               <p className="text-xs text-muted-foreground">/100</p>
             </div>
           </div>
-          <div className="flex-1">
-            <h3 className="text-2xl font-bold text-foreground mb-4">Score de Gestion</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-primary" />
-                <span className="text-sm text-muted-foreground">
+          <div className="flex-1 text-center md:text-left">
+            <h3 className="text-xl md:text-2xl font-bold text-foreground mb-3 md:mb-4">Score de Gestion</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
+              <div className="flex items-center gap-2 justify-center md:justify-start">
+                <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+                <span className="text-xs md:text-sm text-muted-foreground">
                   Gestion stocks: <strong className="text-foreground">92%</strong>
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-success" />
-                <span className="text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 justify-center md:justify-start">
+                <div className="h-2 w-2 rounded-full bg-success flex-shrink-0" />
+                <span className="text-xs md:text-sm text-muted-foreground">
                   Rentabilité: <strong className="text-foreground">85%</strong>
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-chart-4" />
-                <span className="text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 justify-center md:justify-start">
+                <div className="h-2 w-2 rounded-full bg-chart-4 flex-shrink-0" />
+                <span className="text-xs md:text-sm text-muted-foreground">
                   Prévisions: <strong className="text-foreground">88%</strong>
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-chart-2" />
-                <span className="text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 justify-center md:justify-start">
+                <div className="h-2 w-2 rounded-full bg-chart-2 flex-shrink-0" />
+                <span className="text-xs md:text-sm text-muted-foreground">
                   Anti-gaspillage: <strong className="text-foreground">83%</strong>
                 </span>
               </div>
@@ -145,7 +132,7 @@ export default function ManagerDashboard() {
         </div>
       </Card>
 
-      <div className="grid lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Stocks Card */}
         <Card
           className="revolut-card lg:col-span-1 p-6 border-border animate-revolut-slide-up"

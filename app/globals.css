@@ -180,6 +180,27 @@
   }
 }
 
+/* Ajout lueurs mobiles animées */
+@keyframes moving-glow {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes score-bounce {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.05) rotate(2deg);
+  }
+}
+
 /* Classes d'animation */
 .animate-revolut-slide-up {
   animation: revolut-slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -273,4 +294,33 @@
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(255, 140, 66, 0.2);
   animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* Classe pour lueurs mobiles sur la sidebar */
+.moving-glow-bg {
+  background: linear-gradient(135deg, #2a1f1a 0%, #1a1410 50%, #2a1f1a 100%);
+  background-size: 200% 200%;
+  animation: moving-glow 8s ease infinite;
+  position: relative;
+}
+
+.moving-glow-bg::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 140, 66, 0.08) 0%, transparent 70%);
+  animation: moving-glow 6s ease infinite reverse;
+  pointer-events: none;
+}
+
+/* Score de gestion en carré arrondi animé */
+.score-card-animated {
+  animation: score-bounce 4s ease-in-out infinite;
+  border-radius: 28px;
+  background: linear-gradient(145deg, rgba(42, 31, 26, 0.98), rgba(35, 25, 21, 0.95));
+  box-shadow: 0 4px 16px rgba(255, 140, 66, 0.25), 0 8px 32px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 140, 66, 0.3);
 }
