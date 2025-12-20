@@ -1,629 +1,482 @@
 "use client"
 
-import { DialogTrigger } from "@/components/ui/dialog"
-
-import { RoleNav } from "@/components/role-nav"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useState, useEffect } from "react"
+import Link from "next/link"
 import {
+  Plus,
   TrendingUp,
+  TrendingDown,
+  Check,
   AlertTriangle,
   Package,
-  ShoppingCart,
-  BarChart3,
-  Camera,
-  DollarSign,
-  Lightbulb,
-  Activity,
-  Target,
-  Calendar,
+  Truck,
+  Users,
+  ArrowUpRight,
+  Snowflake,
+  Leaf,
+  Wine,
+  Box,
+  ChevronDown,
+  ExternalLink,
+  RefreshCw,
 } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { supabase } from "@/lib/supabase"
+import { useRealtimeProducts, useRealtimeSuppliers } from "@/lib/hooks/use-realtime"
+import { AddObjectiveModal, AddReportDataModal } from "@/components/dashboard-modals"
 
-const lossData = [
-  { day: "Lun", loss: 45 },
-  { day: "Mar", loss: 52 },
-  { day: "Mer", loss: 38 },
-  { day: "Jeu", loss: 61 },
-  { day: "Ven", loss: 73 },
-  { day: "Sam", loss: 55 },
-  { day: "Dim", loss: 42 },
-]
+// Types
+interface StockCategory {
+  id: string
+  name: string
+  category: string
+  value: number
+  icon: any
+  status: "ok" | "warning" | "critical"
+}
 
-const anomalies = [
-  {
-    title: "Consommation de frites anormale détectée",
-    description: "Mardi soir : +18% vs moyenne habituelle",
-    severity: "warning",
-  },
-  {
-    title: "Portions de pain réduites",
-    description: "Économie de 23€ cette semaine grâce aux ajustements",
-    severity: "success",
-  },
-  {
-    title: "Pic de commandes inhabituelles",
-    description: "Samedi 20h : +45% par rapport au samedi précédent",
-    severity: "info",
-  },
-]
+interface Supplier {
+  id: string
+  name: string
+  lastOrder: string
+  totalSpent: number
+  status: "active" | "pending" | "inactive"
+}
 
-export default function ManagerDashboard() {
-  const router = useRouter()
-  const [weeklyPerformance] = useState<"positive" | "negative">("positive")
-  const [chartData] = useState([
-    { day: "Lun", gaspillage: 45 },
-    { day: "Mar", gaspillage: 52 },
-    { day: "Mer", gaspillage: 38 },
-    { day: "Jeu", gaspillage: 41 },
-    { day: "Ven", gaspillage: 35 },
-    { day: "Sam", gaspillage: 48 },
-    { day: "Dim", gaspillage: 33 },
-  ])
-
-  const [showPerformanceDialog, setShowPerformanceDialog] = useState(true)
+// Donut Chart
+function DonutChart({ percentage, size = 100 }: { percentage: number; size?: number }) {
+  const strokeWidth = 10
+  const radius = (size - strokeWidth) / 2
+  const circumference = 2 * Math.PI * radius
+  const strokeDashoffset = circumference - (percentage / 100) * circumference
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
-      <Card className="score-card-animated p-4 md:p-6 mb-6 md:mb-8">
-        <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
-          <div className="relative flex-shrink-0">
-            <svg className="w-24 h-24 md:w-32 md:h-32 transform -rotate-90">
-              <circle
-                cx={window.innerWidth < 768 ? "48" : "64"}
-                cy={window.innerWidth < 768 ? "48" : "64"}
-                r={window.innerWidth < 768 ? "40" : "56"}
-                stroke="currentColor"
-                strokeWidth="8"
-                fill="none"
-                className="text-muted/20"
-              />
-              <circle
-                cx={window.innerWidth < 768 ? "48" : "64"}
-                cy={window.innerWidth < 768 ? "48" : "64"}
-                r={window.innerWidth < 768 ? "40" : "56"}
-                stroke="currentColor"
-                strokeWidth="8"
-                fill="none"
-                strokeDasharray={`${(87 / 100) * (window.innerWidth < 768 ? 251 : 352)} ${window.innerWidth < 768 ? 251 : 352}`}
-                className="text-primary progress-animated"
-                strokeLinecap="round"
-                style={{
-                  filter: "drop-shadow(0 0 8px rgba(255, 140, 66, 0.6))",
-                }}
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <p className="text-2xl md:text-3xl font-bold text-foreground">87</p>
-              <p className="text-xs text-muted-foreground">/100</p>
-            </div>
-          </div>
-          <div className="flex-1 text-center md:text-left">
-            <h3 className="text-xl md:text-2xl font-bold text-foreground mb-3 md:mb-4">Score de Gestion</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
-              <div className="flex items-center gap-2 justify-center md:justify-start">
-                <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-                <span className="text-xs md:text-sm text-muted-foreground">
-                  Gestion stocks: <strong className="text-foreground">92%</strong>
-                </span>
-              </div>
-              <div className="flex items-center gap-2 justify-center md:justify-start">
-                <div className="h-2 w-2 rounded-full bg-success flex-shrink-0" />
-                <span className="text-xs md:text-sm text-muted-foreground">
-                  Rentabilité: <strong className="text-foreground">85%</strong>
-                </span>
-              </div>
-              <div className="flex items-center gap-2 justify-center md:justify-start">
-                <div className="h-2 w-2 rounded-full bg-chart-4 flex-shrink-0" />
-                <span className="text-xs md:text-sm text-muted-foreground">
-                  Prévisions: <strong className="text-foreground">88%</strong>
-                </span>
-              </div>
-              <div className="flex items-center gap-2 justify-center md:justify-start">
-                <div className="h-2 w-2 rounded-full bg-chart-2 flex-shrink-0" />
-                <span className="text-xs md:text-sm text-muted-foreground">
-                  Anti-gaspillage: <strong className="text-foreground">83%</strong>
-                </span>
-              </div>
-            </div>
-          </div>
+    <div className="sg-donut" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" className="sg-donut-bg" strokeWidth={strokeWidth} />
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" className="sg-donut-ring" strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} />
+      </svg>
+      <div className="sg-donut-center">
+        <span className="text-xl font-bold text-[var(--text-primary)]">{percentage}%</span>
+      </div>
+    </div>
+  )
+}
+
+// Bar Chart
+function BarChart({ data }: { data: { label: string; value: number }[] }) {
+  const maxValue = Math.max(...data.map(d => d.value), 1)
+  return (
+    <div className="flex items-end gap-1.5 h-20">
+      {data.map((item, index) => (
+        <div key={index} className="flex-1 flex flex-col items-center gap-1">
+          <div className="sg-bar w-full min-h-[3px]" style={{ height: `${(item.value / maxValue) * 100}%` }} />
+          <span className="text-[9px] text-[var(--text-muted)]">{item.label}</span>
         </div>
-      </Card>
+      ))}
+    </div>
+  )
+}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        {/* Stocks Card */}
-        <Card
-          className="revolut-card lg:col-span-1 p-6 border-border animate-revolut-slide-up"
-          style={{ animationDelay: "0.1s" }}
-        >
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <p className="text-muted-foreground text-sm mb-1">Valeur du Stock</p>
-              <h2 className="text-3xl font-bold text-foreground">22 450€</h2>
-            </div>
-            <Package className="h-6 w-6 text-primary icon-glow" />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-              <span className="text-sm text-muted-foreground">Surgelé: 8 450€</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-success" />
-              <span className="text-sm text-muted-foreground">Frais: 9 200€</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-chart-4" />
-              <span className="text-sm text-muted-foreground">Sec: 4 800€</span>
-            </div>
-          </div>
-        </Card>
+export default function ManagerDashboard() {
+  const { products, loading: productsLoading } = useRealtimeProducts()
+  const { suppliers, loading: suppliersLoading } = useRealtimeSuppliers()
+  
+  const [showObjectiveModal, setShowObjectiveModal] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [stockTotal, setStockTotal] = useState(0)
+  const [stockPercentage, setStockPercentage] = useState(0)
+  const [ordersTotal, setOrdersTotal] = useState(0)
+  const [stockCategories, setStockCategories] = useState<StockCategory[]>([
+    { id: "1", name: "Surgelés", category: "Congélateur", value: 0, icon: Snowflake, status: "ok" },
+    { id: "2", name: "Produits Frais", category: "Réfrigérateur", value: 0, icon: Leaf, status: "ok" },
+    { id: "3", name: "Boissons", category: "Cave & Bar", value: 0, icon: Wine, status: "ok" },
+    { id: "4", name: "Sec & Épicerie", category: "Stockage", value: 0, icon: Box, status: "ok" },
+  ])
+  const [reportData, setReportData] = useState([
+    { label: "Jan", value: 0 },
+    { label: "Fév", value: 0 },
+    { label: "Mar", value: 0 },
+    { label: "Avr", value: 0 },
+    { label: "Mai", value: 0 },
+  ])
 
-        {/* Gaspillage Card */}
-        <Card
-          className="revolut-card lg:col-span-1 p-6 border-border animate-revolut-slide-up"
-          style={{ animationDelay: "0.2s" }}
-        >
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <p className="text-muted-foreground text-sm mb-1">Gaspillage du jour</p>
-              <h2 className="text-3xl font-bold text-destructive">- 42€</h2>
-            </div>
-            <AlertTriangle className="h-6 w-6 text-destructive icon-glow" />
-          </div>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Frites</span>
-              <span className="text-sm font-semibold text-destructive">- 18€</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Pain</span>
-              <span className="text-sm font-semibold text-destructive">- 12€</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Autre</span>
-              <span className="text-sm font-semibold text-destructive">- 12€</span>
-            </div>
-          </div>
-        </Card>
+  const loading = productsLoading || suppliersLoading
 
-        {/* Graphique Card */}
-        <Card
-          className="revolut-card lg:col-span-1 p-6 border-border animate-revolut-slide-up"
-          style={{ animationDelay: "0.3s" }}
-        >
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <p className="text-muted-foreground text-sm mb-1">Évolution Gaspillage</p>
-              <h2 className="text-2xl font-bold text-success">-15%</h2>
-            </div>
-            <BarChart3 className="h-6 w-6 text-primary icon-glow" />
-          </div>
-          <div className="flex items-end justify-between gap-2 h-32">
-            {[45, 52, 38, 41, 35, 48, 33].map((value, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                <div
-                  className="w-full bg-primary rounded-t-lg transition-all duration-500 hover:bg-primary/80 progress-animated"
-                  style={{
-                    height: `${(value / 60) * 100}%`,
-                    animationDelay: `${i * 0.1}s`,
-                  }}
-                />
-                <span className="text-xs text-muted-foreground">{["L", "M", "M", "J", "V", "S", "D"][i]}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
+  // Recalculer les données quand les products changent (realtime)
+  useEffect(() => {
+    if (products && products.length > 0) {
+      // Calculer la valeur totale du stock
+      const total = products.reduce((sum, p) => sum + ((p.quantity || 0) * (p.unit_price || 0)), 0)
+      setStockTotal(total)
+      
+      // Calculer le pourcentage de stock (basé sur les seuils min)
+      const stockOk = products.filter(p => (p.quantity || 0) > (p.min_quantity || 0)).length
+      const percentage = products.length > 0 ? Math.round((stockOk / products.length) * 100) : 0
+      setStockPercentage(percentage)
+      
+      // Regrouper par catégorie
+      const categories: Record<string, number> = {}
+      products.forEach(p => {
+        const cat = p.category || 'Autre'
+        categories[cat] = (categories[cat] || 0) + ((p.quantity || 0) * (p.unit_price || 0))
+      })
+      
+      // Mettre à jour les catégories de stock
+      setStockCategories(prev => prev.map(cat => {
+        const matchingCat = Object.entries(categories).find(([key]) => 
+          key.toLowerCase().includes(cat.name.toLowerCase().substring(0, 4))
+        )
+        return {
+          ...cat,
+          value: matchingCat ? matchingCat[1] : 0,
+          status: matchingCat && matchingCat[1] > 0 ? "ok" : "warning" as const
+        }
+      }))
+    } else {
+      setStockTotal(0)
+      setStockPercentage(0)
+    }
+  }, [products])
 
-        {/* Commandes Card */}
-        <Card
-          className="revolut-card lg:col-span-1 p-6 border-border animate-revolut-slide-up"
-          style={{ animationDelay: "0.4s" }}
-        >
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <p className="text-muted-foreground text-sm mb-1">Commandes en cours</p>
-              <h2 className="text-3xl font-bold text-foreground">3</h2>
-            </div>
-            <ShoppingCart className="h-6 w-6 text-primary icon-glow" />
-          </div>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Fournisseur A</span>
-              <span className="text-xs px-2 py-1 rounded-full bg-chart-4/20 text-chart-4">En attente</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Fournisseur B</span>
-              <span className="text-xs px-2 py-1 rounded-full bg-success/20 text-success">Confirmé</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Fournisseur C</span>
-              <span className="text-xs px-2 py-1 rounded-full bg-primary/20 text-primary">En livraison</span>
-            </div>
-          </div>
-        </Card>
+  // Charger le total des commandes
+  useEffect(() => {
+    async function fetchOrders() {
+      const { data: orders } = await supabase.from('orders').select('*')
+      if (orders) {
+        const total = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0)
+        setOrdersTotal(total)
+      }
+    }
+    fetchOrders()
+  }, [])
 
-        {/* Prévisions Card */}
-        <Card
-          className="revolut-card lg:col-span-1 p-6 border-border animate-revolut-slide-up"
-          style={{ animationDelay: "0.5s" }}
-        >
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <p className="text-muted-foreground text-sm mb-1">Prévisions Demain</p>
-              <h2 className="text-3xl font-bold text-foreground">245</h2>
-              <p className="text-sm text-muted-foreground">clients attendus</p>
-            </div>
-            <Target className="h-6 w-6 text-success icon-glow" />
-          </div>
-          <div className="relative h-20 flex items-center justify-center">
-            <svg className="w-20 h-20 transform -rotate-90">
-              <circle
-                cx="40"
-                cy="40"
-                r="32"
-                stroke="currentColor"
-                strokeWidth="6"
-                fill="none"
-                className="text-muted/30"
-              />
-              <circle
-                cx="40"
-                cy="40"
-                r="32"
-                stroke="currentColor"
-                strokeWidth="6"
-                fill="none"
-                strokeDasharray={`${(75 / 100) * 201} 201`}
-                className="text-primary progress-animated"
-                strokeLinecap="round"
-                style={{
-                  filter: "drop-shadow(0 0 4px rgba(255, 140, 66, 0.5))",
-                }}
-              />
-            </svg>
-            <div className="absolute text-center">
-              <p className="text-xl font-bold text-foreground">75%</p>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground text-center mt-2">Fiabilité de la prévision</p>
-        </Card>
+  const addObjective = (objective: any) => {
+    console.log('Nouvel objectif:', objective)
+    // TODO: Sauvegarder dans Supabase
+  }
 
-        {/* Actions Rapides Card */}
-        <Card
-          className="revolut-card lg:col-span-1 p-6 border-border animate-revolut-slide-up"
-          style={{ animationDelay: "0.6s" }}
-        >
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <p className="text-muted-foreground text-sm mb-1">Actions Rapides</p>
-            </div>
-            <Lightbulb className="h-6 w-6 text-primary icon-glow" />
-          </div>
-          <div className="space-y-2">
-            <Button
-              variant="outline"
-              className="revolut-button w-full justify-start text-left hover:bg-primary/10 hover:text-primary hover:border-primary bg-transparent"
-              onClick={() => router.push("/manager/stock")}
-            >
-              <Package className="h-4 w-4 mr-2" />
-              Voir les stocks
-            </Button>
-            <Button
-              variant="outline"
-              className="revolut-button w-full justify-start text-left hover:bg-primary/10 hover:text-primary hover:border-primary bg-transparent"
-              onClick={() => router.push("/manager/forecasts")}
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              Prévisions
-            </Button>
-            <Button
-              variant="outline"
-              className="revolut-button w-full justify-start text-left hover:bg-primary/10 hover:text-primary hover:border-primary bg-transparent"
-              onClick={() => router.push("/manager/orders")}
-            >
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              Commander
-            </Button>
-          </div>
-        </Card>
+  const addReportData = (data: any) => {
+    setReportData(prev => [...prev, data])
+    // TODO: Sauvegarder dans Supabase
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "ok": case "active": return "sg-status-positive"
+      case "warning": case "pending": return "sg-status-warning"
+      case "critical": case "inactive": return "sg-status-negative"
+      default: return ""
+    }
+  }
+
+  const refreshData = () => {
+    window.location.reload()
+  }
+
+  return (
+    <div className="p-5">
+      {/* Header compact */}
+      <div className="flex items-center justify-between mb-5">
+        <h1 className="text-xl font-bold text-[var(--text-primary)]">Dashboard</h1>
+        <button onClick={refreshData} className="sg-icon-btn" title="Actualiser">
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        </button>
       </div>
 
-      <Dialog open={showPerformanceDialog} onOpenChange={setShowPerformanceDialog}>
-        <DialogContent className="revolut-popup sm:max-w-lg bg-card border-primary/30">
-          <DialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center animate-bounce-subtle icon-glow">
-                <TrendingUp className="h-6 w-6 text-primary" />
+      {/* Grille de Cartes */}
+      <div className="sg-dashboard-grid">
+        
+        {/* Carte 1: Stock - Style Hero */}
+        <Link href="/manager/stock" className="sg-card-glass sg-animate-fade-in block">
+          <div className="sg-card-body">
+            {/* Header avec pills */}
+            <div className="flex items-center gap-2 mb-6">
+              <div className="sg-pill">
+                <div className="sg-pill-icon">
+                  <Package className="h-3 w-3 text-white" />
+                </div>
+                <span>Stock</span>
               </div>
-              <div>
-                <span className="revolut-badge inline-block px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-semibold mb-2">
-                  Performance hebdomadaire
-                </span>
-                <DialogTitle className="text-2xl font-bold text-foreground">
-                  Grâce à cette application, vous avez généré
-                </DialogTitle>
+              <div className="sg-pill">
+                Valeur Totale
+                <ChevronDown className="h-3 w-3 ml-1" />
               </div>
-            </div>
-            <DialogDescription className="text-5xl font-bold text-success mt-4 animate-revolut-scale-in">
-              +482€
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-6 space-y-4">
-            <div className="p-4 bg-muted/30 rounded-xl border border-primary/20 animate-shimmer">
-              <p className="text-sm text-muted-foreground mb-2">Prévisions pour demain</p>
-              <div className="flex justify-between items-center">
-                <span className="text-foreground font-semibold">245 clients attendus</span>
-                <span className="text-success font-semibold">+32€ économies prévues</span>
+              <div className="sg-pill ml-auto !p-2">
+                <ExternalLink className="h-3.5 w-3.5" />
               </div>
             </div>
-            <Button
-              onClick={() => setShowPerformanceDialog(false)}
-              className="revolut-button w-full bg-primary hover:bg-primary/90"
-            >
-              Continuer
-            </Button>
+
+            {/* Valeur géante */}
+            <div className="mb-4">
+              <div className="sg-value-hero">
+                {loading ? "..." : stockPercentage}<span>%</span>
+              </div>
+            </div>
+
+            {/* Texte descriptif */}
+            <div className="mb-5">
+              <p className="text-[var(--text-primary)] font-semibold text-sm mb-1">
+                {stockTotal > 0 ? `€${stockTotal.toLocaleString()} en stock` : "Aucun produit en stock"}
+              </p>
+              <p className="text-[var(--text-muted)] text-xs">
+                {stockTotal > 0 
+                  ? "Cliquez pour gérer votre inventaire" 
+                  : "Ajoutez vos premiers produits pour commencer"}
+              </p>
+            </div>
+
+            {/* Images pilules */}
+            <div className="flex gap-3">
+              <div className="sg-image-pill h-14 w-24 bg-gradient-to-br from-orange-600/40 to-red-600/30 flex items-center justify-center">
+                <Snowflake className="h-6 w-6 text-white/80" />
+              </div>
+              <div className="sg-image-pill h-14 w-24 bg-gradient-to-br from-green-600/40 to-emerald-600/30 flex items-center justify-center">
+                <Leaf className="h-6 w-6 text-white/80" />
+              </div>
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </Link>
 
-      <RoleNav role="manager" />
+        {/* Carte 2: Budget / Achats */}
+        <Link href="/manager/orders" className="sg-card sg-animate-fade-in block">
+          <div className="sg-card-body">
+            <div className="flex items-center justify-between mb-3">
+              <span className="sg-card-title">Budget Achats</span>
+              <ArrowUpRight className="h-4 w-4 text-[var(--text-muted)]" />
+            </div>
 
-      <main className="mx-auto max-w-7xl px-6 py-8 sm:px-8 lg:px-12">
-        <div className="mb-8 animate-slide-up">
-          <h2 className="text-4xl font-bold text-foreground mb-2">Tableau de Bord</h2>
-          <p className="text-muted-foreground text-lg">Votre coach business silencieux</p>
+            <div className="mb-4">
+              <p className="text-[10px] text-[var(--text-muted)]">Total dépensé</p>
+              <p className="sg-card-value">€ {loading ? "..." : ordersTotal.toLocaleString()}</p>
+            </div>
+
+            <div className="space-y-2">
+              {stockCategories.slice(0, 4).map((item) => {
+                const Icon = item.icon
+                return (
+                  <div key={item.id} className="flex items-center gap-2.5 group">
+                    <div className={`sg-checkbox ${item.value > 0 ? "checked" : ""}`}>
+                      {item.value > 0 && <Check className="h-2.5 w-2.5" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-[var(--text-primary)] group-hover:text-[#ff8c42] transition-colors">{item.name}</p>
+                    </div>
+                    <span className="text-xs text-[var(--text-muted)]">€{item.value.toLocaleString()}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </Link>
+
+        {/* Carte 3: Rapport */}
+        <div className="sg-card sg-animate-fade-in">
+          <div className="sg-card-body">
+            <div className="flex items-center justify-between mb-3">
+              <span className="sg-card-title">Rapport</span>
+              <button onClick={() => setShowReportModal(true)} className="sg-icon-btn !w-7 !h-7">
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            <BarChart data={reportData} />
+
+            <div className="flex items-center gap-3 mt-3 text-[10px]">
+              <div className="flex items-center gap-1">
+                {stockTotal > 0 ? (
+                  <>
+                    <TrendingUp className="h-3 w-3 sg-text-positive" />
+                    <span className="sg-text-positive">Actif</span>
+                  </>
+                ) : (
+                  <>
+                    <TrendingDown className="h-3 w-3 sg-text-negative" />
+                    <span className="sg-text-negative">Aucune donnée</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
-        <Card className="revolut-card p-6 mb-8 border-2 border-primary/30 hover:border-primary/50">
-          <div className="flex items-start gap-4 mb-4">
-            <div className="h-14 w-14 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-              <Target className="h-7 w-7 text-primary" />
+        {/* Carte 4: Détail Stock */}
+        <Link href="/manager/stock" className="sg-card sg-card-glow sg-animate-fade-in block">
+          <div className="sg-card-body">
+            <div className="flex items-center justify-between mb-3">
+              <span className="sg-card-title">Détail Stock</span>
+              <ArrowUpRight className="h-4 w-4 text-[var(--text-muted)]" />
             </div>
-            <div className="flex-1">
-              <h3 className="text-2xl font-bold text-foreground mb-2">Décision du jour</h3>
-              <p className="text-sm text-muted-foreground mb-4">Recommandation basée sur vos données en temps réel</p>
+
+            <div className="mb-4">
+              <p className="text-[10px] text-[var(--text-muted)]">Valeur totale</p>
+              <p className="sg-card-value">€ {loading ? "..." : stockTotal.toLocaleString()}</p>
+            </div>
+
+            <div className="space-y-2">
+              {stockCategories.map((item) => {
+                const Icon = item.icon
+                return (
+                  <div key={item.id} className="flex items-center gap-2.5 group">
+                    <div className={`sg-checkbox ${item.value > 0 ? "checked" : ""}`}>
+                      {item.value > 0 ? <Check className="h-2.5 w-2.5" /> : <AlertTriangle className="h-2.5 w-2.5 text-amber-400" />}
+                    </div>
+                    <div className="h-7 w-7 rounded-lg bg-[var(--secondary)] flex items-center justify-center group-hover:bg-[#ff8c42]/20 transition-colors">
+                      <Icon className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-[#ff8c42] transition-colors" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-[var(--text-primary)] group-hover:text-[#ff8c42] transition-colors">{item.name}</p>
+                      <p className="text-[9px] text-[var(--text-muted)]">{item.category}</p>
+                    </div>
+                    <span className="text-xs text-[var(--text-muted)]">€{item.value.toLocaleString()}</span>
+                  </div>
+                )
+              })}
             </div>
           </div>
+        </Link>
 
-          <div className="bg-card/50 rounded-xl p-5 border border-primary/20">
-            <p className="text-lg font-semibold text-foreground mb-3">
-              Commander 15 kg de frites supplémentaires pour le week-end
-            </p>
-            <p className="text-sm text-muted-foreground mb-4">
-              Basé sur : afflux prévu de +28% samedi, stock actuel insuffisant pour tenir jusqu'à lundi
-            </p>
-            <div className="flex items-center gap-3">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="bg-primary hover:bg-primary/90">
-                    Commander maintenant
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="revolut-popup sm:max-w-md bg-card border-border">
-                  <DialogHeader>
-                    <DialogTitle className="text-2xl text-primary">Confirmer la commande</DialogTitle>
-                    <DialogDescription className="text-base text-muted-foreground pt-4">
-                      Vous êtes sur le point de commander 15 kg de frites auprès de votre fournisseur habituel.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 pt-4">
-                    <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-muted-foreground">Produit</span>
-                        <span className="font-semibold text-foreground">Frites surgelées</span>
-                      </div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-muted-foreground">Quantité</span>
-                        <span className="font-semibold text-foreground">15 kg</span>
-                      </div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-muted-foreground">Prix unitaire</span>
-                        <span className="font-semibold text-foreground">2.80 €/kg</span>
-                      </div>
-                      <div className="flex items-center justify-between pt-2 border-t border-border">
-                        <span className="text-sm font-semibold text-foreground">Total</span>
-                        <span className="text-xl font-bold text-primary">42.00 €</span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button className="flex-1 bg-primary hover:bg-primary/90">Confirmer</Button>
-                      <Button variant="outline" className="flex-1 bg-transparent">
-                        Annuler
-                      </Button>
+        {/* Carte 5: Fournisseurs */}
+        <Link href="/manager/suppliers" className="sg-card sg-animate-fade-in block">
+          <div className="sg-card-body">
+            <div className="flex items-center justify-between mb-3">
+              <span className="sg-card-title">Fournisseurs ({suppliers.length})</span>
+              <ArrowUpRight className="h-4 w-4 text-[var(--text-muted)]" />
+            </div>
+
+            {suppliers.length > 0 ? (
+              <div className="space-y-2">
+                {suppliers.slice(0, 3).map((sup: any) => (
+                  <div key={sup.id} className="flex items-center gap-2.5 group">
+                    <div className={`sg-status-dot ${getStatusColor('active')}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-[var(--text-primary)] group-hover:text-[#ff8c42] transition-colors">{sup.name}</p>
+                      <p className="text-[9px] text-[var(--text-muted)]">Actif</p>
                     </div>
                   </div>
-                </DialogContent>
-              </Dialog>
-              <Button size="sm" variant="outline">
-                Plus tard
-              </Button>
-              <Button size="sm" variant="ghost">
-                Ignorer
-              </Button>
-            </div>
-          </div>
-        </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-xs text-[var(--text-muted)]">Aucun fournisseur</p>
+                <p className="text-[10px] text-[var(--text-muted)]">Cliquez pour en ajouter</p>
+              </div>
+            )}
 
-        <div className="mb-8 animate-fade-in-scale">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-10 w-10 rounded-lg bg-accent/20 flex items-center justify-center">
-              <Activity className="h-5 w-5 text-accent" />
+            {/* Alerte */}
+            {stockTotal === 0 && (
+              <div className="mt-4 pt-3 border-t border-[var(--border)]">
+                <div className="flex items-center gap-2.5 bg-[rgba(239,68,68,0.08)] rounded-xl p-2.5 border border-[rgba(239,68,68,0.12)]">
+                  <div className="h-8 w-8 rounded-lg bg-red-500/20 flex items-center justify-center">
+                    <AlertTriangle className="h-4 w-4 text-red-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-[var(--text-primary)] font-medium">Stock vide</p>
+                    <p className="text-[9px] text-[var(--text-muted)]">Ajoutez des produits</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </Link>
+
+        {/* Carte 6: Objectifs */}
+        <div className="sg-card sg-animate-fade-in">
+          <div className="sg-card-body">
+            <div className="flex items-center justify-between mb-3">
+              <span className="sg-card-title">Objectifs</span>
+              <button onClick={() => setShowObjectiveModal(true)} className="sg-icon-btn !w-7 !h-7">
+                <Plus className="h-3.5 w-3.5" />
+              </button>
             </div>
-            <div>
-              <h3 className="text-2xl font-bold text-foreground">Détection intelligente des anomalies</h3>
-              <p className="text-sm text-muted-foreground">
-                Le système analyse automatiquement vos habitudes de consommation
+
+            <div className="flex items-center gap-4 mb-3">
+              <DonutChart percentage={stockPercentage} size={90} />
+              <div>
+                <p className="text-[10px] text-[var(--text-muted)]">Stock optimal</p>
+                <p className="text-base font-bold text-[var(--text-primary)]">100%</p>
+                <p className="text-[10px] text-[var(--text-muted)] mt-1">Atteint</p>
+                <p className="text-sm font-semibold sg-text-accent">{stockPercentage}%</p>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-[var(--border)]">
+              <p className="text-[10px] text-[var(--text-muted)] mb-1">Conseil</p>
+              <p className="text-[11px] text-[var(--text-secondary)] italic leading-relaxed">
+                {stockTotal > 0 
+                  ? '"Surveillez vos niveaux de stock pour éviter les ruptures."'
+                  : '"Commencez par ajouter vos produits dans la section Stocks."'}
               </p>
             </div>
           </div>
-
-          <div className="grid md:grid-cols-3 gap-4">
-            {anomalies.map((anomaly, index) => (
-              <Dialog key={index}>
-                <DialogTrigger asChild>
-                  <Card
-                    className={`revolut-card p-5 border-2 cursor-pointer ${
-                      anomaly.severity === "warning"
-                        ? "border-accent/40 hover:border-accent"
-                        : anomaly.severity === "success"
-                          ? "border-primary/40 hover:border-primary"
-                          : "border-blue-500/40 hover:border-blue-500"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          anomaly.severity === "warning"
-                            ? "bg-accent/20"
-                            : anomaly.severity === "success"
-                              ? "bg-primary/20"
-                              : "bg-blue-500/20"
-                        }`}
-                      >
-                        {anomaly.severity === "warning" && <AlertTriangle className="h-5 w-5 text-accent" />}
-                        {anomaly.severity === "success" && <TrendingUp className="h-5 w-5 text-primary" />}
-                        {anomaly.severity === "info" && <Activity className="h-5 w-5 text-blue-500" />}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-foreground mb-1">{anomaly.title}</p>
-                        <p className="text-sm text-muted-foreground">{anomaly.description}</p>
-                      </div>
-                    </div>
-                  </Card>
-                </DialogTrigger>
-                <DialogContent className="revolut-popup sm:max-w-md bg-card border-border">
-                  <DialogHeader>
-                    <DialogTitle className="text-2xl">{anomaly.title}</DialogTitle>
-                    <DialogDescription className="text-base text-muted-foreground pt-4">
-                      {anomaly.description}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 pt-4">
-                    <div className="p-4 bg-muted/50 rounded-lg">
-                      <p className="text-sm text-muted-foreground mb-2">Action recommandée :</p>
-                      <p className="text-foreground">
-                        {anomaly.severity === "warning"
-                          ? "Surveillez la consommation et ajustez les portions si nécessaire."
-                          : anomaly.severity === "success"
-                            ? "Continuez sur cette lancée ! Vos ajustements portent leurs fruits."
-                            : "Préparez-vous à une affluence similaire les prochains samedis."}
-                      </p>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            ))}
-          </div>
         </div>
+      </div>
 
-        <div className="grid lg:grid-cols-2 gap-6 mb-8 animate-in fade-in slide-in-from-bottom duration-500 delay-100">
-          {/* Photo → Stock */}
-          <Card className="p-6 bg-card border-border hover:border-primary/50 transition-all duration-300 hover:scale-[1.02]">
-            <div className="flex items-start gap-4 mb-4">
-              <div className="h-14 w-14 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-                <Camera className="h-7 w-7 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-foreground mb-1">Prenez une photo. C'est fait.</h3>
-                <p className="text-sm text-muted-foreground">Une photo suffit pour mettre votre stock à jour</p>
-              </div>
+      {/* Actions Rapides */}
+      <div className="mt-5 grid grid-cols-4 gap-3">
+        <Link href="/manager/stock" className="sg-card sg-card-hover-effect">
+          <div className="p-3 flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-lg bg-orange-500/20 flex items-center justify-center group-hover:bg-orange-500/30 transition-all">
+              <Package className="h-4 w-4 text-orange-400" />
             </div>
-            <div className="bg-muted/30 border border-border rounded-lg p-8 flex items-center justify-center mb-4">
-              <div className="text-center">
-                <Camera className="h-16 w-16 text-muted-foreground/50 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">Scanner une facture ou un bon de livraison</p>
-              </div>
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-[var(--text-primary)]">Stocks</p>
+              <p className="text-[9px] text-[var(--text-muted)]">Inventaire</p>
             </div>
-            <Button
-              onClick={() => router.push("/manager/photo-stock")}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              Prendre une photo
-            </Button>
-          </Card>
-
-          {/* Coût & Marge */}
-          <Card className="p-6 bg-card border-border hover:border-accent/50 transition-all duration-300 hover:scale-[1.02]">
-            <div className="flex items-start gap-4 mb-4">
-              <div className="h-14 w-14 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
-                <DollarSign className="h-7 w-7 text-accent" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-foreground mb-1">Vous savez enfin ce que vous gagnez</h3>
-                <p className="text-sm text-muted-foreground">Coût réel et marge exacte par produit</p>
-              </div>
-            </div>
-
-            <div className="space-y-3 mb-4">
-              <div className="flex items-center justify-between p-3 bg-muted/30 border border-border rounded-lg">
-                <span className="text-sm font-medium text-foreground">Tacos Poulet</span>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-primary">Marge : 68%</p>
-                  <p className="text-xs text-muted-foreground">Coût : 2,40€ • Vente : 7,50€</p>
-                </div>
-              </div>
-
-              <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="h-4 w-4 text-destructive" />
-                  <span className="text-sm font-semibold text-destructive">
-                    La marge de votre burger a baissé de 12% cette semaine
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground ml-6">
-                  Suggestion : Augmenter le prix de 0,50€ = +340€ par mois
-                </p>
-              </div>
-            </div>
-
-            <Button
-              onClick={() => router.push("/manager/margins")}
-              variant="outline"
-              className="w-full border-2 hover:bg-accent/5 hover:border-accent/50"
-            >
-              Voir toutes les marges
-            </Button>
-          </Card>
-        </div>
-
-        <Card className="p-6 mb-8 bg-card border-border animate-in fade-in slide-in-from-bottom-6 duration-500 delay-250">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <p className="text-muted-foreground text-sm mb-1">Actions Rapides</p>
-            </div>
-            <Lightbulb className="h-6 w-6 text-primary" />
+            <ArrowUpRight className="h-3.5 w-3.5 text-[var(--text-muted)]" />
           </div>
-          <div className="space-y-2">
-            <Button
-              variant="outline"
-              className="w-full justify-start text-left hover:bg-primary/10 hover:text-primary hover:border-primary bg-transparent"
-              onClick={() => router.push("/manager/stock")}
-            >
-              <Package className="h-4 w-4 mr-2" />
-              Voir les stocks
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start text-left hover:bg-primary/10 hover:text-primary hover:border-primary bg-transparent"
-              onClick={() => router.push("/manager/forecasts")}
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              Prévisions
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start text-left hover:bg-primary/10 hover:text-primary hover:border-primary bg-transparent"
-              onClick={() => router.push("/manager/orders")}
-            >
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              Commander
-            </Button>
+        </Link>
+
+        <Link href="/manager/orders" className="sg-card sg-card-hover-effect">
+          <div className="p-3 flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-lg bg-blue-500/20 flex items-center justify-center transition-all">
+              <Truck className="h-4 w-4 text-blue-400" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-[var(--text-primary)]">Achats</p>
+              <p className="text-[9px] text-[var(--text-muted)]">Fournisseurs</p>
+            </div>
+            <ArrowUpRight className="h-3.5 w-3.5 text-[var(--text-muted)]" />
           </div>
-        </Card>
-      </main>
+        </Link>
+
+        <Link href="/manager/reports" className="sg-card sg-card-hover-effect">
+          <div className="p-3 flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-lg bg-green-500/20 flex items-center justify-center transition-all">
+              <TrendingUp className="h-4 w-4 text-green-400" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-[var(--text-primary)]">Rapports</p>
+              <p className="text-[9px] text-[var(--text-muted)]">Analyses</p>
+            </div>
+            <ArrowUpRight className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+          </div>
+        </Link>
+
+        <Link href="/manager/feedback" className="sg-card sg-card-hover-effect">
+          <div className="p-3 flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-lg bg-purple-500/20 flex items-center justify-center transition-all">
+              <Users className="h-4 w-4 text-purple-400" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-[var(--text-primary)]">Équipe</p>
+              <p className="text-[9px] text-[var(--text-muted)]">Feedbacks</p>
+            </div>
+            <ArrowUpRight className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+          </div>
+        </Link>
+      </div>
+
+      {/* Modals */}
+      <AddObjectiveModal 
+        isOpen={showObjectiveModal} 
+        onClose={() => setShowObjectiveModal(false)}
+        onAdd={addObjective}
+      />
+      <AddReportDataModal 
+        isOpen={showReportModal} 
+        onClose={() => setShowReportModal(false)}
+        onAdd={addReportData}
+      />
     </div>
   )
 }

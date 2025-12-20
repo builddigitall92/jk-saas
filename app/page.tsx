@@ -356,8 +356,12 @@ export default function LandingPage() {
             {/* Main Title */}
             <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-6 animate-fade-up delay-1">
               Maîtrisez vos stocks,
-              <span className="block mt-2 bg-gradient-to-r from-primary via-orange-400 to-primary bg-clip-text text-transparent">
-                maximisez vos marges
+              <span className="block mt-2 bg-gradient-to-r from-primary via-orange-400 to-primary bg-clip-text text-transparent relative">
+                <span className="relative z-10">maximisez vos marges</span>
+                {/* Glows animés */}
+                <div className="landing-glow-1" />
+                <div className="landing-glow-2" />
+                <div className="landing-glow-3" />
               </span>
             </h1>
 
@@ -370,13 +374,13 @@ export default function LandingPage() {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up delay-3">
               <Link href="/login">
-                <Button className="btn-primary h-14 px-8 text-lg">
+                <Button className="btn-primary btn-hover-lift landing-cta-glow h-14 px-8 text-lg">
                   <ChefHat className="h-5 w-5 mr-2" />
                   Démarrer gratuitement
                 </Button>
               </Link>
               <a href="#features">
-                <Button variant="outline" className="btn-outline h-14 px-8 text-lg">
+                <Button variant="outline" className="btn-outline btn-hover-lift h-14 px-8 text-lg">
                   Découvrir les fonctionnalités
                 </Button>
               </a>
@@ -385,15 +389,15 @@ export default function LandingPage() {
             {/* Trust indicators */}
             <div className="flex flex-wrap items-center justify-center gap-6 md:gap-8 mt-12 text-muted-foreground animate-fade-up delay-4">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-accent" />
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
                 <span className="text-sm">Essai gratuit 14 jours</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-accent" />
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
                 <span className="text-sm">Sans engagement</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-accent" />
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
                 <span className="text-sm">Support inclus</span>
               </div>
             </div>
@@ -436,7 +440,7 @@ export default function LandingPage() {
             </div>
             
             {/* Floating elements */}
-            <div className="absolute -left-4 top-1/3 banking-card p-4 rounded-xl shadow-2xl animate-float hidden lg:block">
+            <div className="absolute -left-4 top-1/3 banking-card p-4 rounded-xl shadow-2xl animate-float landing-shake hidden lg:block">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-accent/20 flex items-center justify-center">
                   <CheckCircle2 className="h-5 w-5 text-accent" />
@@ -450,7 +454,7 @@ export default function LandingPage() {
             </div>
           </div>
           
-            <div className="absolute -right-4 top-1/2 banking-card p-4 rounded-xl shadow-2xl animate-float-delayed hidden lg:block">
+            <div className="absolute -right-4 top-1/2 banking-card p-4 rounded-xl shadow-2xl animate-float-delayed landing-shake hidden lg:block">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
                   <AlertTriangle className="h-5 w-5 text-primary" />
@@ -513,11 +517,11 @@ export default function LandingPage() {
               return (
           <div
                   key={feature.title}
-                  className="banking-card p-6 group cursor-default"
+                  className="banking-card landing-card-slide p-6 group cursor-default hover:scale-[1.02] transition-all duration-300"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
-                    <Icon className="h-7 w-7 text-primary" />
+                  <div className="landing-icon-glow h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-all duration-300 relative">
+                    <Icon className="h-7 w-7 text-primary relative z-10" />
                   </div>
                   <h3 className="text-xl font-semibold text-foreground mb-2">
                     {feature.title}
@@ -554,10 +558,10 @@ export default function LandingPage() {
               return (
                 <div 
                   key={benefit.label}
-                  className="banking-card-featured p-8 text-center"
+                  className="banking-card-featured landing-card-slide p-8 text-center hover:scale-105 transition-all duration-300"
                 >
-                  <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5">
-                    <Icon className="h-8 w-8 text-primary" />
+                  <div className="landing-icon-glow h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5 relative">
+                    <Icon className="h-8 w-8 text-primary relative z-10" />
                   </div>
                   <p className="text-4xl font-bold text-primary mb-2">
                     {benefit.value}
@@ -592,10 +596,11 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial) => (
+            {testimonials.map((testimonial, index) => (
               <div 
                 key={testimonial.author}
-                className="banking-card p-8"
+                className="landing-testimonial-card landing-card-slide p-8"
+                style={{ animationDelay: `${index * 0.15}s` }}
               >
                 {/* Stars */}
                 <div className="flex gap-1 mb-4">
@@ -644,7 +649,7 @@ export default function LandingPage() {
           {/* Pricing Cards */}
           <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto items-start">
             {/* Starter Plan */}
-            <div className="banking-card p-8 relative">
+            <div className="landing-pricing-card landing-card-slide p-8 relative" style={{ animationDelay: '0s' }}>
               <div className="mb-6">
                 <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center mb-4">
                   <Store className="h-6 w-6 text-muted-foreground" />
@@ -654,50 +659,60 @@ export default function LandingPage() {
               </div>
               
               <div className="mb-6">
-                <span className="text-5xl font-bold text-foreground">20€</span>
-                <span className="text-muted-foreground">/mois</span>
+                <div className="relative inline-block">
+                  <span className="text-3xl line-through text-muted-foreground mr-2">30€</span>
+                  <span className="text-5xl font-bold text-foreground">20€</span>
+                  <span className="text-muted-foreground">/mois</span>
+                  <div className="absolute -top-3 -right-16">
+                    <span className="landing-promo-badge">-33%</span>
+                  </div>
+                </div>
               </div>
 
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">1 restaurant</span>
+                  <span className="text-foreground">1 établissement</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">2 comptes utilisateurs</span>
+                  <span className="text-foreground">5 utilisateurs max</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">Gestion des stocks de base</span>
+                  <span className="text-foreground">Gestion stocks & gaspillage</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">Suivi du gaspillage</span>
+                  <span className="text-foreground">Alertes automatiques</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">Alertes de stock</span>
+                  <span className="text-foreground">Checklist employés</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
+                  <span className="text-foreground">Rapports basiques</span>
                 </li>
                 <li className="flex items-start gap-3 text-muted-foreground">
                   <X className="h-5 w-5 shrink-0 mt-0.5" />
-                  <span>Prévisions avancées</span>
+                  <span>Prévisions & calculateur</span>
                 </li>
                 <li className="flex items-start gap-3 text-muted-foreground">
                   <X className="h-5 w-5 shrink-0 mt-0.5" />
-                  <span>Support prioritaire</span>
+                  <span>Multi-sites</span>
                 </li>
               </ul>
 
               <Link href="/login" className="block">
-                <Button variant="outline" className="w-full btn-outline h-12">
+                <Button variant="outline" className="w-full btn-outline btn-hover-lift h-12">
                   Commencer l'essai gratuit
                 </Button>
               </Link>
             </div>
 
             {/* Pro Plan - Featured */}
-            <div className="banking-card-glow p-8 relative scale-105 z-10">
+            <div className="landing-pricing-card-featured landing-card-slide p-8 relative scale-105 z-10" style={{ animationDelay: '0.15s' }}>
               {/* Popular Badge */}
               <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                 <div className="bg-primary text-white px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-2">
@@ -715,14 +730,20 @@ export default function LandingPage() {
               </div>
               
               <div className="mb-6">
-                <span className="text-5xl font-bold text-primary">80€</span>
-                <span className="text-muted-foreground">/mois</span>
+                <div className="relative inline-block">
+                  <span className="text-3xl line-through text-muted-foreground mr-2">100€</span>
+                  <span className="text-5xl font-bold text-primary">80€</span>
+                  <span className="text-muted-foreground">/mois</span>
+                  <div className="absolute -top-3 -right-16">
+                    <span className="landing-promo-badge">-20%</span>
+                  </div>
+                </div>
               </div>
 
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span className="text-foreground"><strong>Jusqu'à 3 restaurants</strong></span>
+                  <span className="text-foreground"><strong>Jusqu'à 3 établissements</strong></span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
@@ -730,7 +751,7 @@ export default function LandingPage() {
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span className="text-foreground">Gestion des stocks avancée</span>
+                  <span className="text-foreground">Toutes fonctionnalités Starter</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
@@ -738,7 +759,7 @@ export default function LandingPage() {
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span className="text-foreground">Rapports détaillés</span>
+                  <span className="text-foreground">Calculateur de marges</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
@@ -746,12 +767,16 @@ export default function LandingPage() {
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span className="text-foreground">Support par email</span>
+                  <span className="text-foreground">Rapports détaillés</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <span className="text-foreground">Support email prioritaire</span>
                 </li>
               </ul>
 
               <Link href="/login" className="block">
-                <Button className="w-full btn-primary h-12 text-base">
+                <Button className="w-full btn-primary btn-hover-lift h-12 text-base">
                   Commencer l'essai gratuit
                 <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
@@ -759,7 +784,7 @@ export default function LandingPage() {
             </div>
 
             {/* Premium Plan */}
-            <div className="banking-card p-8 relative">
+            <div className="landing-pricing-card landing-card-slide p-8 relative" style={{ animationDelay: '0.3s' }}>
               <div className="mb-6">
                 <div className="h-12 w-12 rounded-xl bg-secondary flex items-center justify-center mb-4">
                   <Building2 className="h-6 w-6 text-foreground" />
@@ -769,14 +794,20 @@ export default function LandingPage() {
               </div>
               
               <div className="mb-6">
-                <span className="text-5xl font-bold text-foreground">110€</span>
-                <span className="text-muted-foreground">/mois</span>
+                <div className="relative inline-block">
+                  <span className="text-3xl line-through text-muted-foreground mr-2">150€</span>
+                  <span className="text-5xl font-bold text-foreground">110€</span>
+                  <span className="text-muted-foreground">/mois</span>
+                  <div className="absolute -top-3 -right-16">
+                    <span className="landing-promo-badge">-27%</span>
+                  </div>
+                </div>
             </div>
 
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground"><strong>Restaurants illimités</strong></span>
+                  <span className="text-foreground"><strong>Établissements illimités</strong></span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
@@ -788,7 +819,11 @@ export default function LandingPage() {
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">Intégrations externes (API)</span>
+                  <span className="text-foreground">Vue consolidée multi-sites</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
+                  <span className="text-foreground">Intégrations API avancées</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
@@ -796,11 +831,11 @@ export default function LandingPage() {
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">Accompagnement dédié</span>
+                  <span className="text-foreground">Account manager dédié</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">Formation personnalisée</span>
+                  <span className="text-foreground">Formation sur-mesure</span>
                 </li>
               </ul>
 

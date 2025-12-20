@@ -40,19 +40,16 @@ export default function EmployeePage() {
 
         const today = new Date().toISOString().split('T')[0]
 
-        // Vérifier le check-in et le statut inventaire
+        // Vérifier le check-in
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: checkIn } = await (supabase as any)
           .from('service_checks')
-          .select('id, inventory_done')
+          .select('id')
           .eq('performed_by', user.id)
           .eq('check_date', today)
           .limit(1)
 
-        const hasCheckIn = checkIn && checkIn.length > 0
-        const inventoryMarkedDone = hasCheckIn && checkIn[0]?.inventory_done === true
-
-        // Vérifier aussi les mises à jour de stock directes
+        // Vérifier les mises à jour de stock
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: stockUpdate } = await (supabase as any)
           .from('stock')
@@ -61,11 +58,9 @@ export default function EmployeePage() {
           .gte('created_at', `${today}T00:00:00`)
           .limit(1)
 
-        const hasStockUpdate = stockUpdate && stockUpdate.length > 0
-
         setStatus({
-          checkInDone: hasCheckIn,
-          stockUpdated: inventoryMarkedDone || hasStockUpdate,
+          checkInDone: checkIn && checkIn.length > 0,
+          stockUpdated: stockUpdate && stockUpdate.length > 0,
           loading: false
         })
       } catch (err) {
