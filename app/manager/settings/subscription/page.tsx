@@ -5,6 +5,7 @@ import Link from "next/link"
 import { ArrowLeft, Check, CreditCard, Crown, Loader2 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { PRICING_PLANS } from "@/lib/pricing-config"
 
 const plans = [
   {
@@ -22,37 +23,32 @@ const plans = [
     ],
   },
   {
-    id: "pro",
-    name: "Pro",
-    price: "29€",
-    priceId: "price_pro_monthly", // À remplacer par votre vrai Price ID Stripe
-    period: "/mois",
-    description: "Pour les professionnels",
-    features: [
-      "3 établissements",
-      "Gestion de stock avancée",
-      "Produits illimités",
-      "Alertes automatiques",
-      "Rapports détaillés",
-      "Support prioritaire",
-    ],
+    id: PRICING_PLANS.starter.id,
+    name: PRICING_PLANS.starter.name,
+    price: `${PRICING_PLANS.starter.price}€`,
+    priceId: PRICING_PLANS.starter.priceId,
+    period: PRICING_PLANS.starter.period,
+    description: PRICING_PLANS.starter.description,
+    features: PRICING_PLANS.starter.features,
+  },
+  {
+    id: PRICING_PLANS.pro.id,
+    name: PRICING_PLANS.pro.name,
+    price: `${PRICING_PLANS.pro.price}€`,
+    priceId: PRICING_PLANS.pro.priceId,
+    period: PRICING_PLANS.pro.period,
+    description: PRICING_PLANS.pro.description,
+    features: PRICING_PLANS.pro.features,
     popular: true,
   },
   {
-    id: "enterprise",
-    name: "Enterprise",
-    price: "99€",
-    priceId: "price_enterprise_monthly", // À remplacer par votre vrai Price ID Stripe
-    period: "/mois",
-    description: "Pour les grandes équipes",
-    features: [
-      "Établissements illimités",
-      "Toutes les fonctionnalités Pro",
-      "API access",
-      "Intégrations personnalisées",
-      "Account manager dédié",
-      "SLA 99.9%",
-    ],
+    id: PRICING_PLANS.premium.id,
+    name: PRICING_PLANS.premium.name,
+    price: `${PRICING_PLANS.premium.price}€`,
+    priceId: PRICING_PLANS.premium.priceId,
+    period: PRICING_PLANS.premium.period,
+    description: PRICING_PLANS.premium.description,
+    features: PRICING_PLANS.premium.features,
   },
 ]
 
@@ -153,8 +149,8 @@ export default function SubscriptionPage() {
         </div>
       </div>
 
-      {/* Plans Grid */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* Plans Grid - Single Row */}
+      <div className="grid grid-cols-4 gap-3">
         {plans.map((plan) => {
           const isCurrent = plan.id === currentPlan
           
@@ -163,49 +159,52 @@ export default function SubscriptionPage() {
               key={plan.id}
               className={`sg-card cursor-pointer transition-all ${
                 isCurrent ? "sg-card-glow ring-2 ring-orange-500/50" : ""
-              } ${selectedPlan === plan.id ? "scale-[1.02]" : ""}`}
+              } ${selectedPlan === plan.id ? "scale-[1.01]" : ""}`}
               onClick={() => setSelectedPlan(plan.id)}
             >
-              <div className="sg-card-body">
+              <div className="p-4">
                 {plan.popular && (
-                  <div className="flex justify-center -mt-3 mb-3">
-                    <span className="sg-badge sg-badge-orange">
-                      <Crown className="h-3 w-3" />
+                  <div className="flex justify-center -mt-2 mb-2">
+                    <span className="sg-badge sg-badge-orange text-[10px] px-2 py-0.5">
+                      <Crown className="h-2.5 w-2.5" />
                       Populaire
                     </span>
                   </div>
                 )}
                 
-                <div className="text-center mb-4">
-                  <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1">{plan.name}</h3>
-                  <p className="text-xs text-[var(--text-muted)]">{plan.description}</p>
+                <div className="text-center mb-3">
+                  <h3 className="text-sm font-bold text-[var(--text-primary)] mb-0.5">{plan.name}</h3>
+                  <p className="text-[10px] text-[var(--text-muted)]">{plan.description}</p>
                 </div>
 
-                <div className="text-center mb-4">
-                  <span className="text-3xl font-bold text-[var(--text-primary)]">{plan.price}</span>
-                  <span className="text-sm text-[var(--text-muted)]">{plan.period}</span>
+                <div className="text-center mb-3">
+                  <span className="text-2xl font-bold text-[var(--text-primary)]">{plan.price}</span>
+                  <span className="text-xs text-[var(--text-muted)]">{plan.period}</span>
                 </div>
 
-                <ul className="space-y-2 mb-4">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
-                      <Check className="h-3.5 w-3.5 text-green-400 flex-shrink-0" />
-                      {feature}
+                <ul className="space-y-1 mb-3">
+                  {plan.features.slice(0, 4).map((feature, i) => (
+                    <li key={i} className="flex items-center gap-1.5 text-[10px] text-[var(--text-secondary)]">
+                      <Check className="h-3 w-3 text-green-400 flex-shrink-0" />
+                      <span className="truncate">{feature}</span>
                     </li>
                   ))}
+                  {plan.features.length > 4 && (
+                    <li className="text-[10px] text-[var(--text-muted)] text-center">+{plan.features.length - 4} autres</li>
+                  )}
                 </ul>
 
                 <button
                   onClick={() => plan.priceId && handleSubscribe(plan.priceId)}
                   disabled={isCurrent || loading || !plan.priceId}
-                  className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                  className={`w-full py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
                     isCurrent
                       ? "bg-[var(--secondary)] text-[var(--text-muted)] cursor-default"
                       : "bg-gradient-to-r from-orange-500 to-red-500 text-white hover:opacity-90 disabled:opacity-50"
                   }`}
                 >
-                  {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {isCurrent ? "Plan actuel" : loading ? "Chargement..." : "Choisir ce plan"}
+                  {loading && <Loader2 className="h-3 w-3 animate-spin" />}
+                  {isCurrent ? "Plan actuel" : loading ? "..." : "Choisir ce plan"}
                 </button>
               </div>
             </div>

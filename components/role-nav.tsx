@@ -1,9 +1,10 @@
 "use client"
 
-import { Shield, ArrowLeft, Package, ShoppingCart, BarChart3, Calendar, Building2, Heart, Home } from "lucide-react"
+import { Shield, ArrowLeft, Package, ShoppingCart, BarChart3, Calendar, Building2, Heart, Home, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
+import { NotificationDropdown } from "@/components/notification-dropdown"
 
 interface RoleNavProps {
   role: "manager" | "employee"
@@ -18,6 +19,7 @@ export function RoleNav({ role }: RoleNavProps) {
     { name: "Stocks", href: "/manager/stock", icon: Package },
     { name: "Commandes", href: "/manager/orders", icon: ShoppingCart },
     { name: "Fournisseurs", href: "/manager/suppliers", icon: Building2 },
+    { name: "Alertes", href: "/manager/alerts", icon: Bell },
     { name: "Prévisions", href: "/manager/forecasts", icon: Calendar },
     { name: "Rapports", href: "/manager/reports", icon: BarChart3 },
     { name: "Feedbacks", href: "/manager/feedback", icon: Heart },
@@ -56,6 +58,8 @@ export function RoleNav({ role }: RoleNavProps) {
           </div>
 
           <div className="flex items-center gap-3">
+            {role === "manager" && <NotificationDropdown />}
+            
             {role === "employee" && (
               <Button
                 variant="outline"

@@ -14,10 +14,22 @@ import {
 } from "@/components/ui/dialog"
 import { Package, Plus, Trash2, Save, Check, Calendar, DollarSign } from "lucide-react"
 import { useState, useEffect } from "react"
-import { stockStore, type Stock } from "@/lib/stock-store"
+import { createClient } from "@/utils/supabase/client"
+
+interface Product {
+  id: string
+  name: string
+  quantity: number
+  unit: string
+  unit_price: number
+  expiry_date: string
+  category: string
+  created_at: string
+}
 
 export default function EmployeeStockUpdatePage() {
-  const [stocks, setStocks] = useState<Stock[]>([])
+  const supabase = createClient()
+  const [stocks, setStocks] = useState<Product[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [newItemName, setNewItemName] = useState("")
   const [newItemQty, setNewItemQty] = useState("")
@@ -26,67 +38,153 @@ export default function EmployeeStockUpdatePage() {
   const [newItemExpiryDate, setNewItemExpiryDate] = useState("")
   const [newItemCategory, setNewItemCategory] = useState<"surgele" | "frais" | "sec">("frais")
   const [showNotification, setShowNotification] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [establishmentId, setEstablishmentId] = useState<string | null>(null)
 
+  // Charger les produits depuis Supabase
   useEffect(() => {
-    setStocks(stockStore.getStocks())
-    const unsubscribe = stockStore.subscribe(() => {
-      console.log("[v0] Stock updated, refreshing employee view")
-      setStocks([...stockStore.getStocks()])
-    })
-    return unsubscribe
+    const fetchProducts = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: profile } = await (supabase as any)
+          .from('profiles')
+          .select('establishment_id')
+          .eq('id', user.id)
+          .single()
+
+        if (!profile?.establishment_id) return
+        setEstablishmentId(profile.establishment_id)
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: products } = await (supabase as any)
+          .from('products')
+          .select('*')
+          .eq('establishment_id', profile.establishment_id)
+          .order('created_at', { ascending: false })
+
+        if (products) {
+          setStocks(products)
+        }
+      } catch (err) {
+        console.error('Erreur chargement produits:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProducts()
   }, [])
 
-  const handleAddStock = () => {
-    if (newItemName && newItemQty && newItemPrice && newItemExpiryDate) {
-      const newStock: Stock = {
-        id: Date.now().toString(),
-        name: newItemName,
-        quantity: Number.parseFloat(newItemQty),
-        unit: newItemUnit,
-        price: Number.parseFloat(newItemPrice),
-        expiryDate: newItemExpiryDate,
-        category: newItemCategory,
-        addedAt: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
-        addedBy: "employee",
+  const handleAddStock = async () => {
+    if (newItemName && newItemQty && newItemPrice && newItemExpiryDate && establishmentId) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: newProduct, error } = await (supabase as any)
+          .from('products')
+          .insert({
+            establishment_id: establishmentId,
+            name: newItemName,
+            quantity: Number.parseFloat(newItemQty),
+            unit: newItemUnit,
+            unit_price: Number.parseFloat(newItemPrice),
+            expiry_date: newItemExpiryDate,
+            category: newItemCategory,
+            added_by: user.id,
+          })
+          .select()
+          .single()
+
+        if (error) throw error
+
+        if (newProduct) {
+          setStocks(prev => [newProduct, ...prev])
+        }
+
+        const audio = new Audio(
+          "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZURE=",
+        )
+        audio.play().catch((e) => console.log("Audio play failed:", e))
+
+        setShowNotification(true)
+        setTimeout(() => setShowNotification(false), 3000)
+
+        setNewItemName("")
+        setNewItemQty("")
+        setNewItemUnit("kg")
+        setNewItemPrice("")
+        setNewItemExpiryDate("")
+        setNewItemCategory("frais")
+        setIsAddDialogOpen(false)
+      } catch (err) {
+        console.error('Erreur ajout produit:', err)
+        alert('Erreur lors de l\'ajout du produit')
       }
-      stockStore.addStock(newStock)
-
-      const audio = new Audio(
-        "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZURE=",
-      )
-      audio.play().catch((e) => console.log("[v0] Audio play failed:", e))
-
-      setShowNotification(true)
-      setTimeout(() => setShowNotification(false), 3000)
-
-      setNewItemName("")
-      setNewItemQty("")
-      setNewItemUnit("kg")
-      setNewItemPrice("")
-      setNewItemExpiryDate("")
-      setNewItemCategory("frais")
-      setIsAddDialogOpen(false)
     }
   }
 
-  const handleAdjust = (id: string, delta: number) => {
+  const handleAdjust = async (id: string, delta: number) => {
     const stock = stocks.find((s) => s.id === id)
     if (stock) {
-      stockStore.updateStock(id, {
-        quantity: Math.max(0, stock.quantity + delta),
-      })
+      const newQuantity = Math.max(0, stock.quantity + delta)
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
+          .from('products')
+          .update({ quantity: newQuantity })
+          .eq('id', id)
+
+        if (error) throw error
+
+        setStocks(prev => prev.map(s => s.id === id ? { ...s, quantity: newQuantity } : s))
+      } catch (err) {
+        console.error('Erreur mise à jour quantité:', err)
+      }
     }
   }
 
-  const handleQuantityChange = (id: string, value: string) => {
+  const handleQuantityChange = async (id: string, value: string) => {
     const numValue = Number.parseFloat(value)
     if (!isNaN(numValue)) {
-      stockStore.updateStock(id, { quantity: Math.max(0, numValue) })
+      const newQuantity = Math.max(0, numValue)
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
+          .from('products')
+          .update({ quantity: newQuantity })
+          .eq('id', id)
+
+        if (error) throw error
+
+        setStocks(prev => prev.map(s => s.id === id ? { ...s, quantity: newQuantity } : s))
+      } catch (err) {
+        console.error('Erreur mise à jour quantité:', err)
+      }
     }
   }
 
-  const handleDelete = (id: string) => {
-    stockStore.deleteStock(id)
+  const handleDelete = async (id: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cet article ?')) return
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('products')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      setStocks(prev => prev.filter(s => s.id !== id))
+    } catch (err) {
+      console.error('Erreur suppression produit:', err)
+      alert('Erreur lors de la suppression')
+    }
   }
 
   return (
@@ -256,12 +354,18 @@ export default function EmployeeStockUpdatePage() {
                       {stock.category === "surgele" ? "❄️ Surgelé" : stock.category === "frais" ? "🌿 Frais" : "🌾 Sec"}{" "}
                       • {stock.unit}
                     </p>
-                    <p className="text-sm text-accent font-semibold mt-1">{stock.price.toFixed(2)} €</p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                      <Calendar className="h-3 w-3" />
-                      Expire le: {new Date(stock.expiryDate).toLocaleDateString("fr-FR")}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">Ajouté à {stock.addedAt}</p>
+                    {stock.unit_price && (
+                      <p className="text-sm text-accent font-semibold mt-1">{stock.unit_price.toFixed(2)} €</p>
+                    )}
+                    {stock.expiry_date && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                        <Calendar className="h-3 w-3" />
+                        Expire le: {new Date(stock.expiry_date).toLocaleDateString("fr-FR")}
+                      </p>
+                    )}
+                    {stock.created_at && (
+                      <p className="text-xs text-muted-foreground mt-1">Ajouté le {new Date(stock.created_at).toLocaleDateString("fr-FR")}</p>
+                    )}
                   </div>
                 </div>
 

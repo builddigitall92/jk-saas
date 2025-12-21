@@ -86,6 +86,9 @@ export default function ManagerDashboard() {
   const [stockTotal, setStockTotal] = useState(0)
   const [stockPercentage, setStockPercentage] = useState(0)
   const [ordersTotal, setOrdersTotal] = useState(0)
+  const [stockFilter, setStockFilter] = useState<'all' | 'surgele' | 'frais' | 'sec'>('all')
+  const [showStockFilter, setShowStockFilter] = useState(false)
+  const [checkedBudgetItems, setCheckedBudgetItems] = useState<string[]>([])
   const [stockCategories, setStockCategories] = useState<StockCategory[]>([
     { id: "1", name: "Surgelés", category: "Congélateur", value: 0, icon: Snowflake, status: "ok" },
     { id: "2", name: "Produits Frais", category: "Réfrigérateur", value: 0, icon: Leaf, status: "ok" },
@@ -105,13 +108,24 @@ export default function ManagerDashboard() {
   // Recalculer les données quand les products changent (realtime)
   useEffect(() => {
     if (products && products.length > 0) {
-      // Calculer la valeur totale du stock
-      const total = products.reduce((sum, p) => sum + ((p.quantity || 0) * (p.unit_price || 0)), 0)
+      // Filtrer les produits selon le filtre sélectionné
+      const filteredProducts = stockFilter === 'all' 
+        ? products 
+        : products.filter(p => {
+            const cat = (p.category || '').toLowerCase()
+            if (stockFilter === 'surgele') return cat.includes('surgel') || cat.includes('congel')
+            if (stockFilter === 'frais') return cat.includes('frais') || cat.includes('réfrig')
+            if (stockFilter === 'sec') return cat.includes('sec') || cat.includes('épice') || cat.includes('boisson')
+            return true
+          })
+      
+      // Calculer la valeur totale du stock (filtré)
+      const total = filteredProducts.reduce((sum, p) => sum + ((p.quantity || 0) * (p.unit_price || 0)), 0)
       setStockTotal(total)
       
-      // Calculer le pourcentage de stock (basé sur les seuils min)
-      const stockOk = products.filter(p => (p.quantity || 0) > (p.min_quantity || 0)).length
-      const percentage = products.length > 0 ? Math.round((stockOk / products.length) * 100) : 0
+      // Calculer le pourcentage de stock (basé sur les seuils min, filtré)
+      const stockOk = filteredProducts.filter(p => (p.quantity || 0) > (p.min_quantity || 0)).length
+      const percentage = filteredProducts.length > 0 ? Math.round((stockOk / filteredProducts.length) * 100) : 0
       setStockPercentage(percentage)
       
       // Regrouper par catégorie
@@ -136,7 +150,7 @@ export default function ManagerDashboard() {
       setStockTotal(0)
       setStockPercentage(0)
     }
-  }, [products])
+  }, [products, stockFilter])
 
   // Charger le total des commandes
   useEffect(() => {
@@ -197,9 +211,34 @@ export default function ManagerDashboard() {
                 </div>
                 <span>Stock</span>
               </div>
-              <div className="sg-pill">
-                Valeur Totale
-                <ChevronDown className="h-3 w-3 ml-1" />
+              <div className="relative">
+                <button 
+                  onClick={(e) => { e.preventDefault(); setShowStockFilter(!showStockFilter) }}
+                  className="sg-pill hover:bg-[var(--secondary)] transition-colors"
+                >
+                  {stockFilter === 'all' ? 'Valeur Totale' : 
+                   stockFilter === 'surgele' ? 'Surgelé' :
+                   stockFilter === 'frais' ? 'Frais' : 'Sec'}
+                  <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${showStockFilter ? 'rotate-180' : ''}`} />
+                </button>
+                {showStockFilter && (
+                  <div className="absolute top-full left-0 mt-2 w-40 sg-card shadow-lg z-10 animate-fade-up">
+                    <div className="p-2 space-y-1">
+                      <button onClick={(e) => { e.preventDefault(); setStockFilter('all'); setShowStockFilter(false) }} className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${stockFilter === 'all' ? 'bg-[#ff8c42] text-white' : 'hover:bg-[var(--secondary)]'}`}>
+                        Tout
+                      </button>
+                      <button onClick={(e) => { e.preventDefault(); setStockFilter('surgele'); setShowStockFilter(false) }} className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${stockFilter === 'surgele' ? 'bg-[#ff8c42] text-white' : 'hover:bg-[var(--secondary)]'}`}>
+                        🧊 Surgelé
+                      </button>
+                      <button onClick={(e) => { e.preventDefault(); setStockFilter('frais'); setShowStockFilter(false) }} className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${stockFilter === 'frais' ? 'bg-[#ff8c42] text-white' : 'hover:bg-[var(--secondary)]'}`}>
+                        🥬 Frais
+                      </button>
+                      <button onClick={(e) => { e.preventDefault(); setStockFilter('sec'); setShowStockFilter(false) }} className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${stockFilter === 'sec' ? 'bg-[#ff8c42] text-white' : 'hover:bg-[var(--secondary)]'}`}>
+                        📦 Sec
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="sg-pill ml-auto !p-2">
                 <ExternalLink className="h-3.5 w-3.5" />
@@ -253,10 +292,21 @@ export default function ManagerDashboard() {
             <div className="space-y-2">
               {stockCategories.slice(0, 4).map((item) => {
                 const Icon = item.icon
+                const isChecked = checkedBudgetItems.includes(item.id)
                 return (
-                  <div key={item.id} className="flex items-center gap-2.5 group">
-                    <div className={`sg-checkbox ${item.value > 0 ? "checked" : ""}`}>
-                      {item.value > 0 && <Check className="h-2.5 w-2.5" />}
+                  <div 
+                    key={item.id} 
+                    className="flex items-center gap-2.5 group cursor-pointer"
+                    onClick={() => {
+                      setCheckedBudgetItems(prev => 
+                        prev.includes(item.id) 
+                          ? prev.filter(id => id !== item.id)
+                          : [...prev, item.id]
+                      )
+                    }}
+                  >
+                    <div className={`sg-checkbox ${isChecked ? "checked" : ""}`}>
+                      {isChecked && <Check className="h-2.5 w-2.5" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-[var(--text-primary)] group-hover:text-[#ff8c42] transition-colors">{item.name}</p>

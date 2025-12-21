@@ -32,6 +32,7 @@ import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useLandingStats } from "@/lib/hooks/use-landing-stats"
+import { PRICING_PLANS } from "@/lib/pricing-config"
 
 // Composant FAQ Item
 function FAQItem({ question, answer, isOpen, onClick }: { 
@@ -654,54 +655,34 @@ export default function LandingPage() {
                 <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center mb-4">
                   <Store className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <h3 className="text-2xl font-bold text-foreground mb-2">Starter</h3>
-                <p className="text-muted-foreground text-sm">Pour démarrer et tester</p>
+                <h3 className="text-2xl font-bold text-foreground mb-2">{PRICING_PLANS.starter.name}</h3>
+                <p className="text-muted-foreground text-sm">{PRICING_PLANS.starter.description}</p>
               </div>
               
               <div className="mb-6">
                 <div className="relative inline-block">
-                  <span className="text-3xl line-through text-muted-foreground mr-2">30€</span>
-                  <span className="text-5xl font-bold text-foreground">20€</span>
-                  <span className="text-muted-foreground">/mois</span>
+                  <span className="text-3xl line-through text-muted-foreground mr-2">{PRICING_PLANS.starter.originalPrice}€</span>
+                  <span className="text-5xl font-bold text-foreground">{PRICING_PLANS.starter.price}€</span>
+                  <span className="text-muted-foreground">{PRICING_PLANS.starter.period}</span>
                   <div className="absolute -top-3 -right-16">
-                    <span className="landing-promo-badge">-33%</span>
+                    <span className="landing-promo-badge">{PRICING_PLANS.starter.discount}</span>
                   </div>
                 </div>
               </div>
 
               <ul className="space-y-4 mb-8">
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">1 établissement</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">5 utilisateurs max</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">Gestion stocks & gaspillage</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">Alertes automatiques</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">Checklist employés</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">Rapports basiques</span>
-                </li>
-                <li className="flex items-start gap-3 text-muted-foreground">
-                  <X className="h-5 w-5 shrink-0 mt-0.5" />
-                  <span>Prévisions & calculateur</span>
-                </li>
-                <li className="flex items-start gap-3 text-muted-foreground">
-                  <X className="h-5 w-5 shrink-0 mt-0.5" />
-                  <span>Multi-sites</span>
-                </li>
+                {PRICING_PLANS.starter.features.map((feature, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
+                    <span className="text-foreground">{feature}</span>
+                  </li>
+                ))}
+                {PRICING_PLANS.starter.excludedFeatures?.map((feature, i) => (
+                  <li key={`excluded-${i}`} className="flex items-start gap-3 text-muted-foreground">
+                    <X className="h-5 w-5 shrink-0 mt-0.5" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
               </ul>
 
               <Link href="/login" className="block">
@@ -725,54 +706,28 @@ export default function LandingPage() {
                 <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center mb-4">
                   <Crown className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-2xl font-bold text-foreground mb-2">Pro</h3>
-                <p className="text-primary text-sm font-medium">Tout ce qu'il faut pour piloter vos marges</p>
+                <h3 className="text-2xl font-bold text-foreground mb-2">{PRICING_PLANS.pro.name}</h3>
+                <p className="text-primary text-sm font-medium">{PRICING_PLANS.pro.description}</p>
               </div>
               
               <div className="mb-6">
                 <div className="relative inline-block">
-                  <span className="text-3xl line-through text-muted-foreground mr-2">100€</span>
-                  <span className="text-5xl font-bold text-primary">80€</span>
-                  <span className="text-muted-foreground">/mois</span>
+                  <span className="text-3xl line-through text-muted-foreground mr-2">{PRICING_PLANS.pro.originalPrice}€</span>
+                  <span className="text-5xl font-bold text-primary">{PRICING_PLANS.pro.price}€</span>
+                  <span className="text-muted-foreground">{PRICING_PLANS.pro.period}</span>
                   <div className="absolute -top-3 -right-16">
-                    <span className="landing-promo-badge">-20%</span>
+                    <span className="landing-promo-badge">{PRICING_PLANS.pro.discount}</span>
                   </div>
                 </div>
               </div>
 
               <ul className="space-y-4 mb-8">
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span className="text-foreground"><strong>Jusqu'à 3 établissements</strong></span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span className="text-foreground"><strong>Utilisateurs illimités</strong></span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span className="text-foreground">Toutes fonctionnalités Starter</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span className="text-foreground">Prévisions intelligentes</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span className="text-foreground">Calculateur de marges</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span className="text-foreground">Gestion fournisseurs</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span className="text-foreground">Rapports détaillés</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <span className="text-foreground">Support email prioritaire</span>
-                </li>
+                {PRICING_PLANS.pro.features.map((feature, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                    <span className="text-foreground">{i < 2 ? <strong>{feature}</strong> : feature}</span>
+                  </li>
+                ))}
               </ul>
 
               <Link href="/login" className="block">
@@ -789,54 +744,28 @@ export default function LandingPage() {
                 <div className="h-12 w-12 rounded-xl bg-secondary flex items-center justify-center mb-4">
                   <Building2 className="h-6 w-6 text-foreground" />
                 </div>
-                <h3 className="text-2xl font-bold text-foreground mb-2">Premium</h3>
-                <p className="text-muted-foreground text-sm">Pour chaînes et groupes multi-sites</p>
+                <h3 className="text-2xl font-bold text-foreground mb-2">{PRICING_PLANS.premium.name}</h3>
+                <p className="text-muted-foreground text-sm">{PRICING_PLANS.premium.description}</p>
               </div>
               
               <div className="mb-6">
                 <div className="relative inline-block">
-                  <span className="text-3xl line-through text-muted-foreground mr-2">150€</span>
-                  <span className="text-5xl font-bold text-foreground">110€</span>
-                  <span className="text-muted-foreground">/mois</span>
+                  <span className="text-3xl line-through text-muted-foreground mr-2">{PRICING_PLANS.premium.originalPrice}€</span>
+                  <span className="text-5xl font-bold text-foreground">{PRICING_PLANS.premium.price}€</span>
+                  <span className="text-muted-foreground">{PRICING_PLANS.premium.period}</span>
                   <div className="absolute -top-3 -right-16">
-                    <span className="landing-promo-badge">-27%</span>
+                    <span className="landing-promo-badge">{PRICING_PLANS.premium.discount}</span>
                   </div>
                 </div>
             </div>
 
               <ul className="space-y-4 mb-8">
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground"><strong>Établissements illimités</strong></span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground"><strong>Utilisateurs illimités</strong></span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">Toutes les fonctionnalités Pro</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">Vue consolidée multi-sites</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">Intégrations API avancées</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">Support prioritaire 24/7</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">Account manager dédié</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                  <span className="text-foreground">Formation sur-mesure</span>
-                </li>
+                {PRICING_PLANS.premium.features.map((feature, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
+                    <span className="text-foreground">{i < 2 ? <strong>{feature}</strong> : feature}</span>
+                  </li>
+                ))}
               </ul>
 
               <Link href="/login" className="block">
