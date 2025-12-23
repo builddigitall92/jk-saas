@@ -26,35 +26,35 @@ interface Establishment {
 }
 
 const modules = [
-  { 
-    title: "Gaspillage", 
+  {
+    title: "Gaspillage",
     description: "Déclarer les pertes et réduire le gâchis",
-    icon: Flame, 
-    href: "/employee/waste", 
+    icon: Flame,
+    href: "/employee/waste",
     gradient: "from-rose-500 via-red-500 to-orange-500",
     glow: "shadow-[0_0_30px_rgba(244,63,94,0.4)]"
   },
-  { 
-    title: "Stock", 
+  {
+    title: "Stock",
     description: "Mettre à jour l'inventaire en temps réel",
-    icon: Boxes, 
-    href: "/employee/stock-update", 
+    icon: Boxes,
+    href: "/employee/stock-update",
     gradient: "from-orange-400 via-amber-500 to-yellow-500",
     glow: "shadow-[0_0_30px_rgba(251,146,60,0.4)]"
   },
-  { 
-    title: "Alertes", 
+  {
+    title: "Alertes",
     description: "Consulter les notifications importantes",
-    icon: BellRing, 
-    href: "/employee/alerts", 
+    icon: BellRing,
+    href: "/employee/alerts",
     gradient: "from-amber-400 via-yellow-500 to-lime-500",
     glow: "shadow-[0_0_30px_rgba(250,204,21,0.4)]"
   },
-  { 
-    title: "Check-in", 
+  {
+    title: "Check-in",
     description: "Valider le contrôle du service",
-    icon: ClipboardCheck, 
-    href: "/employee/service-check", 
+    icon: ClipboardCheck,
+    href: "/employee/service-check",
     gradient: "from-emerald-400 via-green-500 to-teal-500",
     glow: "shadow-[0_0_30px_rgba(34,197,94,0.4)]"
   },
@@ -83,10 +83,10 @@ export default function EmployeePage() {
 
   const currentHour = new Date().getHours()
   const greeting = currentHour < 12 ? "Bonjour" : currentHour < 18 ? "Bon après-midi" : "Bonsoir"
-  const currentDate = new Date().toLocaleDateString('fr-FR', { 
-    weekday: 'long', 
-    day: 'numeric', 
-    month: 'long' 
+  const currentDate = new Date().toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long'
   })
 
   // Obtenir les initiales
@@ -328,7 +328,7 @@ export default function EmployeePage() {
               const Icon = module.icon
               const showBadge = module.title === "Alertes" && unreadCount > 0
               const isCompleted = (module.title === "Check-in" && status.checkInDone) || (module.title === "Stock" && status.stockUpdated)
-              
+
               return (
                 <Link key={module.href} href={module.href}>
                   <div className={`relative bg-card/90 border border-border/50 rounded-2xl p-4 group cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ${isCompleted ? 'ring-1 ring-green-500/50' : ''}`}>
@@ -354,16 +354,16 @@ export default function EmployeePage() {
           </div>
 
           {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            {/* Tâches du jour - 2 colonnes */}
-            <div className="lg:col-span-2 bg-card/90 border border-border/50 rounded-2xl p-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Tâches du jour */}
+            <div className="bg-card/90 border border-border/50 rounded-2xl p-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-black text-foreground" style={{ fontFamily: 'var(--font-sf-pro)' }}>Tâches du jour</h3>
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${allTasksDone ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'}`}>
                   {tasksCompleted}/2
                 </span>
               </div>
-              
+
               {status.loading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -398,8 +398,8 @@ export default function EmployeePage() {
               )}
             </div>
 
-            {/* Prévision & Infos - 3 colonnes */}
-            <div className="lg:col-span-3 space-y-4">
+            {/* Prévision & Infos */}
+            <div className="space-y-4">
               {/* Prévision */}
               <div className="bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/30 rounded-2xl p-4 flex items-center gap-4">
                 <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">

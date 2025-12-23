@@ -22,7 +22,7 @@ export default function EmployeeLayout({
   const pathname = usePathname()
   const { profile, loading } = useAuth()
 
-  const initials = profile 
+  const initials = profile
     ? `${profile.first_name?.[0] || ""}${profile.last_name?.[0] || ""}`.toUpperCase() || "U"
     : "..."
 
@@ -39,18 +39,18 @@ export default function EmployeeLayout({
           </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-          <form action={signOut}>
-            <button type="submit" className="h-9 w-9 rounded-xl bg-secondary flex items-center justify-center hover:bg-destructive/20 transition-colors">
-              <LogOut className="h-5 w-5 text-muted-foreground" />
-            </button>
-          </form>
+            <form action={signOut}>
+              <button type="submit" className="h-9 w-9 rounded-xl bg-secondary flex items-center justify-center hover:bg-destructive/20 transition-colors">
+                <LogOut className="h-5 w-5 text-muted-foreground" />
+              </button>
+            </form>
           </div>
         </div>
       </header>
 
       {/* Desktop Header */}
       <header className="hidden md:block sticky top-0 z-40 bg-sidebar border-b border-border">
-        <div className="max-w-4xl mx-auto px-6 py-4">
+        <div className="w-full px-6 py-4">
           <div className="flex items-center justify-between">
             <Link href="/employee" className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
@@ -61,22 +61,21 @@ export default function EmployeeLayout({
                 <p className="text-xs text-muted-foreground">Interface Employé</p>
               </div>
             </Link>
-            
+
             <div className="flex items-center gap-4">
               <nav className="flex items-center gap-2">
                 {navItems.map((item) => {
                   const Icon = item.icon
                   const isActive = pathname === item.href
-                  
+
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                        isActive
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${isActive
                           ? "bg-primary text-white"
                           : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                      }`}
+                        }`}
                     >
                       <Icon className="h-4 w-4" />
                       {item.name}
@@ -102,7 +101,7 @@ export default function EmployeeLayout({
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto">
+      <main className="w-full">
         {children}
       </main>
 
@@ -112,12 +111,11 @@ export default function EmployeeLayout({
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = pathname === item.href
-            
+
             return (
               <Link key={item.href} href={item.href} className={`mobile-nav-item ${isActive ? "mobile-nav-item-active" : ""}`}>
-                <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all ${
-                  isActive ? "bg-primary/20" : ""
-                }`}>
+                <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all ${isActive ? "bg-primary/20" : ""
+                  }`}>
                   <Icon className={`h-6 w-6 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
                 </div>
                 <span className="text-xs font-medium">{item.name}</span>

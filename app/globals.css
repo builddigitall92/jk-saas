@@ -1250,6 +1250,106 @@ html:not(.dark) .landing-pricing-card-featured {
 ::-webkit-scrollbar-thumb:hover { background: #3a332d; }
 
 /* ========================================
+   DOAT PREMIUM ANIMATIONS
+   ======================================== */
+
+/* Shimmer effect for premium cards */
+@keyframes shimmer {
+  0% { background-position: -250% 0; }
+  100% { background-position: 250% 0; }
+}
+
+.group-hover\:animate-shimmer:hover,
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* Wiggle animation for unstable indicators */
+@keyframes wiggle {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  50% { transform: translateX(0); }
+  75% { transform: translateX(2px); }
+}
+
+.animate-wiggle {
+  animation: wiggle 0.5s ease-in-out infinite;
+}
+
+/* Scale check animation */
+@keyframes scale-check {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-scale-check {
+  animation: scale-check 0.3s ease-out forwards;
+}
+
+/* Glow pulse animation */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(255, 140, 66, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(255, 140, 66, 0.6); }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* Fade up animation */
+@keyframes fade-up {
+  from { 
+    opacity: 0; 
+    transform: translateY(10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.3s ease-out forwards;
+}
+
+/* Float animation for decorative elements */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Ripple effect */
+@keyframes ripple {
+  0% { transform: scale(0); opacity: 0.5; }
+  100% { transform: scale(4); opacity: 0; }
+}
+
+.animate-ripple {
+  animation: ripple 0.6s ease-out forwards;
+}
+
+/* Premium card entrance */
+@keyframes card-entrance {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px) scale(0.95); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0) scale(1); 
+  }
+}
+
+.animate-card-entrance {
+  animation: card-entrance 0.5s ease-out forwards;
+}
+
+/* ========================================
    LEGACY
    ======================================== */
 
@@ -1259,3 +1359,4 @@ html:not(.dark) .landing-pricing-card-featured {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+

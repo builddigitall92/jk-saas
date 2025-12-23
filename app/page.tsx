@@ -1,14 +1,14 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { 
-  Shield, 
-  TrendingUp, 
-  Package, 
-  AlertTriangle, 
-  BarChart3, 
-  Users, 
-  ArrowRight, 
+import {
+  Shield,
+  TrendingUp,
+  Package,
+  AlertTriangle,
+  BarChart3,
+  Users,
+  ArrowRight,
   CheckCircle2,
   Zap,
   Clock,
@@ -32,14 +32,14 @@ import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useLandingStats } from "@/lib/hooks/use-landing-stats"
-import { PRICING_PLANS } from "@/lib/pricing-config"
+import { PRICING_PLANS, type BillingPeriod } from "@/lib/pricing-config"
 
 // Composant FAQ Item
-function FAQItem({ question, answer, isOpen, onClick }: { 
+function FAQItem({ question, answer, isOpen, onClick }: {
   question: string
   answer: string
   isOpen: boolean
-  onClick: () => void 
+  onClick: () => void
 }) {
   return (
     <div className="banking-card overflow-hidden">
@@ -167,6 +167,7 @@ function formatCurrency(amount: number): string {
 
 export default function LandingPage() {
   const { stats, loading } = useLandingStats()
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly")
 
   const features = [
     {
@@ -308,11 +309,11 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Image 
-                src="/logo.png" 
-                alt="StockGuard Logo" 
-                width={40} 
-                height={40} 
+              <Image
+                src="/logo.png"
+                alt="StockGuard Logo"
+                width={40}
+                height={40}
                 className="rounded-xl"
               />
               <span className="text-xl font-bold text-foreground">StockGuard</span>
@@ -345,7 +346,7 @@ export default function LandingPage() {
         {/* Background gradient orbs */}
         <div className="absolute top-20 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
-        
+
         <div className="max-w-7xl mx-auto relative">
           <div className="text-center max-w-4xl mx-auto">
             {/* Badge */}
@@ -368,7 +369,7 @@ export default function LandingPage() {
 
             {/* Subtitle */}
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-up delay-2">
-              StockGuard est la solution complète pour les restaurateurs qui veulent 
+              StockGuard est la solution complète pour les restaurateurs qui veulent
               réduire le gaspillage, optimiser leurs commandes et gagner en rentabilité.
             </p>
 
@@ -424,7 +425,7 @@ export default function LandingPage() {
                     <span className="badge-green">En ligne</span>
                   </div>
                 </div>
-                
+
                 {/* Live Stats Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {liveStats.map((stat, index) => (
@@ -439,7 +440,7 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-            
+
             {/* Floating elements */}
             <div className="absolute -left-4 top-1/3 banking-card p-4 rounded-xl shadow-2xl animate-float landing-shake hidden lg:block">
               <div className="flex items-center gap-3">
@@ -452,9 +453,9 @@ export default function LandingPage() {
                     {loading ? "..." : `${stats.deliveredOrders} livrées`}
                   </p>
                 </div>
+              </div>
             </div>
-          </div>
-          
+
             <div className="absolute -right-4 top-1/2 banking-card p-4 rounded-xl shadow-2xl animate-float-delayed landing-shake hidden lg:block">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
@@ -509,14 +510,14 @@ export default function LandingPage() {
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Une suite d'outils pensée pour simplifier la gestion quotidienne de votre établissement.
-          </p>
-        </div>
+            </p>
+          </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => {
               const Icon = feature.icon
               return (
-          <div
+                <div
                   key={feature.title}
                   className="banking-card landing-card-slide p-6 group cursor-default hover:scale-[1.02] transition-all duration-300"
                   style={{ animationDelay: `${index * 0.1}s` }}
@@ -534,7 +535,7 @@ export default function LandingPage() {
               )
             })}
           </div>
-              </div>
+        </div>
       </section>
 
       {/* Benefits Section */}
@@ -547,17 +548,17 @@ export default function LandingPage() {
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
               Des résultats concrets
-                </h2>
+            </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Nos utilisateurs constatent des améliorations significatives dès les premières semaines.
-                </p>
-              </div>
+            </p>
+          </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {benefits.map((benefit) => {
               const Icon = benefit.icon
               return (
-                <div 
+                <div
                   key={benefit.label}
                   className="banking-card-featured landing-card-slide p-8 text-center hover:scale-105 transition-all duration-300"
                 >
@@ -576,7 +577,7 @@ export default function LandingPage() {
                 </div>
               )
             })}
-            </div>
+          </div>
         </div>
       </section>
 
@@ -598,7 +599,7 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-6">
             {testimonials.map((testimonial, index) => (
-              <div 
+              <div
                 key={testimonial.author}
                 className="landing-testimonial-card landing-card-slide p-8"
                 style={{ animationDelay: `${index * 0.15}s` }}
@@ -608,12 +609,12 @@ export default function LandingPage() {
                   {[...Array(testimonial.rating)].map((_, i) => (
                     <Star key={i} className="h-5 w-5 text-primary fill-primary" />
                   ))}
-              </div>
+                </div>
 
                 <blockquote className="text-foreground text-lg mb-6 leading-relaxed">
                   &ldquo;{testimonial.quote}&rdquo;
                 </blockquote>
-                
+
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-orange-400 flex items-center justify-center">
                     <span className="text-white font-bold">
@@ -641,11 +642,36 @@ export default function LandingPage() {
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
               Des tarifs adaptés à votre activité
-                </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
               Choisissez le plan qui correspond à vos besoins. Essai gratuit de 14 jours sur tous les plans.
-                </p>
-              </div>
+            </p>
+
+            {/* Billing Period Toggle */}
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => setBillingPeriod("monthly")}
+                className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${billingPeriod === "monthly"
+                    ? "bg-primary text-white shadow-lg scale-105"
+                    : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                  }`}
+              >
+                Mensuel
+              </button>
+              <button
+                onClick={() => setBillingPeriod("annual")}
+                className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 relative ${billingPeriod === "annual"
+                    ? "bg-primary text-white shadow-lg scale-105"
+                    : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                  }`}
+              >
+                Annuel
+                <span className="absolute -top-2 -right-2 bg-accent text-white text-xs px-2 py-0.5 rounded-full font-semibold">
+                  -17%
+                </span>
+              </button>
+            </div>
+          </div>
 
           {/* Pricing Cards */}
           <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto items-start">
@@ -658,16 +684,23 @@ export default function LandingPage() {
                 <h3 className="text-2xl font-bold text-foreground mb-2">{PRICING_PLANS.starter.name}</h3>
                 <p className="text-muted-foreground text-sm">{PRICING_PLANS.starter.description}</p>
               </div>
-              
+
               <div className="mb-6">
                 <div className="relative inline-block">
-                  <span className="text-3xl line-through text-muted-foreground mr-2">{PRICING_PLANS.starter.originalPrice}€</span>
-                  <span className="text-5xl font-bold text-foreground">{PRICING_PLANS.starter.price}€</span>
-                  <span className="text-muted-foreground">{PRICING_PLANS.starter.period}</span>
+                  <span className="text-3xl line-through text-muted-foreground mr-2">
+                    {PRICING_PLANS.starter[billingPeriod].originalPrice}€
+                  </span>
+                  <span className="text-5xl font-bold text-foreground transition-all duration-300">
+                    {PRICING_PLANS.starter[billingPeriod].price}€
+                  </span>
+                  <span className="text-muted-foreground">{PRICING_PLANS.starter[billingPeriod].period}</span>
                   <div className="absolute -top-3 -right-16">
-                    <span className="landing-promo-badge">{PRICING_PLANS.starter.discount}</span>
+                    <span className="landing-promo-badge">{PRICING_PLANS.starter[billingPeriod].discount}</span>
                   </div>
                 </div>
+                {billingPeriod === "annual" && (
+                  <p className="text-sm text-accent mt-2 font-medium">Soit {PRICING_PLANS.starter.monthly.price}€/mois</p>
+                )}
               </div>
 
               <ul className="space-y-4 mb-8">
@@ -709,16 +742,23 @@ export default function LandingPage() {
                 <h3 className="text-2xl font-bold text-foreground mb-2">{PRICING_PLANS.pro.name}</h3>
                 <p className="text-primary text-sm font-medium">{PRICING_PLANS.pro.description}</p>
               </div>
-              
+
               <div className="mb-6">
                 <div className="relative inline-block">
-                  <span className="text-3xl line-through text-muted-foreground mr-2">{PRICING_PLANS.pro.originalPrice}€</span>
-                  <span className="text-5xl font-bold text-primary">{PRICING_PLANS.pro.price}€</span>
-                  <span className="text-muted-foreground">{PRICING_PLANS.pro.period}</span>
+                  <span className="text-3xl line-through text-muted-foreground mr-2">
+                    {PRICING_PLANS.pro[billingPeriod].originalPrice}€
+                  </span>
+                  <span className="text-5xl font-bold text-primary transition-all duration-300">
+                    {PRICING_PLANS.pro[billingPeriod].price}€
+                  </span>
+                  <span className="text-muted-foreground">{PRICING_PLANS.pro[billingPeriod].period}</span>
                   <div className="absolute -top-3 -right-16">
-                    <span className="landing-promo-badge">{PRICING_PLANS.pro.discount}</span>
+                    <span className="landing-promo-badge">{PRICING_PLANS.pro[billingPeriod].discount}</span>
                   </div>
                 </div>
+                {billingPeriod === "annual" && (
+                  <p className="text-sm text-primary mt-2 font-medium">Soit {PRICING_PLANS.pro.monthly.price}€/mois</p>
+                )}
               </div>
 
               <ul className="space-y-4 mb-8">
@@ -733,8 +773,8 @@ export default function LandingPage() {
               <Link href="/login" className="block">
                 <Button className="w-full btn-primary btn-hover-lift h-12 text-base">
                   Commencer l'essai gratuit
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Button>
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                </Button>
               </Link>
             </div>
 
@@ -747,17 +787,24 @@ export default function LandingPage() {
                 <h3 className="text-2xl font-bold text-foreground mb-2">{PRICING_PLANS.premium.name}</h3>
                 <p className="text-muted-foreground text-sm">{PRICING_PLANS.premium.description}</p>
               </div>
-              
+
               <div className="mb-6">
                 <div className="relative inline-block">
-                  <span className="text-3xl line-through text-muted-foreground mr-2">{PRICING_PLANS.premium.originalPrice}€</span>
-                  <span className="text-5xl font-bold text-foreground">{PRICING_PLANS.premium.price}€</span>
-                  <span className="text-muted-foreground">{PRICING_PLANS.premium.period}</span>
+                  <span className="text-3xl line-through text-muted-foreground mr-2">
+                    {PRICING_PLANS.premium[billingPeriod].originalPrice}€
+                  </span>
+                  <span className="text-5xl font-bold text-foreground transition-all duration-300">
+                    {PRICING_PLANS.premium[billingPeriod].price}€
+                  </span>
+                  <span className="text-muted-foreground">{PRICING_PLANS.premium[billingPeriod].period}</span>
                   <div className="absolute -top-3 -right-16">
-                    <span className="landing-promo-badge">{PRICING_PLANS.premium.discount}</span>
+                    <span className="landing-promo-badge">{PRICING_PLANS.premium[billingPeriod].discount}</span>
                   </div>
                 </div>
-            </div>
+                {billingPeriod === "annual" && (
+                  <p className="text-sm text-accent mt-2 font-medium">Soit {PRICING_PLANS.premium.monthly.price}€/mois</p>
+                )}
+              </div>
 
               <ul className="space-y-4 mb-8">
                 {PRICING_PLANS.premium.features.map((feature, i) => (
@@ -773,8 +820,8 @@ export default function LandingPage() {
                   Contacter l'équipe commerciale
                 </Button>
               </Link>
+            </div>
           </div>
-        </div>
 
           {/* Pricing Note */}
           <p className="text-center text-muted-foreground mt-12 text-sm">
@@ -793,19 +840,19 @@ export default function LandingPage() {
             {/* Background decoration */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/5 rounded-full blur-3xl" />
-            
+
             <div className="relative">
               <div className="h-20 w-20 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-8">
                 <Shield className="h-10 w-10 text-white" strokeWidth={1.5} />
               </div>
-              
+
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
                 Prêt à transformer votre gestion ?
               </h2>
               <p className="text-xl text-muted-foreground mb-8 max-w-xl mx-auto">
                 Rejoignez {stats.establishments > 0 ? `les ${stats.establishments} établissements` : 'les restaurateurs'} qui ont déjà optimisé leur rentabilité avec StockGuard.
               </p>
-              
+
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link href="/login">
                   <Button className="btn-primary h-14 px-8 text-lg">
@@ -814,12 +861,12 @@ export default function LandingPage() {
                   </Button>
                 </Link>
               </div>
-              
+
               <p className="text-sm text-muted-foreground mt-6">
                 14 jours d'essai gratuit • Sans carte bancaire • Annulation à tout moment
-          </p>
-        </div>
-      </div>
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -828,22 +875,22 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
-              <Image 
-                src="/logo.png" 
-                alt="StockGuard Logo" 
-                width={40} 
-                height={40} 
+              <Image
+                src="/logo.png"
+                alt="StockGuard Logo"
+                width={40}
+                height={40}
                 className="rounded-xl"
               />
               <span className="text-xl font-bold text-foreground">StockGuard</span>
             </div>
-            
+
             <div className="flex items-center gap-8 text-sm text-muted-foreground">
               <a href="#" className="hover:text-foreground transition-colors">Confidentialité</a>
               <a href="#" className="hover:text-foreground transition-colors">Conditions d'utilisation</a>
               <a href="#" className="hover:text-foreground transition-colors">Contact</a>
             </div>
-            
+
             <p className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} StockGuard. Tous droits réservés.
             </p>

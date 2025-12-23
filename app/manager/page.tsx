@@ -5,13 +5,9 @@ import Link from "next/link"
 import {
   Plus,
   TrendingUp,
-  TrendingDown,
-  Check,
   AlertTriangle,
   Package,
   Truck,
-  Users,
-  ArrowUpRight,
   Snowflake,
   Leaf,
   Wine,
@@ -19,10 +15,18 @@ import {
   ChevronDown,
   ExternalLink,
   RefreshCw,
+  Calculator,
+  Sparkles,
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useRealtimeProducts, useRealtimeSuppliers } from "@/lib/hooks/use-realtime"
 import { AddObjectiveModal, AddReportDataModal } from "@/components/dashboard-modals"
+import { WelcomeHero } from "@/components/dashboard/welcome-hero"
+import { AlertsCard } from "@/components/dashboard/alerts-card"
+import { DailyTasksCard } from "@/components/dashboard/daily-tasks-card"
+import { EstablishmentCard } from "@/components/dashboard/establishment-card"
+import { TipCard } from "@/components/dashboard/tip-card"
+import { useAuth } from "@/lib/hooks/use-auth"
 
 // Types
 interface StockCategory {
@@ -30,77 +34,26 @@ interface StockCategory {
   name: string
   category: string
   value: number
-  icon: any
+  icon: React.ComponentType<{ className?: string }>
   status: "ok" | "warning" | "critical"
-}
-
-interface Supplier {
-  id: string
-  name: string
-  lastOrder: string
-  totalSpent: number
-  status: "active" | "pending" | "inactive"
-}
-
-// Donut Chart
-function DonutChart({ percentage, size = 100 }: { percentage: number; size?: number }) {
-  const strokeWidth = 10
-  const radius = (size - strokeWidth) / 2
-  const circumference = 2 * Math.PI * radius
-  const strokeDashoffset = circumference - (percentage / 100) * circumference
-
-  return (
-    <div className="sg-donut" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" className="sg-donut-bg" strokeWidth={strokeWidth} />
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" className="sg-donut-ring" strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} />
-      </svg>
-      <div className="sg-donut-center">
-        <span className="text-xl font-bold text-[var(--text-primary)]">{percentage}%</span>
-      </div>
-    </div>
-  )
-}
-
-// Bar Chart
-function BarChart({ data }: { data: { label: string; value: number }[] }) {
-  const maxValue = Math.max(...data.map(d => d.value), 1)
-  return (
-    <div className="flex items-end gap-1.5 h-20">
-      {data.map((item, index) => (
-        <div key={index} className="flex-1 flex flex-col items-center gap-1">
-          <div className="sg-bar w-full min-h-[3px]" style={{ height: `${(item.value / maxValue) * 100}%` }} />
-          <span className="text-[9px] text-[var(--text-muted)]">{item.label}</span>
-        </div>
-      ))}
-    </div>
-  )
 }
 
 export default function ManagerDashboard() {
   const { products, loading: productsLoading } = useRealtimeProducts()
   const { suppliers, loading: suppliersLoading } = useRealtimeSuppliers()
-  
+  const { profile, establishment } = useAuth()
+
   const [showObjectiveModal, setShowObjectiveModal] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
   const [stockTotal, setStockTotal] = useState(0)
   const [stockPercentage, setStockPercentage] = useState(0)
-  const [ordersTotal, setOrdersTotal] = useState(0)
   const [stockFilter, setStockFilter] = useState<'all' | 'surgele' | 'frais' | 'sec'>('all')
   const [showStockFilter, setShowStockFilter] = useState(false)
-  const [checkedBudgetItems, setCheckedBudgetItems] = useState<string[]>([])
   const [stockCategories, setStockCategories] = useState<StockCategory[]>([
     { id: "1", name: "Surgelés", category: "Congélateur", value: 0, icon: Snowflake, status: "ok" },
     { id: "2", name: "Produits Frais", category: "Réfrigérateur", value: 0, icon: Leaf, status: "ok" },
     { id: "3", name: "Boissons", category: "Cave & Bar", value: 0, icon: Wine, status: "ok" },
     { id: "4", name: "Sec & Épicerie", category: "Stockage", value: 0, icon: Box, status: "ok" },
-  ])
-  const [reportData, setReportData] = useState([
-    { label: "Jan", value: 0 },
-    { label: "Fév", value: 0 },
-    { label: "Mar", value: 0 },
-    { label: "Avr", value: 0 },
-    { label: "Mai", value: 0 },
   ])
 
   const loading = productsLoading || suppliersLoading
@@ -108,36 +61,31 @@ export default function ManagerDashboard() {
   // Recalculer les données quand les products changent (realtime)
   useEffect(() => {
     if (products && products.length > 0) {
-      // Filtrer les produits selon le filtre sélectionné
-      const filteredProducts = stockFilter === 'all' 
-        ? products 
+      const filteredProducts = stockFilter === 'all'
+        ? products
         : products.filter(p => {
-            const cat = (p.category || '').toLowerCase()
-            if (stockFilter === 'surgele') return cat.includes('surgel') || cat.includes('congel')
-            if (stockFilter === 'frais') return cat.includes('frais') || cat.includes('réfrig')
-            if (stockFilter === 'sec') return cat.includes('sec') || cat.includes('épice') || cat.includes('boisson')
-            return true
-          })
-      
-      // Calculer la valeur totale du stock (filtré)
-      const total = filteredProducts.reduce((sum, p) => sum + ((p.quantity || 0) * (p.unit_price || 0)), 0)
+          const cat = ((p as any).category || '').toLowerCase()
+          if (stockFilter === 'surgele') return cat.includes('surgel') || cat.includes('congel')
+          if (stockFilter === 'frais') return cat.includes('frais') || cat.includes('réfrig')
+          if (stockFilter === 'sec') return cat.includes('sec') || cat.includes('épice') || cat.includes('boisson')
+          return true
+        })
+
+      const total = filteredProducts.reduce((sum, p: any) => sum + ((p.quantity || 0) * (p.unit_price || 0)), 0)
       setStockTotal(total)
-      
-      // Calculer le pourcentage de stock (basé sur les seuils min, filtré)
-      const stockOk = filteredProducts.filter(p => (p.quantity || 0) > (p.min_quantity || 0)).length
+
+      const stockOk = filteredProducts.filter((p: any) => (p.quantity || 0) > (p.min_quantity || 0)).length
       const percentage = filteredProducts.length > 0 ? Math.round((stockOk / filteredProducts.length) * 100) : 0
       setStockPercentage(percentage)
-      
-      // Regrouper par catégorie
+
       const categories: Record<string, number> = {}
-      products.forEach(p => {
+      products.forEach((p: any) => {
         const cat = p.category || 'Autre'
         categories[cat] = (categories[cat] || 0) + ((p.quantity || 0) * (p.unit_price || 0))
       })
-      
-      // Mettre à jour les catégories de stock
+
       setStockCategories(prev => prev.map(cat => {
-        const matchingCat = Object.entries(categories).find(([key]) => 
+        const matchingCat = Object.entries(categories).find(([key]) =>
           key.toLowerCase().includes(cat.name.toLowerCase().substring(0, 4))
         )
         return {
@@ -152,378 +100,261 @@ export default function ManagerDashboard() {
     }
   }, [products, stockFilter])
 
-  // Charger le total des commandes
-  useEffect(() => {
-    async function fetchOrders() {
-      const { data: orders } = await supabase.from('orders').select('*')
-      if (orders) {
-        const total = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0)
-        setOrdersTotal(total)
-      }
-    }
-    fetchOrders()
-  }, [])
-
   const addObjective = (objective: any) => {
     console.log('Nouvel objectif:', objective)
-    // TODO: Sauvegarder dans Supabase
   }
 
   const addReportData = (data: any) => {
-    setReportData(prev => [...prev, data])
-    // TODO: Sauvegarder dans Supabase
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "ok": case "active": return "sg-status-positive"
-      case "warning": case "pending": return "sg-status-warning"
-      case "critical": case "inactive": return "sg-status-negative"
-      default: return ""
-    }
+    console.log('Nouvelle donnée rapport:', data)
   }
 
   const refreshData = () => {
     window.location.reload()
   }
 
+  const lowStockCount = products.filter((p: any) => (p.quantity || 0) <= (p.min_quantity || 0)).length
+
   return (
-    <div className="p-5">
-      {/* Header compact */}
-      <div className="flex items-center justify-between mb-5">
-        <h1 className="text-xl font-bold text-[var(--text-primary)]">Dashboard</h1>
-        <button onClick={refreshData} className="sg-icon-btn" title="Actualiser">
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+    <div className="p-6 min-h-screen">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Tableau de bord</h1>
+          <p className="text-sm text-white/40 mt-1">Vue d&apos;ensemble de vos opérations</p>
+        </div>
+        <button
+          onClick={refreshData}
+          className="group h-11 w-11 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.08] hover:border-orange-500/30 flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/10"
+          title="Actualiser"
+        >
+          <RefreshCw className={`h-5 w-5 text-white/50 group-hover:text-orange-400 transition-colors ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
-      {/* Grille de Cartes */}
-      <div className="sg-dashboard-grid">
-        
-        {/* Carte 1: Stock - Style Hero */}
-        <Link href="/manager/stock" className="sg-card-glass sg-animate-fade-in block">
-          <div className="sg-card-body">
-            {/* Header avec pills */}
-            <div className="flex items-center gap-2 mb-6">
-              <div className="sg-pill">
-                <div className="sg-pill-icon">
-                  <Package className="h-3 w-3 text-white" />
-                </div>
-                <span>Stock</span>
-              </div>
-              <div className="relative">
-                <button 
-                  onClick={(e) => { e.preventDefault(); setShowStockFilter(!showStockFilter) }}
-                  className="sg-pill hover:bg-[var(--secondary)] transition-colors"
-                >
-                  {stockFilter === 'all' ? 'Valeur Totale' : 
-                   stockFilter === 'surgele' ? 'Surgelé' :
-                   stockFilter === 'frais' ? 'Frais' : 'Sec'}
-                  <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${showStockFilter ? 'rotate-180' : ''}`} />
-                </button>
-                {showStockFilter && (
-                  <div className="absolute top-full left-0 mt-2 w-40 sg-card shadow-lg z-10 animate-fade-up">
-                    <div className="p-2 space-y-1">
-                      <button onClick={(e) => { e.preventDefault(); setStockFilter('all'); setShowStockFilter(false) }} className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${stockFilter === 'all' ? 'bg-[#ff8c42] text-white' : 'hover:bg-[var(--secondary)]'}`}>
-                        Tout
-                      </button>
-                      <button onClick={(e) => { e.preventDefault(); setStockFilter('surgele'); setShowStockFilter(false) }} className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${stockFilter === 'surgele' ? 'bg-[#ff8c42] text-white' : 'hover:bg-[var(--secondary)]'}`}>
-                        🧊 Surgelé
-                      </button>
-                      <button onClick={(e) => { e.preventDefault(); setStockFilter('frais'); setShowStockFilter(false) }} className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${stockFilter === 'frais' ? 'bg-[#ff8c42] text-white' : 'hover:bg-[var(--secondary)]'}`}>
-                        🥬 Frais
-                      </button>
-                      <button onClick={(e) => { e.preventDefault(); setStockFilter('sec'); setShowStockFilter(false) }} className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${stockFilter === 'sec' ? 'bg-[#ff8c42] text-white' : 'hover:bg-[var(--secondary)]'}`}>
-                        📦 Sec
-                      </button>
-                    </div>
+      {/* Main Layout */}
+      <div className="space-y-6">
+
+        {/* ROW 1: Welcome + Establishment */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4">
+          <WelcomeHero
+            userName={profile?.first_name || "Manager"}
+            establishmentId={profile?.establishment_id || undefined}
+          />
+          <EstablishmentCard
+            name={establishment?.name || "Mon Établissement"}
+            location={establishment?.address || "Localisation non définie"}
+          />
+        </div>
+
+        {/* ROW 2: Stock + Alerts */}
+        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
+          {/* Stock Card */}
+          <Link href="/manager/stock" className="group block relative overflow-hidden rounded-[20px] border border-white/[0.08] shadow-2xl shadow-black/30 transition-all duration-500 hover:border-orange-500/30 hover:shadow-orange-500/10 hover:-translate-y-1">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#1f1814] via-[#1a1410] to-[#151210]" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,140,66,0.12),transparent_60%)]" />
+            <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0f0d0b] to-transparent" />
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-[linear-gradient(110deg,transparent_25%,rgba(255,255,255,0.02)_50%,transparent_75%)] bg-[length:250%_100%] group-hover:animate-shimmer" />
+
+            <div className="relative p-6">
+              {/* Header */}
+              <div className="flex items-center gap-2 mb-6">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-orange-500/40 rounded-full blur-xl" />
+                  <div className="relative px-4 py-2 rounded-full bg-gradient-to-r from-orange-500/25 to-red-500/20 border border-orange-500/30 flex items-center gap-2">
+                    <Package className="h-4 w-4 text-orange-400" />
+                    <span className="text-sm font-bold text-orange-400">Stock</span>
                   </div>
-                )}
-              </div>
-              <div className="sg-pill ml-auto !p-2">
-                <ExternalLink className="h-3.5 w-3.5" />
-              </div>
-            </div>
+                </div>
 
-            {/* Valeur géante */}
-            <div className="mb-4">
-              <div className="sg-value-hero">
-                {loading ? "..." : stockPercentage}<span>%</span>
-              </div>
-            </div>
-
-            {/* Texte descriptif */}
-            <div className="mb-5">
-              <p className="text-[var(--text-primary)] font-semibold text-sm mb-1">
-                {stockTotal > 0 ? `€${stockTotal.toLocaleString()} en stock` : "Aucun produit en stock"}
-              </p>
-              <p className="text-[var(--text-muted)] text-xs">
-                {stockTotal > 0 
-                  ? "Cliquez pour gérer votre inventaire" 
-                  : "Ajoutez vos premiers produits pour commencer"}
-              </p>
-            </div>
-
-            {/* Images pilules */}
-            <div className="flex gap-3">
-              <div className="sg-image-pill h-14 w-24 bg-gradient-to-br from-orange-600/40 to-red-600/30 flex items-center justify-center">
-                <Snowflake className="h-6 w-6 text-white/80" />
-              </div>
-              <div className="sg-image-pill h-14 w-24 bg-gradient-to-br from-green-600/40 to-emerald-600/30 flex items-center justify-center">
-                <Leaf className="h-6 w-6 text-white/80" />
-              </div>
-            </div>
-          </div>
-        </Link>
-
-        {/* Carte 2: Budget / Achats */}
-        <Link href="/manager/orders" className="sg-card sg-animate-fade-in block">
-          <div className="sg-card-body">
-            <div className="flex items-center justify-between mb-3">
-              <span className="sg-card-title">Budget Achats</span>
-              <ArrowUpRight className="h-4 w-4 text-[var(--text-muted)]" />
-            </div>
-
-            <div className="mb-4">
-              <p className="text-[10px] text-[var(--text-muted)]">Total dépensé</p>
-              <p className="sg-card-value">€ {loading ? "..." : ordersTotal.toLocaleString()}</p>
-            </div>
-
-            <div className="space-y-2">
-              {stockCategories.slice(0, 4).map((item) => {
-                const Icon = item.icon
-                const isChecked = checkedBudgetItems.includes(item.id)
-                return (
-                  <div 
-                    key={item.id} 
-                    className="flex items-center gap-2.5 group cursor-pointer"
-                    onClick={() => {
-                      setCheckedBudgetItems(prev => 
-                        prev.includes(item.id) 
-                          ? prev.filter(id => id !== item.id)
-                          : [...prev, item.id]
-                      )
-                    }}
+                <div className="relative ml-2">
+                  <button
+                    onClick={(e) => { e.preventDefault(); setShowStockFilter(!showStockFilter) }}
+                    className="px-3 py-2 rounded-full bg-white/[0.05] border border-white/[0.08] flex items-center gap-1.5 text-xs text-white/60 hover:bg-white/[0.08] hover:border-white/[0.15] transition-all"
                   >
-                    <div className={`sg-checkbox ${isChecked ? "checked" : ""}`}>
-                      {isChecked && <Check className="h-2.5 w-2.5" />}
+                    {stockFilter === 'all' ? 'Valeur Totale' : stockFilter === 'surgele' ? 'Surgelé' : stockFilter === 'frais' ? 'Frais' : 'Sec'}
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-300 ${showStockFilter ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showStockFilter && (
+                    <div className="absolute top-full left-0 mt-2 w-40 rounded-xl bg-[rgba(26,20,16,0.98)] backdrop-blur-xl border border-white/[0.1] shadow-2xl z-20 overflow-hidden animate-fade-up">
+                      <div className="p-1.5">
+                        {[
+                          { key: 'all', label: 'Tout', emoji: '📊' },
+                          { key: 'surgele', label: 'Surgelé', emoji: '🧊' },
+                          { key: 'frais', label: 'Frais', emoji: '🥬' },
+                          { key: 'sec', label: 'Sec', emoji: '📦' }
+                        ].map(item => (
+                          <button
+                            key={item.key}
+                            onClick={(e) => { e.preventDefault(); setStockFilter(item.key as any); setShowStockFilter(false) }}
+                            className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all flex items-center gap-2.5 ${stockFilter === item.key
+                                ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold shadow-lg'
+                                : 'text-white/60 hover:bg-white/[0.08] hover:text-white'
+                              }`}
+                          >
+                            <span className="text-base">{item.emoji}</span>
+                            <span>{item.label}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-[var(--text-primary)] group-hover:text-[#ff8c42] transition-colors">{item.name}</p>
-                    </div>
-                    <span className="text-xs text-[var(--text-muted)]">€{item.value.toLocaleString()}</span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </Link>
+                  )}
+                </div>
 
-        {/* Carte 3: Rapport */}
-        <div className="sg-card sg-animate-fade-in">
-          <div className="sg-card-body">
-            <div className="flex items-center justify-between mb-3">
-              <span className="sg-card-title">Rapport</span>
-              <button onClick={() => setShowReportModal(true)} className="sg-icon-btn !w-7 !h-7">
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
-            <BarChart data={reportData} />
-
-            <div className="flex items-center gap-3 mt-3 text-[10px]">
-              <div className="flex items-center gap-1">
-                {stockTotal > 0 ? (
-                  <>
-                    <TrendingUp className="h-3 w-3 sg-text-positive" />
-                    <span className="sg-text-positive">Actif</span>
-                  </>
-                ) : (
-                  <>
-                    <TrendingDown className="h-3 w-3 sg-text-negative" />
-                    <span className="sg-text-negative">Aucune donnée</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Carte 4: Détail Stock */}
-        <Link href="/manager/stock" className="sg-card sg-card-glow sg-animate-fade-in block">
-          <div className="sg-card-body">
-            <div className="flex items-center justify-between mb-3">
-              <span className="sg-card-title">Détail Stock</span>
-              <ArrowUpRight className="h-4 w-4 text-[var(--text-muted)]" />
-            </div>
-
-            <div className="mb-4">
-              <p className="text-[10px] text-[var(--text-muted)]">Valeur totale</p>
-              <p className="sg-card-value">€ {loading ? "..." : stockTotal.toLocaleString()}</p>
-            </div>
-
-            <div className="space-y-2">
-              {stockCategories.map((item) => {
-                const Icon = item.icon
-                return (
-                  <div key={item.id} className="flex items-center gap-2.5 group">
-                    <div className={`sg-checkbox ${item.value > 0 ? "checked" : ""}`}>
-                      {item.value > 0 ? <Check className="h-2.5 w-2.5" /> : <AlertTriangle className="h-2.5 w-2.5 text-amber-400" />}
-                    </div>
-                    <div className="h-7 w-7 rounded-lg bg-[var(--secondary)] flex items-center justify-center group-hover:bg-[#ff8c42]/20 transition-colors">
-                      <Icon className="h-3.5 w-3.5 text-[var(--text-muted)] group-hover:text-[#ff8c42] transition-colors" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-[var(--text-primary)] group-hover:text-[#ff8c42] transition-colors">{item.name}</p>
-                      <p className="text-[9px] text-[var(--text-muted)]">{item.category}</p>
-                    </div>
-                    <span className="text-xs text-[var(--text-muted)]">€{item.value.toLocaleString()}</span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </Link>
-
-        {/* Carte 5: Fournisseurs */}
-        <Link href="/manager/suppliers" className="sg-card sg-animate-fade-in block">
-          <div className="sg-card-body">
-            <div className="flex items-center justify-between mb-3">
-              <span className="sg-card-title">Fournisseurs ({suppliers.length})</span>
-              <ArrowUpRight className="h-4 w-4 text-[var(--text-muted)]" />
-            </div>
-
-            {suppliers.length > 0 ? (
-              <div className="space-y-2">
-                {suppliers.slice(0, 3).map((sup: any) => (
-                  <div key={sup.id} className="flex items-center gap-2.5 group">
-                    <div className={`sg-status-dot ${getStatusColor('active')}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-[var(--text-primary)] group-hover:text-[#ff8c42] transition-colors">{sup.name}</p>
-                      <p className="text-[9px] text-[var(--text-muted)]">Actif</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-xs text-[var(--text-muted)]">Aucun fournisseur</p>
-                <p className="text-[10px] text-[var(--text-muted)]">Cliquez pour en ajouter</p>
-              </div>
-            )}
-
-            {/* Alerte */}
-            {stockTotal === 0 && (
-              <div className="mt-4 pt-3 border-t border-[var(--border)]">
-                <div className="flex items-center gap-2.5 bg-[rgba(239,68,68,0.08)] rounded-xl p-2.5 border border-[rgba(239,68,68,0.12)]">
-                  <div className="h-8 w-8 rounded-lg bg-red-500/20 flex items-center justify-center">
-                    <AlertTriangle className="h-4 w-4 text-red-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-[var(--text-primary)] font-medium">Stock vide</p>
-                    <p className="text-[9px] text-[var(--text-muted)]">Ajoutez des produits</p>
-                  </div>
+                <div className="ml-auto opacity-30 group-hover:opacity-60 transition-opacity">
+                  <ExternalLink className="h-4 w-4 text-white" />
                 </div>
               </div>
-            )}
-          </div>
-        </Link>
 
-        {/* Carte 6: Objectifs */}
-        <div className="sg-card sg-animate-fade-in">
-          <div className="sg-card-body">
-            <div className="flex items-center justify-between mb-3">
-              <span className="sg-card-title">Objectifs</span>
-              <button onClick={() => setShowObjectiveModal(true)} className="sg-icon-btn !w-7 !h-7">
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
-            <div className="flex items-center gap-4 mb-3">
-              <DonutChart percentage={stockPercentage} size={90} />
-              <div>
-                <p className="text-[10px] text-[var(--text-muted)]">Stock optimal</p>
-                <p className="text-base font-bold text-[var(--text-primary)]">100%</p>
-                <p className="text-[10px] text-[var(--text-muted)] mt-1">Atteint</p>
-                <p className="text-sm font-semibold sg-text-accent">{stockPercentage}%</p>
+              {/* Value Display */}
+              <div className="mb-8">
+                <p className="text-xs text-white/40 uppercase tracking-wider mb-2 font-medium">Valeur Totale</p>
+                <div className="flex items-baseline gap-3">
+                  <div className="relative">
+                    <div className="absolute -inset-2 bg-gradient-to-r from-orange-500/20 to-transparent blur-xl opacity-60" />
+                    <span className="relative text-5xl font-bold bg-gradient-to-r from-white via-white to-white/80 bg-clip-text text-transparent tracking-tight">
+                      {loading ? "..." : stockTotal.toLocaleString()}
+                    </span>
+                    <span className="relative text-2xl font-semibold text-white/60 ml-1">€</span>
+                  </div>
+                  {stockPercentage > 0 && (
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${stockPercentage >= 80 ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                        stockPercentage >= 50 ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                          'bg-red-500/20 text-red-400 border border-red-500/30'
+                      }`}>
+                      {stockPercentage >= 80 ? '↑' : '↓'} {stockPercentage}%
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
 
-            <div className="pt-3 border-t border-[var(--border)]">
-              <p className="text-[10px] text-[var(--text-muted)] mb-1">Conseil</p>
-              <p className="text-[11px] text-[var(--text-secondary)] italic leading-relaxed">
-                {stockTotal > 0 
-                  ? '"Surveillez vos niveaux de stock pour éviter les ruptures."'
-                  : '"Commencez par ajouter vos produits dans la section Stocks."'}
-              </p>
+              {/* Category bars */}
+              <div className="space-y-4 mb-5">
+                {stockCategories.map((cat) => {
+                  const Icon = cat.icon
+                  const percentage = stockTotal > 0 ? Math.round((cat.value / stockTotal) * 100) : 0
+                  const colors = {
+                    '1': { bar: 'from-blue-500 to-cyan-500', text: 'text-blue-400', bg: 'bg-blue-500/10' },
+                    '2': { bar: 'from-green-500 to-emerald-500', text: 'text-green-400', bg: 'bg-green-500/10' },
+                    '3': { bar: 'from-purple-500 to-pink-500', text: 'text-purple-400', bg: 'bg-purple-500/10' },
+                    '4': { bar: 'from-orange-500 to-red-500', text: 'text-orange-400', bg: 'bg-orange-500/10' }
+                  }
+                  const color = colors[cat.id as keyof typeof colors] || colors['4']
+
+                  return (
+                    <div key={cat.id} className="group/cat">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`h-8 w-8 rounded-lg ${color.bg} flex items-center justify-center group-hover/cat:scale-110 transition-transform`}>
+                            <Icon className={`h-4 w-4 ${color.text}`} />
+                          </div>
+                          <span className="text-sm text-white/70 font-medium">{cat.name}</span>
+                        </div>
+                        <span className="text-sm font-bold text-white/50">{percentage}%</span>
+                      </div>
+                      <div className="h-2.5 rounded-full bg-white/[0.05] overflow-hidden">
+                        <div
+                          className={`h-full rounded-full bg-gradient-to-r ${color.bar} transition-all duration-700 ease-out shadow-lg`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Low stock warning */}
+              {lowStockCount > 0 && stockTotal > 0 && (
+                <div className="relative overflow-hidden p-4 rounded-xl border border-red-500/30 bg-gradient-to-r from-red-500/10 to-transparent">
+                  <div className="absolute inset-0 bg-red-500/5 animate-pulse" />
+                  <div className="relative flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+                      <AlertTriangle className="h-5 w-5 text-red-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-red-400">{lowStockCount} produits en rupture imminente</p>
+                      <p className="text-xs text-red-400/60">Nécessite une action rapide</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          </Link>
+
+          {/* Alerts Card */}
+          <AlertsCard products={products} />
         </div>
-      </div>
 
-      {/* Actions Rapides */}
-      <div className="mt-5 grid grid-cols-4 gap-3">
-        <Link href="/manager/stock" className="sg-card sg-card-hover-effect">
-          <div className="p-3 flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-lg bg-orange-500/20 flex items-center justify-center group-hover:bg-orange-500/30 transition-all">
-              <Package className="h-4 w-4 text-orange-400" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs font-semibold text-[var(--text-primary)]">Stocks</p>
-              <p className="text-[9px] text-[var(--text-muted)]">Inventaire</p>
-            </div>
-            <ArrowUpRight className="h-3.5 w-3.5 text-[var(--text-muted)]" />
-          </div>
-        </Link>
+        {/* ROW 3: Tasks + Actions + Tip */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_0.8fr] gap-6">
+          {/* Daily Tasks Card */}
+          <DailyTasksCard />
 
-        <Link href="/manager/orders" className="sg-card sg-card-hover-effect">
-          <div className="p-3 flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-lg bg-blue-500/20 flex items-center justify-center transition-all">
-              <Truck className="h-4 w-4 text-blue-400" />
+          {/* Actions Rapides */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-white/70 uppercase tracking-wider">Actions rapides</h3>
+              <Sparkles className="h-4 w-4 text-orange-400/50" />
             </div>
-            <div className="flex-1">
-              <p className="text-xs font-semibold text-[var(--text-primary)]">Achats</p>
-              <p className="text-[9px] text-[var(--text-muted)]">Fournisseurs</p>
-            </div>
-            <ArrowUpRight className="h-3.5 w-3.5 text-[var(--text-muted)]" />
-          </div>
-        </Link>
+            <div className="grid grid-cols-2 gap-3">
+              <Link href="/manager/stock" className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-[rgba(255,140,66,0.08)] to-[rgba(26,20,16,0.4)] backdrop-blur-xl border border-white/[0.06] p-4 hover:border-orange-500/40 transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/10 hover:-translate-y-1">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform duration-300 mb-2">
+                    <Package className="h-5 w-5 text-white" />
+                  </div>
+                  <p className="text-sm font-bold text-white">Entrée Stock</p>
+                  <p className="text-xs text-white/40">Ajouter des produits</p>
+                </div>
+              </Link>
 
-        <Link href="/manager/reports" className="sg-card sg-card-hover-effect">
-          <div className="p-3 flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-lg bg-green-500/20 flex items-center justify-center transition-all">
-              <TrendingUp className="h-4 w-4 text-green-400" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs font-semibold text-[var(--text-primary)]">Rapports</p>
-              <p className="text-[9px] text-[var(--text-muted)]">Analyses</p>
-            </div>
-            <ArrowUpRight className="h-3.5 w-3.5 text-[var(--text-muted)]" />
-          </div>
-        </Link>
+              <Link href="/manager/suppliers" className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-[rgba(59,130,246,0.08)] to-[rgba(26,20,16,0.4)] backdrop-blur-xl border border-white/[0.06] p-4 hover:border-blue-500/40 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform duration-300 mb-2">
+                    <Truck className="h-5 w-5 text-white" />
+                  </div>
+                  <p className="text-sm font-bold text-white">Fournisseur</p>
+                  <p className="text-xs text-white/40">Gérer les contacts</p>
+                </div>
+              </Link>
 
-        <Link href="/manager/feedback" className="sg-card sg-card-hover-effect">
-          <div className="p-3 flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-lg bg-purple-500/20 flex items-center justify-center transition-all">
-              <Users className="h-4 w-4 text-purple-400" />
+              <Link href="/manager/orders" className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-[rgba(34,197,94,0.08)] to-[rgba(26,20,16,0.4)] backdrop-blur-xl border border-white/[0.06] p-4 hover:border-green-500/40 transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10 hover:-translate-y-1">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/30 group-hover:scale-110 transition-transform duration-300 mb-2">
+                    <Plus className="h-5 w-5 text-white" />
+                  </div>
+                  <p className="text-sm font-bold text-white">Commande</p>
+                  <p className="text-xs text-white/40">Passer une commande</p>
+                </div>
+              </Link>
+
+              <Link href="/manager/calculator" className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-[rgba(168,85,247,0.08)] to-[rgba(26,20,16,0.4)] backdrop-blur-xl border border-white/[0.06] p-4 hover:border-purple-500/40 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10 hover:-translate-y-1">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/30 group-hover:scale-110 transition-transform duration-300 mb-2">
+                    <Calculator className="h-5 w-5 text-white" />
+                  </div>
+                  <p className="text-sm font-bold text-white">Calculer</p>
+                  <p className="text-xs text-white/40">Marges & coûts</p>
+                </div>
+              </Link>
             </div>
-            <div className="flex-1">
-              <p className="text-xs font-semibold text-[var(--text-primary)]">Équipe</p>
-              <p className="text-[9px] text-[var(--text-muted)]">Feedbacks</p>
-            </div>
-            <ArrowUpRight className="h-3.5 w-3.5 text-[var(--text-muted)]" />
           </div>
-        </Link>
+
+          {/* Tip Card */}
+          <TipCard />
+        </div>
       </div>
 
       {/* Modals */}
-      <AddObjectiveModal 
-        isOpen={showObjectiveModal} 
+      <AddObjectiveModal
+        isOpen={showObjectiveModal}
         onClose={() => setShowObjectiveModal(false)}
         onAdd={addObjective}
       />
-      <AddReportDataModal 
-        isOpen={showReportModal} 
+      <AddReportDataModal
+        isOpen={showReportModal}
         onClose={() => setShowReportModal(false)}
         onAdd={addReportData}
       />
