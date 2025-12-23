@@ -1,51 +1,38 @@
 "use client"
 
-import { usePathname } from "next/navigation"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
   Package,
   ShoppingCart,
-  Building2,
+  Truck,
   TrendingUp,
-  FileText,
+  BarChart3,
+  Calculator,
   MessageSquare,
   Settings,
-  LogOut,
   User,
-  Calculator,
-  Sun,
-  Moon,
-  Bell,
-  ChevronDown,
-  CreditCard,
-  Users,
-  ClipboardCheck,
-  X,
+  LogOut,
+  ChevronRight,
 } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
-import { signOut } from "@/app/login/actions"
-import { useState, useEffect, useRef } from "react"
 
 const mainNavItems = [
   { name: "Dashboard", href: "/manager", icon: LayoutDashboard },
   { name: "Stocks", href: "/manager/stock", icon: Package },
-  { name: "Achats", href: "/manager/orders", icon: ShoppingCart },
-  { name: "Fournisseurs", href: "/manager/suppliers", icon: Building2 },
+  { name: "Commandes", href: "/manager/orders", icon: ShoppingCart },
+  { name: "Fournisseurs", href: "/manager/suppliers", icon: Truck },
   { name: "Prévisions", href: "/manager/forecasts", icon: TrendingUp },
-  { name: "Rapports", href: "/manager/reports", icon: FileText },
+  { name: "Rapports", href: "/manager/reports", icon: BarChart3 },
   { name: "Calculateur", href: "/manager/calculator", icon: Calculator },
-  { name: "Feedbacks", href: "/manager/feedback", icon: MessageSquare },
+  { name: "Feedbacks", href: "/manager/feedbacks", icon: MessageSquare },
 ]
 
 const bottomNavItems = [
+  { name: "Compte", href: "/manager/account", icon: User },
   { name: "Paramètres", href: "/manager/settings", icon: Settings },
-]
-
-const accountMenuItems = [
-  { name: "Gérer l'abonnement", href: "/manager/settings/subscription", icon: CreditCard },
-  { name: "Voir les employés", href: "/manager/feedback", icon: Users },
-  { name: "Gérer la checklist", href: "/manager/settings/checklist", icon: ClipboardCheck },
 ]
 
 export default function ManagerLayout({
@@ -54,216 +41,88 @@ export default function ManagerLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-  const { profile, loading } = useAuth()
-  const [isDark, setIsDark] = useState(true)
-  const [showAccountMenu, setShowAccountMenu] = useState(false)
-  const accountMenuRef = useRef<HTMLDivElement>(null)
+  const { profile } = useAuth()
+  const userName = profile?.first_name || "Manager"
 
-  useEffect(() => {
-    // Vérifier le thème sauvegardé
-    const savedTheme = localStorage.getItem('stockguard-theme')
-    if (savedTheme === 'light') {
-      setIsDark(false)
-      document.documentElement.classList.remove('dark')
-      document.body.style.background = 'linear-gradient(145deg, #faf9f7 0%, #f5f3f0 50%, #faf9f7 100%)'
-    } else {
-      setIsDark(true)
-      document.documentElement.classList.add('dark')
-      document.body.style.background = 'linear-gradient(145deg, #0d0b09 0%, #1a1512 50%, #0d0b09 100%)'
-    }
-  }, [])
-
-  // Fermer le menu au clic extérieur
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
-        setShowAccountMenu(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  const toggleTheme = () => {
-    if (isDark) {
-      // Passer en mode clair
-      document.documentElement.classList.remove('dark')
-      document.body.style.background = 'linear-gradient(145deg, #faf9f7 0%, #f5f3f0 50%, #faf9f7 100%)'
-      localStorage.setItem('stockguard-theme', 'light')
-      setIsDark(false)
-    } else {
-      // Passer en mode sombre
-      document.documentElement.classList.add('dark')
-      document.body.style.background = 'linear-gradient(145deg, #0d0b09 0%, #1a1512 50%, #0d0b09 100%)'
-      localStorage.setItem('stockguard-theme', 'dark')
-      setIsDark(true)
-    }
-  }
-
-  const initials = profile 
-    ? `${profile.first_name?.[0] || ""}${profile.last_name?.[0] || ""}`.toUpperCase() || "U"
-    : "..."
-  const fullName = profile 
-    ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || "Utilisateur"
-    : "Chargement..."
-
-  const isActive = (href: string) => {
-    if (href === "/manager") {
-      return pathname === "/manager"
-    }
-    return pathname.startsWith(href)
+  const handleSignOut = async () => {
+    const { supabase } = await import("@/lib/supabase")
+    await supabase.auth.signOut()
+    window.location.href = "/login"
   }
 
   return (
-    <div className="min-h-screen sg-background flex relative overflow-hidden">
-      {/* Lueurs animées en fond */}
-      <div className="sg-glow-orb sg-glow-orb-1" />
-      <div className="sg-glow-orb sg-glow-orb-2" />
-      <div className="sg-glow-orb sg-glow-orb-3" />
+    <div className="flex h-screen bg-gradient-to-br from-[#1a1612] via-[#151210] to-[#0d0a08] overflow-hidden">
+      {/* Massive Sidebar (~22%) */}
+      <aside className="w-[280px] min-w-[280px] h-full flex flex-col bg-[#1c1916]/80 border-r border-white/[0.04]">
 
-      {/* Sidebar avec dégradé */}
-      <aside className="sg-sidebar-gradient fixed left-0 top-0 h-screen flex flex-col z-50">
-        
-        {/* Logo / Brand */}
-        <div className="sg-sidebar-header">
-          <div className="flex items-center gap-3">
-            <div className="sg-sidebar-logo">
-              <Package className="h-5 w-5 text-white" />
+        {/* User Block */}
+        <div className="p-6 border-b border-white/[0.04]">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-orange-500/20">
+              {userName.substring(0, 2).toUpperCase()}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-white text-sm tracking-wide">StockGuard</p>
-              <p className="text-[10px] text-[#78716c] tracking-wider uppercase">Gestion Pro</p>
+            <div className="flex flex-col">
+              <span className="text-white font-semibold text-sm tracking-tight">{userName}</span>
+              <span className="text-white/40 text-xs">Patron · Admin</span>
             </div>
           </div>
         </div>
 
-        {/* Navigation Principale */}
-        <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
+        {/* Main Navigation */}
+        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           {mainNavItems.map((item) => {
+            const isActive = pathname === item.href || (item.href !== "/manager" && pathname.startsWith(item.href))
             const Icon = item.icon
-            const active = isActive(item.href)
 
             return (
               <Link
-                key={item.href}
+                key={item.name}
                 href={item.href}
-                className={`sg-sidebar-nav-item ${active ? "sg-sidebar-nav-item-active" : ""}`}
+                className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive
+                  ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/25"
+                  : "text-white/50 hover:text-white hover:bg-white/[0.04]"
+                  }`}
               >
-                <Icon className="h-[18px] w-[18px] flex-shrink-0" />
-                <span className="truncate">{item.name}</span>
+                <Icon className={`w-5 h-5 ${isActive ? "text-white" : "text-white/40 group-hover:text-orange-400"}`} />
+                <span className="font-medium text-sm">{item.name}</span>
+                {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
               </Link>
             )
           })}
         </nav>
 
-        {/* Navigation Secondaire (Bas) */}
-        <div className="px-2 py-3 border-t border-[rgba(255,255,255,0.04)] space-y-0.5">
+        {/* Bottom Navigation */}
+        <div className="px-4 py-4 border-t border-white/[0.04] space-y-1">
           {bottomNavItems.map((item) => {
             const Icon = item.icon
-            const active = isActive(item.href)
-
             return (
               <Link
-                key={item.href}
+                key={item.name}
                 href={item.href}
-                className={`sg-sidebar-nav-item ${active ? "sg-sidebar-nav-item-active" : ""}`}
+                className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/[0.04] transition-all duration-200"
               >
-                <Icon className="h-[18px] w-[18px] flex-shrink-0" />
-                <span className="truncate">{item.name}</span>
+                <Icon className="w-4 h-4" />
+                <span className="text-sm">{item.name}</span>
               </Link>
             )
           })}
-          
-          <form action={signOut}>
-            <button 
-              type="submit" 
-              className="sg-sidebar-nav-item w-full text-red-400 hover:text-red-300 hover:bg-red-500/10"
-            >
-              <LogOut className="h-[18px] w-[18px] flex-shrink-0" />
-              <span className="truncate">Déconnexion</span>
-            </button>
-          </form>
+          <button
+            onClick={() => handleSignOut()}
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="text-sm">Déconnexion</span>
+          </button>
         </div>
 
-        {/* Footer Version */}
-        <div className="px-3 py-2 border-t border-[rgba(255,255,255,0.04)]">
-          <p className="text-[9px] text-[#57534e] text-center tracking-wider">
-            STOCKGUARD v1.0 • PRO
-          </p>
+        {/* Version Footer */}
+        <div className="px-6 py-4 text-[10px] text-white/20 border-t border-white/[0.04]">
+          StockGuard v2.0 · Pro
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 ml-[220px] min-h-screen relative z-10">
-        {/* Top Bar avec Compte et Theme Toggle */}
-        <div className="sticky top-0 z-40 sg-topbar">
-          <div className="flex items-center justify-end gap-2 px-5 py-3">
-            {/* Notifications */}
-            <button className="sg-icon-btn relative">
-              <Bell className="h-4 w-4" />
-              <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-[9px] flex items-center justify-center text-white font-bold">3</span>
-            </button>
-
-            {/* Theme Toggle */}
-            <button 
-              onClick={toggleTheme}
-              className="sg-icon-btn"
-              title={isDark ? "Mode clair" : "Mode sombre"}
-            >
-              {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
-
-            {/* Compte avec Menu Dropdown */}
-            <div className="relative" ref={accountMenuRef}>
-              <button 
-                onClick={() => setShowAccountMenu(!showAccountMenu)}
-                className="sg-account-btn"
-              >
-                <div className="sg-account-avatar">
-                  {loading ? "..." : initials}
-                </div>
-                <div className="hidden sm:block text-left">
-                  <p className="text-xs font-medium text-white">{fullName}</p>
-                  <p className="text-[9px] text-[#78716c]">Manager</p>
-                </div>
-                <ChevronDown className={`h-3 w-3 text-[#78716c] transition-transform ${showAccountMenu ? 'rotate-180' : ''}`} />
-              </button>
-
-              {/* Dropdown Menu */}
-              {showAccountMenu && (
-                <div className="sg-dropdown">
-                  <div className="sg-dropdown-header">
-                    <p className="text-xs font-medium text-white">{fullName}</p>
-                    <p className="text-[10px] text-[#78716c]">Manager • Pro</p>
-                  </div>
-                  <div className="sg-dropdown-divider" />
-                  {accountMenuItems.map((item) => {
-                    const Icon = item.icon
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className="sg-dropdown-item"
-                        onClick={() => setShowAccountMenu(false)}
-                      >
-                        <Icon className="h-4 w-4" />
-                        <span>{item.name}</span>
-                      </Link>
-                    )
-                  })}
-                  <div className="sg-dropdown-divider" />
-                  <form action={signOut}>
-                    <button type="submit" className="sg-dropdown-item text-red-400 hover:bg-red-500/10 w-full">
-                      <LogOut className="h-4 w-4" />
-                      <span>Déconnexion</span>
-                    </button>
-                  </form>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-y-auto">
         {children}
       </main>
     </div>
