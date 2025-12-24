@@ -1,6 +1,20 @@
 # ⚡ Configuration rapide Vercel - 2 minutes
 
-## 🎯 Le problème
+## 🎯 Les problèmes courants
+
+### ❌ Erreur 1 : "Environment Variable references Secret"
+```
+"NEXT_PUBLIC_SUPABASE_URL" references Secret "supabase_url", which does not exist.
+```
+
+**Solution** : Voir le fichier `VERCEL_FIX.md` pour la solution détaillée.
+
+**Résumé rapide** :
+1. Supprime la variable qui référence un secret inexistant
+2. Recrée-la avec la vraie valeur (pas un secret)
+3. Redéploie
+
+### ❌ Erreur 2 : Variables manquantes
 Le build échoue car les variables d'environnement Supabase ne sont pas configurées sur Vercel.
 
 ## ✅ Solution en 3 étapes
