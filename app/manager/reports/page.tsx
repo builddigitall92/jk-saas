@@ -1,9 +1,6 @@
 "use client"
 
 import { useState, useRef, useEffect, useMemo } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -24,7 +21,6 @@ import {
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Pie, PieChart, Cell } from "recharts"
 import { createClient } from "@/utils/supabase/client"
 
-// Types pour les transactions financières
 interface FinancialEntry {
   id: string
   date: string
@@ -34,12 +30,11 @@ interface FinancialEntry {
   type: 'income' | 'expense'
 }
 
-// Catégories de transactions
 const categories = [
-  { value: 'revenue', label: 'Recette', color: 'text-accent' },
-  { value: 'cost', label: 'Coût achat', color: 'text-primary' },
-  { value: 'waste', label: 'Perte/Gaspillage', color: 'text-destructive' },
-  { value: 'other', label: 'Autre', color: 'text-muted-foreground' },
+  { value: 'revenue', label: 'Recette', color: 'text-green-400' },
+  { value: 'cost', label: 'Coût achat', color: 'text-blue-400' },
+  { value: 'waste', label: 'Perte/Gaspillage', color: 'text-red-400' },
+  { value: 'other', label: 'Autre', color: 'text-slate-400' },
 ]
 
 export default function ManagerReportsPage() {
@@ -47,6 +42,7 @@ export default function ManagerReportsPage() {
   const [loading, setLoading] = useState(true)
   const [entries, setEntries] = useState<FinancialEntry[]>([])
   const [wasteData, setWasteData] = useState<{name: string, value: number, color: string}[]>([])
+  const [activeTab, setActiveTab] = useState<'overview' | 'entries' | 'waste'>('overview')
   
   const [isAddingEntry, setIsAddingEntry] = useState(false)
   const [newEntry, setNewEntry] = useState<Partial<FinancialEntry>>({
@@ -60,7 +56,6 @@ export default function ManagerReportsPage() {
   const [importMessage, setImportMessage] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Charger les données réelles depuis la base de données
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -76,7 +71,6 @@ export default function ManagerReportsPage() {
 
         if (!profile?.establishment_id) return
 
-        // Charger les transactions existantes (si table existe)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: transactions } = await (supabase as any)
           .from('transactions')
@@ -96,7 +90,6 @@ export default function ManagerReportsPage() {
           setEntries(loadedEntries)
         }
 
-        // Charger les données de gaspillage
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: wasteLogs } = await (supabase as any)
           .from('waste_logs')
@@ -104,14 +97,13 @@ export default function ManagerReportsPage() {
           .eq('establishment_id', profile.establishment_id)
 
         if (wasteLogs && wasteLogs.length > 0) {
-          // Grouper par catégorie de produit
           const wasteByCategory: Record<string, number> = {}
           wasteLogs.forEach((log: { product: { category: string }; estimated_cost: number }) => {
             const category = log.product?.category || 'Autre'
             wasteByCategory[category] = (wasteByCategory[category] || 0) + Number(log.estimated_cost || 0)
           })
 
-          const colors = ['#FF6B00', '#FF8C38', '#EF4444', '#22C55E', '#3B82F6']
+          const colors = ['#3b82f6', '#8b5cf6', '#ef4444', '#22c55e', '#f97316']
           const wasteCategories = Object.entries(wasteByCategory).map(([name, value], idx) => ({
             name: name === 'surgele' ? 'Surgelé' : name === 'frais' ? 'Frais' : name === 'sec' ? 'Sec' : name,
             value,
@@ -130,7 +122,6 @@ export default function ManagerReportsPage() {
     fetchData()
   }, [])
 
-  // Mapper les catégories de la base de données
   const mapCategory = (dbCategory: string): FinancialEntry['category'] => {
     switch (dbCategory) {
       case 'supplier_order':
@@ -144,7 +135,6 @@ export default function ManagerReportsPage() {
     }
   }
 
-  // Calculs financiers basés sur les entrées réelles
   const totalRevenue = entries.filter(e => e.category === 'revenue').reduce((sum, e) => sum + e.amount, 0)
   const totalCosts = entries.filter(e => e.category === 'cost').reduce((sum, e) => sum + e.amount, 0)
   const totalWaste = entries.filter(e => e.category === 'waste').reduce((sum, e) => sum + e.amount, 0)
@@ -152,7 +142,6 @@ export default function ManagerReportsPage() {
   const grossMargin = totalRevenue - totalCosts - totalWaste - totalOther
   const marginPercent = totalRevenue > 0 ? ((grossMargin / totalRevenue) * 100).toFixed(1) : '0'
 
-  // Données du graphique basées sur les entrées réelles (regroupées par mois)
   const chartData = useMemo(() => {
     if (entries.length === 0) return []
 
@@ -177,10 +166,8 @@ export default function ManagerReportsPage() {
     }))
   }, [entries])
 
-  // Total gaspillage réel
   const totalWasteFromLogs = wasteData.reduce((sum, item) => sum + item.value, 0)
 
-  // Ajouter une entrée
   const handleAddEntry = async () => {
     if (newEntry.libelle && newEntry.amount && newEntry.amount > 0) {
       try {
@@ -196,13 +183,11 @@ export default function ManagerReportsPage() {
 
         if (!profile?.establishment_id) return
 
-        // Mapper vers la catégorie de la base de données
         let dbCategory = 'other'
         if (newEntry.category === 'revenue') dbCategory = 'other'
         else if (newEntry.category === 'cost') dbCategory = 'supplier_order'
         else if (newEntry.category === 'waste') dbCategory = 'adjustment'
 
-        // Insérer dans la base de données
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data, error } = await (supabase as any)
           .from('transactions')
@@ -220,7 +205,6 @@ export default function ManagerReportsPage() {
 
         if (error) throw error
 
-        // Ajouter à l'état local
         const entry: FinancialEntry = {
           id: data?.id || Date.now().toString(),
           date: newEntry.date || new Date().toISOString().split('T')[0],
@@ -245,7 +229,6 @@ export default function ManagerReportsPage() {
     }
   }
 
-  // Supprimer une entrée
   const handleDeleteEntry = async (id: string) => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -260,7 +243,6 @@ export default function ManagerReportsPage() {
     }
   }
 
-  // Export CSV
   const exportToCSV = () => {
     const headers = ['Date', 'Libellé', 'Catégorie', 'Type', 'Montant (€)']
     const rows = entries.map(e => [
@@ -291,7 +273,6 @@ export default function ManagerReportsPage() {
     link.click()
   }
 
-  // Export Excel
   const exportToExcel = () => {
     const headers = ['Date', 'Libellé', 'Catégorie', 'Type', 'Montant']
     const rows = entries.map(e => [
@@ -321,7 +302,6 @@ export default function ManagerReportsPage() {
     link.click()
   }
 
-  // Import CSV
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -394,21 +374,23 @@ export default function ManagerReportsPage() {
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-blue-400" />
+          </div>
+          <p className="text-slate-400 text-sm">Chargement des rapports...</p>
+        </div>
       </div>
     )
   }
 
-  // Si aucune donnée
-  const hasData = entries.length > 0 || wasteData.length > 0
-
   return (
-    <div className="p-8">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8 animate-fade-up">
+      <div className="flex items-center justify-between glass-animate-fade-up">
         <div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">Rapports Financiers</h1>
-          <p className="text-muted-foreground">Analyse des performances et pertes/bénéfices</p>
+          <h1 className="text-2xl font-semibold text-slate-100 tracking-tight">Rapports Financiers</h1>
+          <p className="text-sm text-slate-400">Analyse des performances et pertes/bénéfices</p>
         </div>
         <div className="flex items-center gap-3">
           <input
@@ -418,37 +400,45 @@ export default function ManagerReportsPage() {
             onChange={handleFileImport}
             className="hidden"
           />
-          <Button 
-            variant="outline" 
-            className="btn-outline"
+          <button 
+            className="glass-btn-secondary"
             onClick={() => fileInputRef.current?.click()}
             disabled={importStatus === 'loading'}
           >
             {importStatus === 'loading' ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4" />
             )}
             Importer
-          </Button>
-          <Button variant="outline" className="btn-outline" onClick={exportToCSV} disabled={entries.length === 0}>
-            <Download className="h-4 w-4 mr-2" />
+          </button>
+          <button className="glass-btn-secondary" onClick={exportToCSV} disabled={entries.length === 0}>
+            <Download className="h-4 w-4" />
             CSV
-          </Button>
-          <Button className="btn-primary" onClick={exportToExcel} disabled={entries.length === 0}>
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
+          </button>
+          <button className="glass-btn-primary" onClick={exportToExcel} disabled={entries.length === 0}>
+            <FileSpreadsheet className="h-4 w-4" />
             Excel
-          </Button>
+          </button>
         </div>
       </div>
 
       {/* Import Status Message */}
       {importStatus !== 'idle' && (
-        <div className={`mb-6 p-4 rounded-xl flex items-center gap-3 animate-fade-up ${
-          importStatus === 'success' ? 'bg-accent/10 text-accent' :
-          importStatus === 'error' ? 'bg-destructive/10 text-destructive' :
-          'bg-primary/10 text-primary'
-        }`}>
+        <div 
+          className="p-4 rounded-xl flex items-center gap-3 glass-animate-fade-up"
+          style={{
+            background: importStatus === 'success' ? 'rgba(34, 197, 94, 0.1)' :
+                        importStatus === 'error' ? 'rgba(239, 68, 68, 0.1)' :
+                        'rgba(59, 130, 246, 0.1)',
+            border: `1px solid ${importStatus === 'success' ? 'rgba(34, 197, 94, 0.3)' :
+                                 importStatus === 'error' ? 'rgba(239, 68, 68, 0.3)' :
+                                 'rgba(59, 130, 246, 0.3)'}`,
+            color: importStatus === 'success' ? '#4ade80' :
+                   importStatus === 'error' ? '#f87171' :
+                   '#60a5fa'
+          }}
+        >
           {importStatus === 'success' && <Check className="h-5 w-5" />}
           {importStatus === 'error' && <AlertCircle className="h-5 w-5" />}
           {importStatus === 'loading' && <Loader2 className="h-5 w-5 animate-spin" />}
@@ -456,152 +446,166 @@ export default function ManagerReportsPage() {
         </div>
       )}
 
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="bg-card border border-border p-1 rounded-xl">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg px-5">
-            Vue d'ensemble
-          </TabsTrigger>
-          <TabsTrigger value="entries" className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg px-5">
-            Pertes & Bénéfices
-          </TabsTrigger>
-          <TabsTrigger value="waste" className="data-[state=active]:bg-primary data-[state=active]:text-white rounded-lg px-5">
-            Gaspillage
-          </TabsTrigger>
-        </TabsList>
+      {/* Tabs */}
+      <div className="glass-tabs glass-animate-fade-up glass-stagger-1">
+        <button 
+          className={`glass-tab ${activeTab === 'overview' ? 'glass-tab-active' : ''}`}
+          onClick={() => setActiveTab('overview')}
+        >
+          Vue d'ensemble
+        </button>
+        <button 
+          className={`glass-tab ${activeTab === 'entries' ? 'glass-tab-active' : ''}`}
+          onClick={() => setActiveTab('entries')}
+        >
+          Pertes & Bénéfices
+        </button>
+        <button 
+          className={`glass-tab ${activeTab === 'waste' ? 'glass-tab-active' : ''}`}
+          onClick={() => setActiveTab('waste')}
+        >
+          Gaspillage
+        </button>
+      </div>
 
-        {/* Tab: Vue d'ensemble */}
-        <TabsContent value="overview" className="space-y-5 mt-5">
+      {/* Tab: Vue d'ensemble */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
           {/* KPIs */}
-          <div className="grid grid-cols-4 gap-4 animate-fade-up delay-1">
-            <div className="banking-card p-5">
-              <div className="flex items-center justify-between mb-3">
-                <DollarSign className="h-5 w-5 text-primary" />
+          <div className="grid grid-cols-4 gap-4">
+            <div className="glass-stat-card glass-animate-fade-up glass-stagger-1">
+              <div className="glass-stat-icon glass-stat-icon-blue">
+                <DollarSign className="h-5 w-5" />
               </div>
-              <p className="text-2xl font-bold text-foreground">{totalRevenue.toLocaleString('fr-FR')}€</p>
-              <p className="text-sm text-muted-foreground">Recettes totales</p>
+              <p className="glass-stat-value glass-stat-value-blue">{totalRevenue.toLocaleString('fr-FR')}€</p>
+              <p className="glass-stat-label">Recettes totales</p>
             </div>
-            <div className="banking-card p-5">
-              <div className="flex items-center justify-between mb-3">
-                <Package className="h-5 w-5 text-accent" />
+            <div className="glass-stat-card glass-animate-fade-up glass-stagger-2">
+              <div className="glass-stat-icon glass-stat-icon-purple">
+                <Package className="h-5 w-5" />
               </div>
-              <p className="text-2xl font-bold text-foreground">{totalCosts.toLocaleString('fr-FR')}€</p>
-              <p className="text-sm text-muted-foreground">Coûts achats</p>
+              <p className="glass-stat-value glass-stat-value-purple">{totalCosts.toLocaleString('fr-FR')}€</p>
+              <p className="glass-stat-label">Coûts achats</p>
             </div>
-            <div className="banking-card p-5">
-              <div className="flex items-center justify-between mb-3">
-                <Trash2 className="h-5 w-5 text-destructive" />
+            <div className="glass-stat-card glass-animate-fade-up glass-stagger-3">
+              <div className="glass-stat-icon glass-stat-icon-orange">
+                <Trash2 className="h-5 w-5" />
               </div>
-              <p className="text-2xl font-bold text-destructive">{(totalWaste + totalWasteFromLogs).toLocaleString('fr-FR')}€</p>
-              <p className="text-sm text-muted-foreground">Pertes/Gaspillage</p>
+              <p className="text-2xl font-bold text-red-400">{(totalWaste + totalWasteFromLogs).toLocaleString('fr-FR')}€</p>
+              <p className="glass-stat-label">Pertes/Gaspillage</p>
             </div>
-            <div className="banking-card-featured p-5">
-              <div className="flex items-center justify-between mb-3">
-                <TrendingUp className="h-5 w-5 text-accent" />
+            <div className="glass-stat-card glass-animate-fade-up glass-stagger-4" style={{ borderColor: grossMargin >= 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)' }}>
+              <div className="glass-stat-icon glass-stat-icon-green">
+                <TrendingUp className="h-5 w-5" />
               </div>
-              <p className={`text-2xl font-bold ${grossMargin >= 0 ? 'text-accent' : 'text-destructive'}`}>
+              <p className={`glass-stat-value ${grossMargin >= 0 ? 'glass-stat-value-green' : 'text-red-400'}`}>
                 {grossMargin.toLocaleString('fr-FR')}€
               </p>
-              <p className="text-sm text-muted-foreground">Marge brute</p>
+              <p className="glass-stat-label">Marge brute</p>
             </div>
           </div>
 
-          {/* Chart ou Message vide */}
-          <div className="banking-card p-5 animate-fade-up delay-2">
+          {/* Chart */}
+          <div className="glass-stat-card glass-animate-fade-up glass-stagger-5">
             <div className="mb-5">
-              <h3 className="font-semibold text-foreground">Évolution</h3>
-              <p className="text-sm text-muted-foreground">Revenus vs Coûts</p>
+              <h3 className="font-semibold text-white">Évolution</h3>
+              <p className="text-sm text-slate-400">Revenus vs Coûts</p>
             </div>
             {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={chartData}>
-                  <XAxis dataKey="month" stroke="#8A8A8A" style={{ fontSize: "12px" }} />
-                  <YAxis stroke="#8A8A8A" style={{ fontSize: "12px" }} />
+                  <XAxis dataKey="month" stroke="#64748b" style={{ fontSize: "12px" }} />
+                  <YAxis stroke="#64748b" style={{ fontSize: "12px" }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#1A1614",
-                      border: "1px solid #2A2420",
-                      borderRadius: "10px",
+                      backgroundColor: "rgba(20, 27, 45, 0.95)",
+                      border: "1px solid rgba(100, 130, 180, 0.2)",
+                      borderRadius: "12px",
                     }}
                   />
-                  <Line type="monotone" dataKey="revenue" stroke="#FF6B00" strokeWidth={3} dot={{ fill: "#FF6B00", r: 4 }} name="Revenus" />
-                  <Line type="monotone" dataKey="costs" stroke="#22C55E" strokeWidth={3} dot={{ fill: "#22C55E", r: 4 }} name="Coûts" />
+                  <Line type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={3} dot={{ fill: "#3b82f6", r: 4 }} name="Revenus" />
+                  <Line type="monotone" dataKey="costs" stroke="#22c55e" strokeWidth={3} dot={{ fill: "#22c55e", r: 4 }} name="Coûts" />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground">
-                <Euro className="h-16 w-16 mb-4 opacity-30" />
-                <p className="text-lg font-medium">Aucune donnée</p>
-                <p className="text-sm">Ajoutez des entrées pour voir l'évolution</p>
+              <div className="glass-empty-state">
+                <div className="glass-empty-icon">
+                  <Euro className="h-10 w-10" />
+                </div>
+                <p className="glass-empty-title">Aucune donnée</p>
+                <p className="glass-empty-desc">Ajoutez des entrées pour voir l'évolution</p>
               </div>
             )}
           </div>
-        </TabsContent>
+        </div>
+      )}
 
-        {/* Tab: Pertes & Bénéfices */}
-        <TabsContent value="entries" className="space-y-5 mt-5">
+      {/* Tab: Pertes & Bénéfices */}
+      {activeTab === 'entries' && (
+        <div className="space-y-6">
           {/* Summary Cards */}
-          <div className="grid grid-cols-3 gap-4 animate-fade-up delay-1">
-            <div className="banking-card p-5 border-l-4 border-l-accent">
-              <p className="text-sm text-muted-foreground mb-1">Total Recettes</p>
-              <p className="text-2xl font-bold text-accent">+{totalRevenue.toLocaleString('fr-FR')}€</p>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="glass-stat-card glass-animate-fade-up glass-stagger-1" style={{ borderLeft: '3px solid #22c55e' }}>
+              <p className="glass-stat-label mb-1">Total Recettes</p>
+              <p className="glass-stat-value glass-stat-value-green">+{totalRevenue.toLocaleString('fr-FR')}€</p>
             </div>
-            <div className="banking-card p-5 border-l-4 border-l-destructive">
-              <p className="text-sm text-muted-foreground mb-1">Total Dépenses</p>
-              <p className="text-2xl font-bold text-destructive">-{(totalCosts + totalWaste + totalOther).toLocaleString('fr-FR')}€</p>
+            <div className="glass-stat-card glass-animate-fade-up glass-stagger-2" style={{ borderLeft: '3px solid #ef4444' }}>
+              <p className="glass-stat-label mb-1">Total Dépenses</p>
+              <p className="text-2xl font-bold text-red-400">-{(totalCosts + totalWaste + totalOther).toLocaleString('fr-FR')}€</p>
             </div>
-            <div className={`banking-card-featured p-5 border-l-4 ${grossMargin >= 0 ? 'border-l-accent' : 'border-l-destructive'}`}>
-              <p className="text-sm text-muted-foreground mb-1">Bénéfice Net</p>
-              <p className={`text-2xl font-bold ${grossMargin >= 0 ? 'text-accent' : 'text-destructive'}`}>
+            <div className="glass-stat-card glass-animate-fade-up glass-stagger-3" style={{ borderLeft: `3px solid ${grossMargin >= 0 ? '#22c55e' : '#ef4444'}` }}>
+              <p className="glass-stat-label mb-1">Bénéfice Net</p>
+              <p className={`glass-stat-value ${grossMargin >= 0 ? 'glass-stat-value-green' : 'text-red-400'}`}>
                 {grossMargin >= 0 ? '+' : ''}{grossMargin.toLocaleString('fr-FR')}€
               </p>
             </div>
           </div>
 
           {/* Add Entry Button */}
-          <div className="flex justify-between items-center animate-fade-up delay-2">
-            <h3 className="font-semibold text-foreground">Journal des opérations</h3>
-            <Button 
+          <div className="flex justify-between items-center glass-animate-fade-up glass-stagger-4">
+            <h3 className="font-semibold text-white">Journal des opérations</h3>
+            <button 
               onClick={() => setIsAddingEntry(!isAddingEntry)}
-              className={isAddingEntry ? "btn-outline" : "btn-primary"}
+              className={isAddingEntry ? "glass-btn-secondary" : "glass-btn-primary"}
             >
               {isAddingEntry ? (
                 <>
-                  <X className="h-4 w-4 mr-2" />
+                  <X className="h-4 w-4" />
                   Annuler
                 </>
               ) : (
                 <>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4" />
                   Nouvelle entrée
                 </>
               )}
-            </Button>
+            </button>
           </div>
 
           {/* Add Entry Form */}
           {isAddingEntry && (
-            <div className="banking-card p-5 animate-fade-up">
+            <div className="glass-stat-card glass-animate-fade-up">
               <div className="grid grid-cols-5 gap-4">
                 <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Date</label>
-                  <Input
+                  <label className="text-sm text-slate-400 mb-2 block">Date</label>
+                  <input
                     type="date"
                     value={newEntry.date}
                     onChange={(e) => setNewEntry({ ...newEntry, date: e.target.value })}
-                    className="h-11"
+                    className="glass-search-input"
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="text-sm text-muted-foreground mb-2 block">Libellé</label>
-                  <Input
+                  <label className="text-sm text-slate-400 mb-2 block">Libellé</label>
+                  <input
                     placeholder="Description de l'opération"
                     value={newEntry.libelle}
                     onChange={(e) => setNewEntry({ ...newEntry, libelle: e.target.value })}
-                    className="h-11"
+                    className="glass-search-input"
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Catégorie</label>
+                  <label className="text-sm text-slate-400 mb-2 block">Catégorie</label>
                   <select
                     value={newEntry.category}
                     onChange={(e) => setNewEntry({ 
@@ -609,7 +613,7 @@ export default function ManagerReportsPage() {
                       category: e.target.value as FinancialEntry['category'],
                       type: e.target.value === 'revenue' ? 'income' : 'expense'
                     })}
-                    className="h-11 w-full rounded-xl border border-border bg-input px-3"
+                    className="glass-search-input"
                   >
                     {categories.map(cat => (
                       <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -617,19 +621,19 @@ export default function ManagerReportsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Montant (€)</label>
+                  <label className="text-sm text-slate-400 mb-2 block">Montant (€)</label>
                   <div className="flex gap-2">
-                    <Input
+                    <input
                       type="number"
                       step="0.01"
                       placeholder="0.00"
                       value={newEntry.amount || ''}
                       onChange={(e) => setNewEntry({ ...newEntry, amount: parseFloat(e.target.value) || 0 })}
-                      className="h-11"
+                      className="glass-search-input flex-1"
                     />
-                    <Button onClick={handleAddEntry} className="h-11 bg-accent hover:bg-green-500">
+                    <button onClick={handleAddEntry} className="glass-btn-success px-4">
                       <Check className="h-4 w-4" />
-                    </Button>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -637,93 +641,81 @@ export default function ManagerReportsPage() {
           )}
 
           {/* Entries Table */}
-          <div className="banking-card overflow-hidden animate-fade-up delay-3">
-            <table className="w-full">
-              <thead className="bg-secondary/30">
-                <tr>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Date</th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Libellé</th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Catégorie</th>
-                  <th className="text-right p-4 text-sm font-medium text-muted-foreground">Montant</th>
-                  <th className="p-4 w-12"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry, idx) => (
-                  <tr 
-                    key={entry.id} 
-                    className={`border-t border-border hover:bg-secondary/20 transition-colors ${
-                      idx % 2 === 0 ? '' : 'bg-secondary/10'
-                    }`}
-                  >
-                    <td className="p-4">
-                      <div className="flex items-center gap-2 text-sm text-foreground">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        {new Date(entry.date).toLocaleDateString('fr-FR')}
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <span className="text-sm font-medium text-foreground">{entry.libelle}</span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`text-sm ${categories.find(c => c.value === entry.category)?.color}`}>
-                        {categories.find(c => c.value === entry.category)?.label}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right">
-                      <span className={`text-sm font-semibold ${
-                        entry.type === 'income' ? 'text-accent' : 'text-destructive'
-                      }`}>
-                        {entry.type === 'income' ? '+' : '-'}{entry.amount.toLocaleString('fr-FR')}€
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDeleteEntry(entry.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </td>
+          <div className="glass-table-container glass-animate-fade-up glass-stagger-5">
+            <div className="overflow-hidden">
+              <table className="w-full">
+                <thead style={{ background: 'rgba(30, 41, 59, 0.5)' }}>
+                  <tr>
+                    <th className="text-left p-4 text-sm font-medium text-slate-400">Date</th>
+                    <th className="text-left p-4 text-sm font-medium text-slate-400">Libellé</th>
+                    <th className="text-left p-4 text-sm font-medium text-slate-400">Catégorie</th>
+                    <th className="text-right p-4 text-sm font-medium text-slate-400">Montant</th>
+                    <th className="p-4 w-12"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            
-            {entries.length === 0 && (
-              <div className="p-12 text-center">
-                <FileSpreadsheet className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium text-foreground mb-1">Aucune entrée</p>
-                <p className="text-sm text-muted-foreground">Importez un fichier ou ajoutez une entrée manuellement</p>
-              </div>
-            )}
+                </thead>
+                <tbody>
+                  {entries.map((entry, idx) => (
+                    <tr 
+                      key={entry.id} 
+                      className="border-t border-white/5 hover:bg-white/5 transition-colors"
+                    >
+                      <td className="p-4">
+                        <div className="flex items-center gap-2 text-sm text-slate-300">
+                          <Calendar className="h-4 w-4 text-slate-500" />
+                          {new Date(entry.date).toLocaleDateString('fr-FR')}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <span className="text-sm font-medium text-white">{entry.libelle}</span>
+                      </td>
+                      <td className="p-4">
+                        <span className={`text-sm ${categories.find(c => c.value === entry.category)?.color}`}>
+                          {categories.find(c => c.value === entry.category)?.label}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <span className={`text-sm font-semibold ${
+                          entry.type === 'income' ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                          {entry.type === 'income' ? '+' : '-'}{entry.amount.toLocaleString('fr-FR')}€
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <button
+                          className="glass-btn-icon w-8 h-8 hover:!bg-red-500/20 hover:!border-red-500/40 hover:text-red-400"
+                          onClick={() => handleDeleteEntry(entry.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              {entries.length === 0 && (
+                <div className="glass-empty-state">
+                  <div className="glass-empty-icon">
+                    <FileSpreadsheet className="h-10 w-10" />
+                  </div>
+                  <p className="glass-empty-title">Aucune entrée</p>
+                  <p className="glass-empty-desc">Importez un fichier ou ajoutez une entrée manuellement</p>
+                </div>
+              )}
+            </div>
           </div>
+        </div>
+      )}
 
-          {/* Format Info */}
-          <div className="banking-card p-5 bg-secondary/20 animate-fade-up delay-4">
-            <h4 className="font-semibold text-foreground mb-2">💡 Format d'import</h4>
-            <p className="text-sm text-muted-foreground mb-3">
-              Pour importer vos données, utilisez un fichier CSV ou Excel avec les colonnes suivantes :
-            </p>
-            <code className="text-xs bg-secondary p-3 rounded-lg block text-foreground">
-              Date ; Libellé ; Catégorie ; Type ; Montant
-            </code>
-            <p className="text-xs text-muted-foreground mt-2">
-              Catégories acceptées : Recette, Coût achat, Perte/Gaspillage, Autre
-            </p>
-          </div>
-        </TabsContent>
-
-        {/* Tab: Gaspillage */}
-        <TabsContent value="waste" className="space-y-5 mt-5">
+      {/* Tab: Gaspillage */}
+      {activeTab === 'waste' && (
+        <div className="space-y-6">
           {wasteData.length > 0 ? (
-            <div className="grid grid-cols-2 gap-5">
-              <div className="banking-card p-5 animate-fade-up delay-1">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="glass-stat-card glass-animate-fade-up glass-stagger-1">
                 <div className="mb-5">
-                  <h3 className="font-semibold text-foreground">Répartition</h3>
-                  <p className="text-sm text-muted-foreground">Par catégorie</p>
+                  <h3 className="font-semibold text-white">Répartition</h3>
+                  <p className="text-sm text-slate-400">Par catégorie</p>
                 </div>
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
@@ -742,35 +734,48 @@ export default function ManagerReportsPage() {
                     </Pie>
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "#1A1614",
-                        border: "1px solid #2A2420",
-                        borderRadius: "10px",
+                        backgroundColor: "rgba(20, 27, 45, 0.95)",
+                        border: "1px solid rgba(100, 130, 180, 0.2)",
+                        borderRadius: "12px",
                       }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
 
-              <div className="banking-card p-5 animate-fade-up delay-2">
+              <div className="glass-stat-card glass-animate-fade-up glass-stagger-2">
                 <div className="mb-5">
-                  <h3 className="font-semibold text-foreground">Détails</h3>
-                  <p className="text-sm text-muted-foreground">Coûts par catégorie</p>
+                  <h3 className="font-semibold text-white">Détails</h3>
+                  <p className="text-sm text-slate-400">Coûts par catégorie</p>
                 </div>
                 <div className="space-y-3">
                   {wasteData.map((item) => (
-                    <div key={item.name} className="flex items-center justify-between p-3 bg-secondary/30 rounded-xl">
+                    <div 
+                      key={item.name} 
+                      className="flex items-center justify-between p-3 rounded-xl"
+                      style={{
+                        background: 'rgba(30, 41, 59, 0.4)',
+                        border: '1px solid rgba(100, 130, 180, 0.1)',
+                      }}
+                    >
                       <div className="flex items-center gap-3">
                         <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
-                        <span className="text-foreground">{item.name}</span>
+                        <span className="text-white">{item.name}</span>
                       </div>
-                      <span className="font-semibold text-foreground">{item.value.toFixed(0)}€</span>
+                      <span className="font-semibold text-white">{item.value.toFixed(0)}€</span>
                     </div>
                   ))}
                 </div>
-                <div className="mt-5 p-4 bg-destructive/10 border border-destructive/20 rounded-xl">
+                <div 
+                  className="mt-5 p-4 rounded-xl"
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                  }}
+                >
                   <div className="flex items-center justify-between">
-                    <span className="text-foreground font-medium">Total gaspillage</span>
-                    <span className="text-xl font-bold text-destructive">
+                    <span className="text-white font-medium">Total gaspillage</span>
+                    <span className="text-xl font-bold text-red-400">
                       {totalWasteFromLogs.toFixed(0)}€
                     </span>
                   </div>
@@ -778,16 +783,20 @@ export default function ManagerReportsPage() {
               </div>
             </div>
           ) : (
-            <div className="banking-card p-12 text-center animate-fade-up">
-              <Trash2 className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-30" />
-              <p className="text-lg font-medium text-foreground mb-1">Aucun gaspillage enregistré</p>
-              <p className="text-sm text-muted-foreground">
-                Les données de gaspillage proviennent de l'onglet Gaspillage de l'employé
-              </p>
+            <div className="glass-stat-card glass-animate-fade-up">
+              <div className="glass-empty-state">
+                <div className="glass-empty-icon">
+                  <Trash2 className="h-10 w-10" />
+                </div>
+                <p className="glass-empty-title">Aucun gaspillage enregistré</p>
+                <p className="glass-empty-desc">
+                  Les données de gaspillage proviennent de l'onglet Gaspillage de l'employé
+                </p>
+              </div>
             </div>
           )}
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
     </div>
   )
 }

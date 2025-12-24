@@ -13,327 +13,301 @@ import {
   Zap,
   Clock,
   PieChart,
-  Smartphone,
-  ChefHat,
   Euro,
-  Leaf,
   Star,
   Building2,
-  ShoppingCart,
   Check,
   X,
   HelpCircle,
   ChevronDown,
   Crown,
   Sparkles,
-  Store
+  Store,
+  MessageCircle,
+  Rocket,
+  Target,
+  Award,
+  HeartHandshake,
+  Play,
+  Fingerprint,
+  Brain,
+  TrendingDown,
+  ShieldCheck,
+  Gauge,
+  LineChart,
+  Bell,
+  Calculator,
+  FileSpreadsheet,
+  RefreshCw
 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import Image from "next/image"
-import { useLandingStats } from "@/lib/hooks/use-landing-stats"
-import { PRICING_PLANS, type BillingPeriod } from "@/lib/pricing-config"
+import { Switch } from "@/components/ui/switch"
 
-// Composant FAQ Item
+// Animated counter
+function AnimatedCounter({ value, suffix = "", prefix = "", duration = 2000 }: { 
+  value: number; suffix?: string; prefix?: string; duration?: number 
+}) {
+  const [count, setCount] = useState(0)
+  const ref = useRef<HTMLSpanElement>(null)
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (ref.current) {
+      observer.observe(ref.current)
+    }
+
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!isVisible) return
+
+    const steps = 60
+    const increment = value / steps
+    let current = 0
+
+    const timer = setInterval(() => {
+      current += increment
+      if (current >= value) {
+        setCount(value)
+        clearInterval(timer)
+      } else {
+        setCount(Math.floor(current))
+      }
+    }, duration / steps)
+
+    return () => clearInterval(timer)
+  }, [value, duration, isVisible])
+
+  return <span ref={ref}>{prefix}{count.toLocaleString('fr-FR')}{suffix}</span>
+}
+
+// FAQ Item
 function FAQItem({ question, answer, isOpen, onClick }: {
-  question: string
-  answer: string
-  isOpen: boolean
-  onClick: () => void
+  question: string; answer: string; isOpen: boolean; onClick: () => void
 }) {
   return (
-    <div className="banking-card overflow-hidden">
+    <div className="border border-white/10 rounded-2xl overflow-hidden bg-white/[0.02] backdrop-blur-sm">
       <button
         onClick={onClick}
-        className="w-full p-6 text-left flex items-center justify-between gap-4 hover:bg-secondary/50 transition-colors"
+        className="w-full p-6 text-left flex items-center justify-between gap-4 hover:bg-white/5 transition-colors"
       >
-        <span className="text-lg font-semibold text-foreground">{question}</span>
-        <ChevronDown className={`h-5 w-5 text-muted-foreground shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <span className="text-lg font-semibold text-white">{question}</span>
+        <ChevronDown className={`h-5 w-5 text-gray-400 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
-      <div className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-96' : 'max-h-0'}`}>
-        <p className="px-6 pb-6 text-muted-foreground leading-relaxed">
-          {answer}
-        </p>
+      <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-96' : 'max-h-0'}`}>
+        <p className="px-6 pb-6 text-gray-400 leading-relaxed">{answer}</p>
       </div>
     </div>
   )
 }
 
-// Composant FAQ Section
-function FAQSection() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null)
-
-  const faqs = [
-    {
-      question: "Comment fonctionne l'essai gratuit de 14 jours ?",
-      answer: "Vous avez accès à toutes les fonctionnalités du plan Pro pendant 14 jours, sans aucun engagement ni carte bancaire requise. À la fin de l'essai, vous pouvez choisir le plan qui vous convient ou continuer gratuitement avec des fonctionnalités limitées."
-    },
-    {
-      question: "Puis-je changer de plan à tout moment ?",
-      answer: "Oui, vous pouvez upgrader ou downgrader votre plan à tout moment. Si vous passez à un plan supérieur, vous ne payez que la différence au prorata. Si vous passez à un plan inférieur, le crédit sera appliqué sur vos prochaines factures."
-    },
-    {
-      question: "Qu'est-ce qui est inclus dans le support prioritaire ?",
-      answer: "Le support prioritaire du plan Premium inclut un accès 24/7 à notre équipe par téléphone et chat, un temps de réponse garanti sous 2 heures, et un account manager dédié pour vous accompagner dans l'optimisation de votre utilisation de StockGuard."
-    },
-    {
-      question: "Comment fonctionne la gestion multi-sites ?",
-      answer: "Avec les plans Pro et Premium, vous pouvez gérer plusieurs établissements depuis un seul compte. Chaque site a son propre inventaire et ses propres fournisseurs, mais vous avez une vue consolidée de tous vos restaurants pour analyser les performances globales."
-    },
-    {
-      question: "StockGuard s'intègre-t-il avec ma caisse enregistreuse ?",
-      answer: "Le plan Premium inclut des intégrations via API avec les principales solutions de caisse du marché. Nous pouvons également développer des connecteurs personnalisés selon vos besoins spécifiques."
-    },
-    {
-      question: "Mes données sont-elles sécurisées ?",
-      answer: "Absolument. Vos données sont hébergées sur des serveurs sécurisés en Europe, avec chiffrement SSL/TLS. Nous effectuons des sauvegardes quotidiennes et nous sommes conformes au RGPD. Vous restez propriétaire de vos données et pouvez les exporter à tout moment."
-    },
-    {
-      question: "Proposez-vous une formation à l'utilisation ?",
-      answer: "Oui ! Tous les plans incluent un accès à notre centre d'aide et nos tutoriels vidéo. Le plan Premium inclut en plus une formation personnalisée pour votre équipe, en présentiel ou en visioconférence."
-    },
-    {
-      question: "Puis-je annuler mon abonnement à tout moment ?",
-      answer: "Oui, vous pouvez annuler votre abonnement à tout moment depuis votre espace client. Il n'y a aucun frais d'annulation et vous conservez l'accès jusqu'à la fin de votre période de facturation en cours."
-    }
-  ]
-
-  return (
-    <section id="faq" className="py-24 px-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary mb-6">
-            <HelpCircle className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-muted-foreground">FAQ</span>
-          </div>
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Questions fréquentes
-          </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Tout ce que vous devez savoir pour démarrer avec StockGuard.
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          {faqs.map((faq, index) => (
-            <FAQItem
-              key={index}
-              question={faq.question}
-              answer={faq.answer}
-              isOpen={openIndex === index}
-              onClick={() => setOpenIndex(openIndex === index ? null : index)}
-            />
-          ))}
-        </div>
-
-        {/* Contact CTA */}
-        <div className="mt-12 text-center">
-          <p className="text-muted-foreground mb-4">
-            Vous avez d'autres questions ?
-          </p>
-          <Link href="/login">
-            <Button variant="outline" className="btn-outline">
-              Contactez notre équipe
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-          </Link>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-// Fonction pour formater les nombres
-function formatNumber(num: number): string {
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + 'M'
-  }
-  if (num >= 1000) {
-    return (num / 1000).toFixed(1) + 'k'
-  }
-  return num.toLocaleString('fr-FR')
-}
-
-// Fonction pour formater les montants en euros
-function formatCurrency(amount: number): string {
-  if (amount >= 1000000) {
-    return (amount / 1000000).toFixed(1) + 'M€'
-  }
-  if (amount >= 1000) {
-    return (amount / 1000).toFixed(1) + 'k€'
-  }
-  return amount.toLocaleString('fr-FR') + '€'
-}
-
 export default function LandingPage() {
-  const { stats, loading } = useLandingStats()
-  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly")
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly")
+  const [openFAQ, setOpenFAQ] = useState<number | null>(null)
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    setIsVisible(true)
+  }, [])
 
   const features = [
     {
-      icon: Package,
-      title: "Gestion des stocks",
-      description: "Suivez vos stocks en temps réel avec des alertes automatiques pour éviter les ruptures."
+      icon: LineChart,
+      title: "Visibilité en temps réel",
+      description: "Fini de deviner. Tu sais exactement ce que tu as, où c'est, et quand ça expire.",
+      color: "emerald"
     },
     {
-      icon: AlertTriangle,
-      title: "Réduction du gaspillage",
-      description: "Identifiez les produits à risque et optimisez vos rotations pour minimiser les pertes."
+      icon: Bell,
+      title: "Alertes avant les problèmes",
+      description: "Rupture imminente ? DLC proche ? Tu es prévenu avant que ça devienne une crise.",
+      color: "amber"
     },
     {
-      icon: TrendingUp,
-      title: "Prévisions intelligentes",
-      description: "Anticipez vos besoins grâce à l'analyse de vos données historiques et tendances."
+      icon: Calculator,
+      title: "Marges protégées",
+      description: "Chaque commande optimisée. Chaque perte évitée. Ton argent reste où il doit être.",
+      color: "emerald"
     },
     {
-      icon: BarChart3,
-      title: "Rapports détaillés",
-      description: "Visualisez vos performances avec des tableaux de bord clairs et exploitables."
-    },
-    {
-      icon: Users,
-      title: "Gestion fournisseurs",
-      description: "Centralisez vos contacts et suivez vos commandes en un seul endroit."
-    },
-    {
-      icon: Smartphone,
-      title: "Interface mobile",
-      description: "Vos employés accèdent aux fonctionnalités essentielles depuis leur smartphone."
+      icon: RefreshCw,
+      title: "Automatisation intelligente",
+      description: "Les tâches répétitives ? Le logiciel s'en charge. Toi, tu gères ce qui compte vraiment.",
+      color: "amber"
     }
   ]
 
-  const benefits = [
-    {
-      icon: Euro,
-      value: `${stats.costReduction}%`,
-      label: "Réduction des coûts",
-      description: "sur les pertes alimentaires"
-    },
-    {
-      icon: Clock,
-      value: `${stats.timeSaved}h`,
-      label: "Temps économisé",
-      description: "par jour en gestion"
-    },
-    {
-      icon: Leaf,
-      value: `${stats.wasteReduction}%`,
-      label: "Moins de gaspillage",
-      description: "en moyenne"
-    },
-    {
-      icon: Zap,
-      value: "24/7",
-      label: "Visibilité totale",
-      description: "sur vos opérations"
-    }
+  const painPoints = [
+    { before: "Excel qui plante en plein service", after: "Dashboard temps réel, toujours à jour" },
+    { before: "Commandes au feeling", after: "Prévisions basées sur tes données" },
+    { before: "Découvrir les ruptures trop tard", after: "Alertes 48h avant le problème" },
+    { before: "Perdre du temps à compter", after: "Inventaire automatisé" }
   ]
 
   const testimonials = [
     {
-      quote: "StockGuard a transformé la façon dont nous gérons notre restaurant. Fini les surprises en fin de mois !",
+      quote: "On est passés de 'on espère que ça passe' à 'on sait exactement ce qu'on a'. Le changement est brutal.",
       author: "Marie L.",
-      role: "Propriétaire, La Belle Époque",
-      rating: 5
+      role: "Propriétaire, Restaurant Le Comptoir",
+      result: "-35% de pertes",
+      avatar: "ML"
     },
     {
-      quote: "L'interface est intuitive et mes employés l'ont adoptée immédiatement. Un vrai gain de temps.",
+      quote: "J'ai récupéré 6h par semaine. 6 heures. À ne plus vérifier des feuilles Excel qui mentent.",
       author: "Thomas D.",
-      role: "Chef cuisinier, Le Bistrot Moderne",
-      rating: 5
+      role: "Chef, Bistrot Moderne",
+      result: "6h/semaine économisées",
+      avatar: "TD"
     },
     {
-      quote: "Les prévisions nous permettent de commander juste ce qu'il faut. Notre marge a augmenté de 18%.",
+      quote: "Le ROI est ridicule. Le coût de l'abonnement, on le rentabilise en évitant UNE rupture.",
       author: "Sophie M.",
-      role: "Gérante, Café Central",
-      rating: 5
+      role: "Directrice, Café Central",
+      result: "ROI en 2 semaines",
+      avatar: "SM"
     }
   ]
 
-  // Stats live pour le dashboard preview
-  const liveStats = [
+  const faqs = [
     {
-      label: "Produits gérés",
-      value: loading ? "..." : formatNumber(stats.products),
-      trend: "+12%",
-      trendColor: "text-accent"
+      question: "Et si je ne suis pas à l'aise avec la tech ?",
+      answer: "C'est justement le point. On a conçu StockGuard pour des gens qui n'ont pas le temps d'apprendre un logiciel compliqué. Interface simple, prise en main en moins d'1 heure, et notre équipe te guide pas à pas si besoin."
     },
     {
-      label: "Valeur stock",
-      value: loading ? "..." : formatCurrency(stats.totalStockValue),
-      trend: "Optimisé",
-      trendColor: "text-accent"
+      question: "Je peux annuler quand je veux ?",
+      answer: "Oui. Sans engagement, sans frais cachés, sans période de préavis. Tu arrêtes quand tu veux, en un clic. Mais honnêtement, personne ne le fait une fois qu'ils ont vu la différence."
     },
     {
-      label: "Fournisseurs",
-      value: loading ? "..." : formatNumber(stats.suppliers),
-      trend: "Actifs",
-      trendColor: "text-muted-foreground"
+      question: "Ça va me prendre combien de temps à mettre en place ?",
+      answer: "La plupart de nos clients sont opérationnels en moins de 2 heures. Import de tes données existantes, configuration de tes alertes, et c'est parti. On n'est pas là pour te faire perdre du temps."
     },
     {
-      label: "Gaspillage",
-      value: `-${stats.wasteReduction}%`,
-      trend: "vs mois dernier",
-      trendColor: "text-accent"
+      question: "Et si ça ne fonctionne pas pour mon établissement ?",
+      answer: "Peu probable, mais on prend le risque : 30 jours satisfait ou remboursé, sans condition. Si tu n'es pas convaincu, tu récupères ton argent. Point."
+    },
+    {
+      question: "C'est vraiment utile si j'ai un petit établissement ?",
+      answer: "Surtout si tu as un petit établissement. Moins de marge d'erreur = plus besoin de contrôle. Un restaurant qui perd 200€/semaine en gaspillage, c'est 10 000€/an dans la poubelle. StockGuard coûte moins que ça."
     }
   ]
 
-  // Stats globales pour la section "confiance"
-  const globalStats = [
-    {
-      icon: Building2,
-      value: stats.establishments,
-      label: "Établissements"
+  const plans = {
+    starter: {
+      name: "Starter",
+      tagline: "Pour démarrer sans risque",
+      monthlyPrice: 20,
+      annualPrice: 200,
+      features: [
+        "1 établissement",
+        "3 utilisateurs max",
+        "Gestion stocks & gaspillage",
+        "Alertes automatiques",
+        "Rapports basiques"
+      ],
+      bullets: [
+        "Arrête les Excel qui cassent en plein service",
+        "Visibilité basique mais déjà 100× mieux que ton cahier",
+        "Tu sais enfin ce que tu as en stock"
+      ],
+      cta: "14 jours d'essai gratuit",
+      highlighted: false
     },
-    {
-      icon: Package,
-      value: stats.products,
-      label: "Produits suivis"
+    pro: {
+      name: "Pro",
+      tagline: "Le choix des équipes sérieuses",
+      monthlyPrice: 80,
+      annualPrice: 800,
+      features: [
+        "Jusqu'à 3 établissements",
+        "Utilisateurs illimités",
+        "Toutes fonctionnalités Starter",
+        "Prévisions intelligentes",
+        "Calculateur de marges",
+        "Gestion fournisseurs",
+        "Rapports détaillés",
+        "Support prioritaire"
+      ],
+      bullets: [
+        "Automatise les commandes avant la rupture",
+        "Réduis les pertes sans embaucher quelqu'un de plus",
+        "Tu passes de pompier à pilote"
+      ],
+      cta: "Passer en Pro",
+      highlighted: true
     },
-    {
-      icon: ShoppingCart,
-      value: stats.deliveredOrders,
-      label: "Commandes livrées"
-    },
-    {
-      icon: CheckCircle2,
-      value: stats.resolvedAlerts,
-      label: "Alertes résolues"
+    premium: {
+      name: "Premium",
+      tagline: "Pour les opérations à grande échelle",
+      monthlyPrice: 110,
+      annualPrice: 1100,
+      features: [
+        "Établissements illimités",
+        "Utilisateurs illimités",
+        "Toutes les fonctionnalités Pro",
+        "Vue consolidée multi-sites",
+        "Intégrations API avancées",
+        "Support 24/7",
+        "Account manager dédié",
+        "Formation sur-mesure"
+      ],
+      bullets: [
+        "Standards d'enseigne, pas de restaurant isolé",
+        "Pilotage multi-sites en temps réel",
+        "Un interlocuteur dédié qui connaît ton business"
+      ],
+      cta: "Parler à un expert",
+      highlighted: false
     }
-  ]
+  }
 
   return (
-    <div className="min-h-screen banking-bg">
+    <div className="min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
+      {/* Background Effects */}
+      <div className="fixed inset-0 pointer-events-none">
+        {/* Grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
+        {/* Gradient orbs */}
+        <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-emerald-600/10 rounded-full blur-[150px]" />
+        <div className="absolute top-1/2 right-0 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[100px]" />
+      </div>
+
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/80 border-b border-border">
+      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-[#0a0a0a]/80 border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Image
-                src="/logo.png"
-                alt="StockGuard Logo"
-                width={40}
-                height={40}
-                className="rounded-xl"
-              />
-              <span className="text-xl font-bold text-foreground">StockGuard</span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-black tracking-tight">STOCKGUARD</span>
             </div>
             <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Fonctionnalités</a>
-              <a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Tarifs</a>
-              <a href="#testimonials" className="text-muted-foreground hover:text-foreground transition-colors">Témoignages</a>
-              <a href="#faq" className="text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
+              <a href="#features" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Fonctionnalités</a>
+              <a href="#pricing" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Tarifs</a>
+              <a href="#testimonials" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Témoignages</a>
+              <a href="#faq" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">FAQ</a>
             </div>
             <div className="flex items-center gap-3">
               <Link href="/login">
-                <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
+                <Button variant="ghost" className="text-gray-400 hover:text-white hover:bg-white/5">
                   Connexion
                 </Button>
               </Link>
               <Link href="/login">
-                <Button className="btn-primary">
-                  Commencer
-                  <ArrowRight className="h-4 w-4 ml-2" />
+                <Button className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 shadow-lg shadow-emerald-500/20">
+                  Essai gratuit
                 </Button>
               </Link>
             </div>
@@ -341,131 +315,139 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-6 overflow-hidden">
-        {/* Background gradient orbs */}
-        <div className="absolute top-20 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
+      {/* Hero Section - HackerRank Style */}
+      <section className="relative pt-32 pb-24 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Left Column - Content */}
+            <div className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 mb-6">
+                <Fingerprint className="h-4 w-4 text-emerald-400" />
+                <span className="text-sm font-medium text-emerald-400">La tour de contrôle de ton stock</span>
+              </div>
 
-        <div className="max-w-7xl mx-auto relative">
-          <div className="text-center max-w-4xl mx-auto">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8 animate-fade-up">
-              <Zap className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Solution #1 pour la restauration</span>
+              {/* Headline */}
+              <h1 className="text-5xl lg:text-6xl font-black leading-[1.1] mb-6">
+                <span className="text-gray-300">Ton stock mérite</span>
+                <br />
+                <span className="text-gray-300">mieux qu'un</span>
+                <br />
+                <span className="relative">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-300">Excel fatigué</span>
+                  <div className="absolute -inset-1 bg-emerald-500/20 blur-xl -z-10" />
+                </span>
+              </h1>
+
+              {/* Sub-headline */}
+              <p className="text-xl text-gray-400 mb-8 leading-relaxed max-w-xl">
+                StockGuard surveille tes niveaux, anticipe tes ruptures et protège tes marges 
+                <span className="text-white font-medium"> pendant que tu t'occupes du service</span>.
+              </p>
+
+              {/* CTAs */}
+              <div className="flex flex-wrap gap-4 mb-8">
+                <Link href="/login">
+                  <Button className="h-14 px-8 text-lg font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl shadow-2xl shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all duration-300 hover:-translate-y-1">
+                    Commencer maintenant
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </Link>
+                <Link href="#contact">
+                  <Button variant="outline" className="h-14 px-8 text-lg font-semibold border-white/20 hover:bg-white/5 text-white rounded-xl">
+                    <MessageCircle className="w-5 h-5 mr-2" />
+                    Nous contacter
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Trust bullets */}
+              <div className="space-y-3">
+                {[
+                  "Moins de ruptures, plus de sérénité",
+                  "Mise en place en quelques heures, pas en semaines",
+                  "Sans engagement, annulable à tout moment"
+                ].map((text, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="h-5 w-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                      <Check className="h-3 w-3 text-emerald-400" />
+                    </div>
+                    <span className="text-gray-400 text-sm">{text}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Main Title */}
-            <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-6 animate-fade-up delay-1">
-              Maîtrisez vos stocks,
-              <span className="block mt-2 bg-gradient-to-r from-primary via-orange-400 to-primary bg-clip-text text-transparent relative">
-                <span className="relative z-10">maximisez vos marges</span>
-                {/* Glows animés */}
-                <div className="landing-glow-1" />
-                <div className="landing-glow-2" />
-                <div className="landing-glow-3" />
-              </span>
-            </h1>
-
-            {/* Subtitle */}
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-up delay-2">
-              StockGuard est la solution complète pour les restaurateurs qui veulent
-              réduire le gaspillage, optimiser leurs commandes et gagner en rentabilité.
-            </p>
-
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up delay-3">
-              <Link href="/login">
-                <Button className="btn-primary btn-hover-lift landing-cta-glow h-14 px-8 text-lg">
-                  <ChefHat className="h-5 w-5 mr-2" />
-                  Démarrer gratuitement
-                </Button>
-              </Link>
-              <a href="#features">
-                <Button variant="outline" className="btn-outline btn-hover-lift h-14 px-8 text-lg">
-                  Découvrir les fonctionnalités
-                </Button>
-              </a>
-            </div>
-
-            {/* Trust indicators */}
-            <div className="flex flex-wrap items-center justify-center gap-6 md:gap-8 mt-12 text-muted-foreground animate-fade-up delay-4">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                <span className="text-sm">Essai gratuit 14 jours</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                <span className="text-sm">Sans engagement</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                <span className="text-sm">Support inclus</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Hero Image / Dashboard Preview - LIVE DATA */}
-          <div className="mt-20 relative animate-fade-up delay-5">
-            <div className="banking-card-glow p-2 rounded-2xl">
-              <div className="banking-card p-6 rounded-xl">
-                {/* Mock Dashboard Header */}
+            {/* Right Column - Dashboard Mockup with Glow */}
+            <div className={`relative transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}>
+              {/* Glow effect behind */}
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-amber-500/10 blur-[80px] scale-110" />
+              
+              {/* Dashboard card */}
+              <div className="relative bg-gradient-to-br from-gray-900/90 to-gray-950/90 rounded-3xl border border-white/10 p-6 shadow-2xl">
+                {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                      <PieChart className="h-5 w-5 text-primary" />
+                    <div className="h-10 w-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                      <Gauge className="h-5 w-5 text-emerald-400" />
                     </div>
                     <div>
-                      <p className="font-semibold text-foreground">Dashboard StockGuard</p>
-                      <p className="text-xs text-muted-foreground">Données en temps réel</p>
+                      <p className="font-semibold text-white">Dashboard</p>
+                      <p className="text-xs text-gray-500">Temps réel</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="status-dot status-dot-green" />
-                    <span className="badge-green">En ligne</span>
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-xs text-emerald-400 font-medium">Live</span>
                   </div>
                 </div>
 
-                {/* Live Stats Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {liveStats.map((stat, index) => (
-                    <div key={stat.label} className="banking-card p-4 rounded-xl">
-                      <p className="text-muted-foreground text-sm mb-1">{stat.label}</p>
-                      <p className={`text-2xl font-bold text-foreground ${loading ? 'animate-pulse' : ''}`}>
-                        {stat.value}
+                {/* Stats grid */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  {[
+                    { label: "Valeur stock", value: "24,850€", change: "+2.3%", positive: true },
+                    { label: "Alertes", value: "3", change: "à traiter", positive: false },
+                    { label: "Marge moyenne", value: "68%", change: "+5pts", positive: true },
+                    { label: "Ruptures évitées", value: "12", change: "ce mois", positive: true }
+                  ].map((stat, i) => (
+                    <div key={i} className="bg-white/5 rounded-xl p-4 border border-white/5">
+                      <p className="text-gray-500 text-xs mb-1">{stat.label}</p>
+                      <p className="text-2xl font-bold text-white">{stat.value}</p>
+                      <p className={`text-xs ${stat.positive ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {stat.change}
                       </p>
-                      <p className={`text-xs ${stat.trendColor}`}>{stat.trend}</p>
                     </div>
                   ))}
                 </div>
-              </div>
-            </div>
 
-            {/* Floating elements */}
-            <div className="absolute -left-4 top-1/3 banking-card p-4 rounded-xl shadow-2xl animate-float landing-shake hidden lg:block">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-accent/20 flex items-center justify-center">
-                  <CheckCircle2 className="h-5 w-5 text-accent" />
+                {/* Mini chart placeholder */}
+                <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-medium text-white">Évolution du stock</p>
+                    <span className="text-xs text-emerald-400">+12% cette semaine</span>
+                  </div>
+                  <div className="flex items-end gap-1 h-16">
+                    {[40, 55, 45, 70, 60, 80, 75, 90, 85, 95].map((h, i) => (
+                      <div 
+                        key={i} 
+                        className="flex-1 bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t opacity-80"
+                        style={{ height: `${h}%` }}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Commande validée</p>
-                  <p className="text-xs text-muted-foreground">
-                    {loading ? "..." : `${stats.deliveredOrders} livrées`}
-                  </p>
-                </div>
-              </div>
-            </div>
 
-            <div className="absolute -right-4 top-1/2 banking-card p-4 rounded-xl shadow-2xl animate-float-delayed landing-shake hidden lg:block">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
-                  <AlertTriangle className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Alertes résolues</p>
-                  <p className="text-xs text-muted-foreground">
-                    {loading ? "..." : `${stats.resolvedAlerts} traitées`}
-                  </p>
+                {/* Floating notification */}
+                <div className="absolute -right-4 top-1/3 bg-gray-900 border border-amber-500/30 rounded-xl p-3 shadow-xl animate-pulse">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+                      <AlertTriangle className="h-4 w-4 text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-white">Alerte stock</p>
+                      <p className="text-xs text-gray-500">Tomates: 2j restants</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -473,64 +455,163 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Global Stats Banner */}
-      {(stats.establishments > 0 || stats.products > 0) && (
-        <section className="py-12 px-6 border-y border-border bg-secondary/20">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {globalStats.map((stat) => {
-                const Icon = stat.icon
-                return (
-                  <div key={stat.label} className="text-center">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <Icon className="h-5 w-5 text-primary" />
-                      <span className={`text-3xl font-bold text-foreground ${loading ? 'animate-pulse' : ''}`}>
-                        {loading ? "..." : formatNumber(stat.value)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
-                  </div>
-                )
-              })}
-            </div>
+      {/* Social Proof - Trusted Restaurants */}
+      <section className="py-16 px-6 border-y border-white/5 bg-white/[0.01]">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="text-gray-500 text-sm mb-2 uppercase tracking-wider">Ils nous font confiance</p>
+            <p className="text-2xl font-bold text-white">Des établissements reconnus</p>
           </div>
-        </section>
-      )}
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {[
+              {
+                name: "Restaurant Le Comptoir",
+                rating: 4.8,
+                reviews: 234,
+                type: "Restaurant français",
+                city: "Paris"
+              },
+              {
+                name: "Bistrot Moderne",
+                rating: 4.7,
+                reviews: 189,
+                type: "Bistrot",
+                city: "Lyon"
+              },
+              {
+                name: "Café Central",
+                rating: 4.9,
+                reviews: 312,
+                type: "Café-Restaurant",
+                city: "Marseille"
+              },
+              {
+                name: "La Belle Époque",
+                rating: 4.6,
+                reviews: 156,
+                type: "Brasserie",
+                city: "Toulouse"
+              },
+              {
+                name: "Le Gourmet",
+                rating: 4.9,
+                reviews: 278,
+                type: "Restaurant gastronomique",
+                city: "Bordeaux"
+              }
+            ].map((restaurant, i) => (
+              <div 
+                key={i}
+                className="group p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 hover:bg-white/[0.04] transition-all duration-300"
+              >
+                {/* Restaurant name */}
+                <h3 className="font-bold text-white text-lg mb-2 group-hover:text-emerald-400 transition-colors">
+                  {restaurant.name}
+                </h3>
+                
+                {/* Type & City */}
+                <p className="text-xs text-gray-500 mb-3">
+                  {restaurant.type} · {restaurant.city}
+                </p>
+                
+                {/* Google Rating */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-1">
+                    {/* Google logo / icon */}
+                    <div className="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center">
+                      <span className="text-blue-400 text-[8px] font-bold">G</span>
+                    </div>
+                    <span className="text-white font-bold text-sm">{restaurant.rating}</span>
+                  </div>
+                  
+                  {/* Stars */}
+                  <div className="flex gap-0.5">
+                    {[...Array(5)].map((_, j) => (
+                      <Star 
+                        key={j} 
+                        className={`h-3 w-3 ${
+                          j < Math.floor(restaurant.rating) 
+                            ? 'text-amber-400 fill-amber-400' 
+                            : 'text-gray-600'
+                        }`} 
+                      />
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Reviews count */}
+                <p className="text-xs text-gray-500">
+                  {restaurant.reviews} avis Google
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-24 px-6">
+      {/* Before/After - Pain Points */}
+      <section className="py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-black mb-4">
+              <span className="text-gray-400">Du chaos</span>
+              <span className="text-white"> → </span>
+              <span className="text-emerald-400">au contrôle</span>
+            </h2>
+            <p className="text-xl text-gray-400">La différence entre gérer à l'aveugle et piloter en toute sérénité.</p>
+          </div>
+
+          <div className="space-y-4">
+            {painPoints.map((point, i) => (
+              <div key={i} className="grid md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-4 p-5 rounded-xl bg-red-500/5 border border-red-500/20">
+                  <X className="h-5 w-5 text-red-400 shrink-0" />
+                  <span className="text-gray-300">{point.before}</span>
+                </div>
+                <div className="flex items-center gap-4 p-5 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+                  <Check className="h-5 w-5 text-emerald-400 shrink-0" />
+                  <span className="text-white">{point.after}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features - Comment ça t'aide */}
+      <section id="features" className="py-24 px-6 bg-white/[0.01]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary mb-6">
-              <Package className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-muted-foreground">Fonctionnalités</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-6">
+              <Brain className="h-4 w-4 text-emerald-400" />
+              <span className="text-sm font-medium text-emerald-400">Comment ça t'aide</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Tout ce qu'il vous faut
+            <h2 className="text-4xl md:text-5xl font-black mb-4">
+              Tu reprends le <span className="text-emerald-400">contrôle</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Une suite d'outils pensée pour simplifier la gestion quotidienne de votre établissement.
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+              Pas de fonctionnalités gadgets. Que des outils qui te font gagner du temps et de l'argent.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => {
+          <div className="grid md:grid-cols-2 gap-6">
+            {features.map((feature, i) => {
               const Icon = feature.icon
               return (
-                <div
-                  key={feature.title}
-                  className="banking-card landing-card-slide p-6 group cursor-default hover:scale-[1.02] transition-all duration-300"
-                  style={{ animationDelay: `${index * 0.1}s` }}
+                <div 
+                  key={i}
+                  className="group p-8 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 hover:bg-white/[0.04] transition-all duration-300"
                 >
-                  <div className="landing-icon-glow h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-all duration-300 relative">
-                    <Icon className="h-7 w-7 text-primary relative z-10" />
+                  <div className={`h-14 w-14 rounded-2xl flex items-center justify-center mb-5 ${
+                    feature.color === 'emerald' 
+                      ? 'bg-emerald-500/10 group-hover:bg-emerald-500/20' 
+                      : 'bg-amber-500/10 group-hover:bg-amber-500/20'
+                  } transition-colors`}>
+                    <Icon className={`h-7 w-7 ${feature.color === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`} />
                   </div>
-                  <h3 className="text-xl font-semibold text-foreground mb-2">
-                    {feature.title}
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {feature.description}
-                  </p>
+                  <h3 className="text-xl font-bold text-white mb-2">{feature.title}</h3>
+                  <p className="text-gray-400 leading-relaxed">{feature.description}</p>
                 </div>
               )
             })}
@@ -538,92 +619,301 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Benefits Section */}
-      <section id="benefits" className="py-24 px-6 bg-secondary/30">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary mb-6">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-muted-foreground">Résultats</span>
+      {/* Pre-Pricing Band */}
+      <section className="py-16 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-black mb-4">
+            Choisis ton <span className="text-emerald-400">rythme de croissance</span>
+          </h2>
+          <p className="text-xl text-gray-400">
+            Tous les plans sont sans engagement. Upgrade possible à tout moment.
+          </p>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-24 px-6 relative">
+        {/* Background glow for pricing */}
+        <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 via-transparent to-transparent pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto relative">
+          <div className="text-center mb-12">
+            {/* Toggle */}
+            <div className="inline-flex items-center gap-4 p-2 rounded-full bg-white/5 border border-white/10">
+              <button
+                onClick={() => setBillingPeriod("monthly")}
+                className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
+                  billingPeriod === "monthly" 
+                    ? "bg-white text-black" 
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                Mensuel
+              </button>
+              <button
+                onClick={() => setBillingPeriod("annual")}
+                className={`px-6 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${
+                  billingPeriod === "annual" 
+                    ? "bg-white text-black" 
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                Annuel
+                <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                  billingPeriod === "annual"
+                    ? "bg-red-500 text-white"
+                    : "bg-red-500/80 text-white"
+                }`}>
+                  -17%
+                </span>
+              </button>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Des résultats concrets
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Nos utilisateurs constatent des améliorations significatives dès les premières semaines.
-            </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {benefits.map((benefit) => {
-              const Icon = benefit.icon
-              return (
-                <div
-                  key={benefit.label}
-                  className="banking-card-featured landing-card-slide p-8 text-center hover:scale-105 transition-all duration-300"
-                >
-                  <div className="landing-icon-glow h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5 relative">
-                    <Icon className="h-8 w-8 text-primary relative z-10" />
+          {/* Pricing Cards */}
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8 items-start">
+            {/* Starter */}
+            <div className="group relative rounded-3xl bg-white/[0.02] border border-white/10 p-8 hover:border-white/20 transition-all duration-300">
+              {/* Promo badge - annual only */}
+              {billingPeriod === "annual" && (
+                <div className="absolute -top-3 right-4">
+                  <div className="bg-gradient-to-r from-red-600 to-orange-600 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-red-500/30 animate-pulse">
+                    -17%
                   </div>
-                  <p className="text-4xl font-bold text-primary mb-2">
-                    {benefit.value}
-                  </p>
-                  <p className="text-lg font-semibold text-foreground mb-1">
-                    {benefit.label}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {benefit.description}
-                  </p>
                 </div>
-              )
-            })}
+              )}
+              
+              <div className="mb-6">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{plans.starter.tagline}</span>
+                <h3 className="text-2xl font-bold text-white mt-2">{plans.starter.name}</h3>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex items-baseline gap-2">
+                  {billingPeriod === "annual" && (
+                    <span className="text-xl font-medium text-gray-500 line-through">
+                      {(plans.starter.monthlyPrice * 12).toFixed(0)}€
+                    </span>
+                  )}
+                  <span className="text-5xl font-black text-white">
+                    {billingPeriod === "monthly" ? plans.starter.monthlyPrice : plans.starter.annualPrice}€
+                  </span>
+                  <span className="text-gray-500">/{billingPeriod === "monthly" ? "mois" : "an"}</span>
+                </div>
+                {billingPeriod === "annual" && (
+                  <p className="text-sm text-red-400 font-semibold mt-1">
+                    Économise {(plans.starter.monthlyPrice * 12) - plans.starter.annualPrice}€
+                  </p>
+                )}
+              </div>
+
+              {/* Psychological bullets */}
+              <div className="space-y-3 mb-6 pb-6 border-b border-white/10">
+                {plans.starter.bullets.map((bullet, i) => (
+                  <p key={i} className="text-sm text-gray-400 italic">"{bullet}"</p>
+                ))}
+              </div>
+
+              <ul className="space-y-3 mb-8">
+                {plans.starter.features.map((feature, i) => (
+                  <li key={i} className="flex items-center gap-3">
+                    <Check className="h-4 w-4 text-emerald-500 shrink-0" />
+                    <span className="text-gray-300 text-sm">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <Link href="/login" className="block">
+                <Button className="w-full h-12 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold shadow-lg shadow-emerald-500/30 animate-pulse">
+                  {plans.starter.cta}
+                </Button>
+              </Link>
+            </div>
+
+            {/* Pro - Highlighted */}
+            <div className="group relative rounded-3xl p-8 transition-all duration-300 scale-105 z-10">
+              {/* Glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-amber-500/10 blur-xl rounded-3xl" />
+              
+              <div className="relative bg-gradient-to-br from-gray-900 to-gray-950 rounded-3xl border-2 border-emerald-500/50 p-8 shadow-2xl shadow-emerald-500/20">
+                {/* Popular badge */}
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+                  <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-emerald-500/30">
+                    <Sparkles className="h-4 w-4" />
+                    Le plus populaire
+                  </div>
+                </div>
+
+                {/* Promo badge - annual only */}
+                {billingPeriod === "annual" && (
+                  <div className="absolute -top-3 right-4 z-10">
+                    <div className="bg-gradient-to-r from-red-600 to-orange-600 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-red-500/30 animate-pulse">
+                      -17%
+                    </div>
+                  </div>
+                )}
+
+                <div className="mb-6 pt-2">
+                  <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">{plans.pro.tagline}</span>
+                  <h3 className="text-2xl font-bold text-white mt-2">{plans.pro.name}</h3>
+                </div>
+
+                <div className="mb-6">
+                  <div className="flex items-baseline gap-2">
+                    {billingPeriod === "annual" && (
+                      <span className="text-xl font-medium text-gray-500 line-through">
+                        {(plans.pro.monthlyPrice * 12).toFixed(0)}€
+                      </span>
+                    )}
+                    <span className="text-5xl font-black text-emerald-400">
+                      {billingPeriod === "monthly" ? plans.pro.monthlyPrice : plans.pro.annualPrice}€
+                    </span>
+                    <span className="text-gray-500">/{billingPeriod === "monthly" ? "mois" : "an"}</span>
+                  </div>
+                  {billingPeriod === "annual" && (
+                    <p className="text-sm text-red-400 font-semibold mt-1">
+                      Économise {(plans.pro.monthlyPrice * 12) - plans.pro.annualPrice}€
+                    </p>
+                  )}
+                </div>
+
+                {/* Psychological bullets */}
+                <div className="space-y-3 mb-6 pb-6 border-b border-emerald-500/20">
+                  {plans.pro.bullets.map((bullet, i) => (
+                    <p key={i} className="text-sm text-emerald-300/80 italic">"{bullet}"</p>
+                  ))}
+                </div>
+
+                <ul className="space-y-3 mb-8">
+                  {plans.pro.features.map((feature, i) => (
+                    <li key={i} className="flex items-center gap-3">
+                      <Check className="h-4 w-4 text-emerald-400 shrink-0" />
+                      <span className="text-white text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Link href="/login" className="block">
+                  <Button className="w-full h-12 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold shadow-lg shadow-emerald-500/30">
+                    {plans.pro.cta}
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Premium */}
+            <div className="group relative rounded-3xl bg-white/[0.02] border border-white/10 p-8 hover:border-amber-500/30 transition-all duration-300">
+              {/* Promo badge - annual only */}
+              {billingPeriod === "annual" && (
+                <div className="absolute -top-3 right-4">
+                  <div className="bg-gradient-to-r from-red-600 to-orange-600 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-red-500/30 animate-pulse">
+                    -17%
+                  </div>
+                </div>
+              )}
+              
+              <div className="mb-6">
+                <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">{plans.premium.tagline}</span>
+                <h3 className="text-2xl font-bold text-white mt-2">{plans.premium.name}</h3>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex items-baseline gap-2">
+                  {billingPeriod === "annual" && (
+                    <span className="text-xl font-medium text-gray-500 line-through">
+                      {(plans.premium.monthlyPrice * 12).toFixed(0)}€
+                    </span>
+                  )}
+                  <span className="text-5xl font-black text-amber-400">
+                    {billingPeriod === "monthly" ? plans.premium.monthlyPrice : plans.premium.annualPrice}€
+                  </span>
+                  <span className="text-gray-500">/{billingPeriod === "monthly" ? "mois" : "an"}</span>
+                </div>
+                {billingPeriod === "annual" && (
+                  <p className="text-sm text-red-400 font-semibold mt-1">
+                    Économise {(plans.premium.monthlyPrice * 12) - plans.premium.annualPrice}€
+                  </p>
+                )}
+              </div>
+
+              {/* Psychological bullets */}
+              <div className="space-y-3 mb-6 pb-6 border-b border-white/10">
+                {plans.premium.bullets.map((bullet, i) => (
+                  <p key={i} className="text-sm text-amber-300/70 italic">"{bullet}"</p>
+                ))}
+              </div>
+
+              <ul className="space-y-3 mb-8">
+                {plans.premium.features.map((feature, i) => (
+                  <li key={i} className="flex items-center gap-3">
+                    <Check className="h-4 w-4 text-amber-400 shrink-0" />
+                    <span className="text-gray-300 text-sm">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <Link href="#contact" className="block">
+                <Button variant="outline" className="w-full h-12 border-amber-500/30 hover:bg-amber-500/10 text-amber-400 font-semibold">
+                  {plans.premium.cta}
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {/* Guarantee */}
+          <div className="mt-12 text-center">
+            <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+              <ShieldCheck className="h-6 w-6 text-emerald-400" />
+              <span className="text-white font-medium">
+                Garantie 30 jours satisfait ou remboursé
+              </span>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section id="testimonials" className="py-24 px-6">
+      {/* Testimonials */}
+      <section id="testimonials" className="py-24 px-6 bg-white/[0.01]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary mb-6">
-              <Star className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-muted-foreground">Témoignages</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-6">
+              <Star className="h-4 w-4 text-emerald-400" />
+              <span className="text-sm font-medium text-emerald-400">Ce qu'ils en disent</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Ils nous font confiance
+            <h2 className="text-4xl md:text-5xl font-black mb-4">
+              Des restaurateurs <span className="text-emerald-400">comme toi</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Découvrez ce que nos clients disent de StockGuard.
-            </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial, index) => (
-              <div
-                key={testimonial.author}
-                className="landing-testimonial-card landing-card-slide p-8"
-                style={{ animationDelay: `${index * 0.15}s` }}
-              >
+            {testimonials.map((t, i) => (
+              <div key={i} className="p-8 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
+                {/* Result badge */}
+                <div className="mb-4">
+                  <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-semibold">
+                    {t.result}
+                  </span>
+                </div>
+
                 {/* Stars */}
                 <div className="flex gap-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 text-primary fill-primary" />
+                  {[...Array(5)].map((_, j) => (
+                    <Star key={j} className="h-4 w-4 text-emerald-400 fill-emerald-400" />
                   ))}
                 </div>
 
-                <blockquote className="text-foreground text-lg mb-6 leading-relaxed">
-                  &ldquo;{testimonial.quote}&rdquo;
+                <blockquote className="text-gray-300 mb-6 leading-relaxed">
+                  "{t.quote}"
                 </blockquote>
 
                 <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-orange-400 flex items-center justify-center">
-                    <span className="text-white font-bold">
-                      {testimonial.author.split(' ').map(n => n[0]).join('')}
-                    </span>
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">{t.avatar}</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-foreground">{testimonial.author}</p>
-                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                    <p className="font-semibold text-white">{t.author}</p>
+                    <p className="text-sm text-gray-500">{t.role}</p>
                   </div>
                 </div>
               </div>
@@ -632,266 +922,116 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="py-24 px-6 bg-secondary/30">
-        <div className="max-w-7xl mx-auto">
+      {/* FAQ */}
+      <section id="faq" className="py-24 px-6">
+        <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary mb-6">
-              <Euro className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-muted-foreground">Tarifs</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-6">
+              <HelpCircle className="h-4 w-4 text-emerald-400" />
+              <span className="text-sm font-medium text-emerald-400">Questions fréquentes</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Des tarifs adaptés à votre activité
+            <h2 className="text-4xl md:text-5xl font-black mb-4">
+              Et si... <span className="text-gray-400">?</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-              Choisissez le plan qui correspond à vos besoins. Essai gratuit de 14 jours sur tous les plans.
-            </p>
-
-            {/* Billing Period Toggle */}
-            <div className="flex items-center justify-center gap-3">
-              <button
-                onClick={() => setBillingPeriod("monthly")}
-                className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${billingPeriod === "monthly"
-                    ? "bg-primary text-white shadow-lg scale-105"
-                    : "bg-secondary text-muted-foreground hover:bg-secondary/80"
-                  }`}
-              >
-                Mensuel
-              </button>
-              <button
-                onClick={() => setBillingPeriod("annual")}
-                className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 relative ${billingPeriod === "annual"
-                    ? "bg-primary text-white shadow-lg scale-105"
-                    : "bg-secondary text-muted-foreground hover:bg-secondary/80"
-                  }`}
-              >
-                Annuel
-                <span className="absolute -top-2 -right-2 bg-accent text-white text-xs px-2 py-0.5 rounded-full font-semibold">
-                  -17%
-                </span>
-              </button>
-            </div>
           </div>
 
-          {/* Pricing Cards */}
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto items-start">
-            {/* Starter Plan */}
-            <div className="landing-pricing-card landing-card-slide p-8 relative" style={{ animationDelay: '0s' }}>
-              <div className="mb-6">
-                <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center mb-4">
-                  <Store className="h-6 w-6 text-muted-foreground" />
-                </div>
-                <h3 className="text-2xl font-bold text-foreground mb-2">{PRICING_PLANS.starter.name}</h3>
-                <p className="text-muted-foreground text-sm">{PRICING_PLANS.starter.description}</p>
-              </div>
-
-              <div className="mb-6">
-                <div className="relative inline-block">
-                  <span className="text-3xl line-through text-muted-foreground mr-2">
-                    {PRICING_PLANS.starter[billingPeriod].originalPrice}€
-                  </span>
-                  <span className="text-5xl font-bold text-foreground transition-all duration-300">
-                    {PRICING_PLANS.starter[billingPeriod].price}€
-                  </span>
-                  <span className="text-muted-foreground">{PRICING_PLANS.starter[billingPeriod].period}</span>
-                  <div className="absolute -top-3 -right-16">
-                    <span className="landing-promo-badge">{PRICING_PLANS.starter[billingPeriod].discount}</span>
-                  </div>
-                </div>
-                {billingPeriod === "annual" && (
-                  <p className="text-sm text-accent mt-2 font-medium">Soit {PRICING_PLANS.starter.monthly.price}€/mois</p>
-                )}
-              </div>
-
-              <ul className="space-y-4 mb-8">
-                {PRICING_PLANS.starter.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    <span className="text-foreground">{feature}</span>
-                  </li>
-                ))}
-                {PRICING_PLANS.starter.excludedFeatures?.map((feature, i) => (
-                  <li key={`excluded-${i}`} className="flex items-start gap-3 text-muted-foreground">
-                    <X className="h-5 w-5 shrink-0 mt-0.5" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Link href="/login" className="block">
-                <Button variant="outline" className="w-full btn-outline btn-hover-lift h-12">
-                  Commencer l'essai gratuit
-                </Button>
-              </Link>
-            </div>
-
-            {/* Pro Plan - Featured */}
-            <div className="landing-pricing-card-featured landing-card-slide p-8 relative scale-105 z-10" style={{ animationDelay: '0.15s' }}>
-              {/* Popular Badge */}
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                <div className="bg-primary text-white px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-2">
-                  <Sparkles className="h-4 w-4" />
-                  Le plus populaire
-                </div>
-              </div>
-
-              <div className="mb-6 pt-2">
-                <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center mb-4">
-                  <Crown className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="text-2xl font-bold text-foreground mb-2">{PRICING_PLANS.pro.name}</h3>
-                <p className="text-primary text-sm font-medium">{PRICING_PLANS.pro.description}</p>
-              </div>
-
-              <div className="mb-6">
-                <div className="relative inline-block">
-                  <span className="text-3xl line-through text-muted-foreground mr-2">
-                    {PRICING_PLANS.pro[billingPeriod].originalPrice}€
-                  </span>
-                  <span className="text-5xl font-bold text-primary transition-all duration-300">
-                    {PRICING_PLANS.pro[billingPeriod].price}€
-                  </span>
-                  <span className="text-muted-foreground">{PRICING_PLANS.pro[billingPeriod].period}</span>
-                  <div className="absolute -top-3 -right-16">
-                    <span className="landing-promo-badge">{PRICING_PLANS.pro[billingPeriod].discount}</span>
-                  </div>
-                </div>
-                {billingPeriod === "annual" && (
-                  <p className="text-sm text-primary mt-2 font-medium">Soit {PRICING_PLANS.pro.monthly.price}€/mois</p>
-                )}
-              </div>
-
-              <ul className="space-y-4 mb-8">
-                {PRICING_PLANS.pro.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                    <span className="text-foreground">{i < 2 ? <strong>{feature}</strong> : feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Link href="/login" className="block">
-                <Button className="w-full btn-primary btn-hover-lift h-12 text-base">
-                  Commencer l'essai gratuit
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </Button>
-              </Link>
-            </div>
-
-            {/* Premium Plan */}
-            <div className="landing-pricing-card landing-card-slide p-8 relative" style={{ animationDelay: '0.3s' }}>
-              <div className="mb-6">
-                <div className="h-12 w-12 rounded-xl bg-secondary flex items-center justify-center mb-4">
-                  <Building2 className="h-6 w-6 text-foreground" />
-                </div>
-                <h3 className="text-2xl font-bold text-foreground mb-2">{PRICING_PLANS.premium.name}</h3>
-                <p className="text-muted-foreground text-sm">{PRICING_PLANS.premium.description}</p>
-              </div>
-
-              <div className="mb-6">
-                <div className="relative inline-block">
-                  <span className="text-3xl line-through text-muted-foreground mr-2">
-                    {PRICING_PLANS.premium[billingPeriod].originalPrice}€
-                  </span>
-                  <span className="text-5xl font-bold text-foreground transition-all duration-300">
-                    {PRICING_PLANS.premium[billingPeriod].price}€
-                  </span>
-                  <span className="text-muted-foreground">{PRICING_PLANS.premium[billingPeriod].period}</span>
-                  <div className="absolute -top-3 -right-16">
-                    <span className="landing-promo-badge">{PRICING_PLANS.premium[billingPeriod].discount}</span>
-                  </div>
-                </div>
-                {billingPeriod === "annual" && (
-                  <p className="text-sm text-accent mt-2 font-medium">Soit {PRICING_PLANS.premium.monthly.price}€/mois</p>
-                )}
-              </div>
-
-              <ul className="space-y-4 mb-8">
-                {PRICING_PLANS.premium.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    <span className="text-foreground">{i < 2 ? <strong>{feature}</strong> : feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Link href="/login" className="block">
-                <Button variant="outline" className="w-full btn-outline h-12">
-                  Contacter l'équipe commerciale
-                </Button>
-              </Link>
-            </div>
+          <div className="space-y-4">
+            {faqs.map((faq, i) => (
+              <FAQItem
+                key={i}
+                question={faq.question}
+                answer={faq.answer}
+                isOpen={openFAQ === i}
+                onClick={() => setOpenFAQ(openFAQ === i ? null : i)}
+              />
+            ))}
           </div>
-
-          {/* Pricing Note */}
-          <p className="text-center text-muted-foreground mt-12 text-sm">
-            Tous les prix sont HT. Essai gratuit de 14 jours sans engagement ni carte bancaire requise.
-          </p>
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <FAQSection />
-
-      {/* CTA Section */}
-      <section className="py-24 px-6">
+      {/* Contact Section */}
+      <section id="contact" className="py-24 px-6 bg-white/[0.01]">
         <div className="max-w-4xl mx-auto">
-          <div className="banking-card-glow p-12 text-center relative overflow-hidden">
-            {/* Background decoration */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/5 rounded-full blur-3xl" />
-
-            <div className="relative">
-              <div className="h-20 w-20 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-8">
-                <Shield className="h-10 w-10 text-white" strokeWidth={1.5} />
-              </div>
-
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Prêt à transformer votre gestion ?
-              </h2>
-              <p className="text-xl text-muted-foreground mb-8 max-w-xl mx-auto">
-                Rejoignez {stats.establishments > 0 ? `les ${stats.establishments} établissements` : 'les restaurateurs'} qui ont déjà optimisé leur rentabilité avec StockGuard.
-              </p>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link href="/login">
-                  <Button className="btn-primary h-14 px-8 text-lg">
-                    Créer mon compte gratuit
-                    <ArrowRight className="h-5 w-5 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-
-              <p className="text-sm text-muted-foreground mt-6">
-                14 jours d'essai gratuit • Sans carte bancaire • Annulation à tout moment
-              </p>
-            </div>
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-black mb-4">
+              Une question ? <span className="text-emerald-400">Parlons-en.</span>
+            </h2>
+            <p className="text-xl text-gray-400">
+              Notre équipe répond sous 24h.
+            </p>
           </div>
+
+          <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-8 md:p-12">
+            <form className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Prénom</label>
+                  <input 
+                    type="text" 
+                    className="w-full h-12 px-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
+                    placeholder="Jean"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                  <input 
+                    type="email" 
+                    className="w-full h-12 px-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
+                    placeholder="jean@restaurant.fr"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Message</label>
+                <textarea 
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors resize-none"
+                  placeholder="Comment pouvons-nous t'aider ?"
+                />
+              </div>
+              <Button className="w-full h-12 bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
+                Envoyer
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-24 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-black mb-6">
+            Prêt à reprendre le <span className="text-emerald-400">contrôle</span> ?
+          </h2>
+          <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
+            Commence gratuitement pendant 14 jours. Sans carte bancaire. Sans engagement.
+          </p>
+          <Link href="/login">
+            <Button className="h-16 px-12 text-lg font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-2xl shadow-2xl shadow-emerald-500/30">
+              Commencer maintenant
+              <ArrowRight className="h-5 w-5 ml-2" />
+            </Button>
+          </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-6 border-t border-border">
+      <footer className="py-12 px-6 border-t border-white/5">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
-              <Image
-                src="/logo.png"
-                alt="StockGuard Logo"
-                width={40}
-                height={40}
-                className="rounded-xl"
-              />
-              <span className="text-xl font-bold text-foreground">StockGuard</span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-black">STOCKGUARD</span>
             </div>
-
-            <div className="flex items-center gap-8 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-foreground transition-colors">Confidentialité</a>
-              <a href="#" className="hover:text-foreground transition-colors">Conditions d'utilisation</a>
-              <a href="#" className="hover:text-foreground transition-colors">Contact</a>
+            <div className="flex items-center gap-8 text-sm text-gray-500">
+              <a href="#" className="hover:text-white transition-colors">Confidentialité</a>
+              <a href="#" className="hover:text-white transition-colors">CGU</a>
+              <a href="#" className="hover:text-white transition-colors">Contact</a>
             </div>
-
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-gray-500">
               © {new Date().getFullYear()} StockGuard. Tous droits réservés.
             </p>
           </div>

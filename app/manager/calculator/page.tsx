@@ -1,8 +1,6 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Calculator,
   Search,
@@ -23,15 +21,15 @@ import { useSuppliers } from "@/lib/hooks/use-suppliers"
 import { createClient } from "@/utils/supabase/client"
 
 interface StockCalculation {
-  unitPrice: number           // Prix par unité (pièce, kg, L)
-  pricePerGram: number        // Prix au gramme (si applicable)
-  pricePerMl: number          // Prix au ml (si applicable)
-  usedValue: number           // Valeur utilisée en €
-  remainingValue: number      // Valeur restante en €
-  usedQuantity: number        // Quantité utilisée
-  remainingQuantity: number   // Quantité restante
-  marginPercent: number       // Marge si prix de vente défini
-  marginAmount: number        // Marge en €
+  unitPrice: number
+  pricePerGram: number
+  pricePerMl: number
+  usedValue: number
+  remainingValue: number
+  usedQuantity: number
+  remainingQuantity: number
+  marginPercent: number
+  marginAmount: number
 }
 
 export default function CalculatorPage() {
@@ -41,16 +39,13 @@ export default function CalculatorPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedStock, setSelectedStock] = useState<StockWithProduct | null>(null)
   
-  // États d'édition
   const [editingField, setEditingField] = useState<string | null>(null)
   const [tempValue, setTempValue] = useState("")
   
-  // Simulation d'utilisation
   const [simulatedUsage, setSimulatedUsage] = useState<Record<string, number>>({})
 
   const loading = stocksLoading || suppliersLoading
 
-  // Filtrer les stocks
   const filteredStocks = useMemo(() => {
     if (!searchQuery) return stocks
     const search = searchQuery.toLowerCase()
@@ -60,22 +55,16 @@ export default function CalculatorPage() {
     )
   }, [stocks, searchQuery])
 
-  // Vérifier si c'est une unité de type "colis" (pièces/unités) ou "poids/volume" (kg/g/L)
   const isPackageUnit = (unit: string) => {
     return unit === 'pièces' || unit === 'unités'
   }
 
-  // Calculs pour un stock donné
   const calculateStock = (stock: StockWithProduct, usedQty: number = 0): StockCalculation => {
     const currentQty = Number(stock.quantity)
     const unit = stock.product?.unit || 'unités'
     
-    // Le unit_price stocké EST déjà le prix par unité (calculé à l'ajout du stock)
-    // - Pour pièces/unités : c'est le prix par pièce (prix colis / qté colis)
-    // - Pour kg/g/L : c'est le prix par kg/g/L (saisi directement)
     const unitPrice = Number(stock.unit_price) || 0
     
-    // Prix au gramme / ml (pour kg/L uniquement)
     let pricePerGram = 0
     let pricePerMl = 0
     if (unit === 'kg') {
@@ -86,15 +75,12 @@ export default function CalculatorPage() {
       pricePerMl = unitPrice / 1000
     }
     
-    // Quantités
     const usedQuantity = usedQty
     const remainingQuantity = currentQty
     
-    // Valeurs en €
     const usedValue = usedQuantity * unitPrice
     const remainingValue = remainingQuantity * unitPrice
     
-    // Marge si prix de vente défini
     const sellingPrice = Number(stock.selling_price) || 0
     let marginPercent = 0
     let marginAmount = 0
@@ -115,18 +101,14 @@ export default function CalculatorPage() {
       marginAmount
     }
   }
-  
 
-  // Stats globales
   const totalStats = useMemo(() => {
     let totalValue = 0
     let totalSimulatedUsed = 0
     
     stocks.forEach(stock => {
       const calc = calculateStock(stock, simulatedUsage[stock.id] || 0)
-      // Valeur totale = quantité × prix unitaire
       totalValue += calc.remainingValue
-      // Valeur simulée utilisée
       totalSimulatedUsed += calc.usedValue
     })
     
@@ -137,7 +119,6 @@ export default function CalculatorPage() {
     }
   }, [stocks, simulatedUsage])
 
-  // Mise à jour d'un champ du stock
   const updateStockField = async (stockId: string, field: string, value: number | string | null) => {
     const supabase = createClient()
     
@@ -152,7 +133,6 @@ export default function CalculatorPage() {
     setTempValue("")
   }
 
-  // Formater le prix
   const formatPrice = (price: number) => {
     if (price < 0.01 && price > 0) {
       return price.toFixed(4)
@@ -160,14 +140,12 @@ export default function CalculatorPage() {
     return price.toFixed(2)
   }
 
-  // Obtenir le nom du fournisseur
   const getSupplierName = (supplierId: string | null) => {
     if (!supplierId) return "Non défini"
     const supplier = suppliers.find(s => s.id === supplierId)
     return supplier?.name || "Non défini"
   }
 
-  // Obtenir l'unité de base pour affichage
   const getBaseUnit = (unit: string) => {
     switch (unit) {
       case 'kg': return 'g'
@@ -179,59 +157,64 @@ export default function CalculatorPage() {
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-blue-400" />
+          </div>
+          <p className="text-slate-400 text-sm">Chargement du calculateur...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="p-8">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8 animate-fade-up">
+      <div className="flex items-center justify-between glass-animate-fade-up">
         <div>
-          <h1 className="text-2xl font-bold text-foreground mb-1 flex items-center gap-3">
-            <Calculator className="h-7 w-7 text-primary" />
+          <h1 className="text-2xl font-semibold text-slate-100 tracking-tight flex items-center gap-3">
+            <Calculator className="h-7 w-7 text-blue-400" />
             Calculateur de Stock
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-slate-400">
             Calculez automatiquement les prix unitaires et la valeur de votre stock
           </p>
         </div>
       </div>
 
       {/* Stats globales */}
-      <div className="grid grid-cols-3 gap-4 mb-6 animate-fade-up delay-1">
-        <div className="banking-card p-4">
+      <div className="grid grid-cols-3 gap-4">
+        <div className="glass-stat-card glass-animate-fade-up glass-stagger-1">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Package className="h-5 w-5 text-primary" />
+            <div className="glass-stat-icon glass-stat-icon-blue">
+              <Package className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Articles en stock</p>
-              <p className="text-xl font-bold text-foreground">{totalStats.stockCount}</p>
+              <p className="glass-stat-label">Articles en stock</p>
+              <p className="text-xl font-bold text-white">{totalStats.stockCount}</p>
             </div>
           </div>
         </div>
-        <div className="banking-card p-4">
+        <div className="glass-stat-card glass-animate-fade-up glass-stagger-2">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
-              <Euro className="h-5 w-5 text-accent" />
+            <div className="glass-stat-icon glass-stat-icon-green">
+              <Euro className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Valeur totale en stock</p>
-              <p className="text-xl font-bold text-accent">{totalStats.totalValue.toFixed(2)}€</p>
+              <p className="glass-stat-label">Valeur totale en stock</p>
+              <p className="glass-stat-value glass-stat-value-green">{totalStats.totalValue.toFixed(2)}€</p>
             </div>
           </div>
         </div>
         {totalStats.totalSimulatedUsed > 0 && (
-          <div className="banking-card p-4">
+          <div className="glass-stat-card glass-animate-fade-up glass-stagger-3">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                <Minus className="h-5 w-5 text-orange-500" />
+              <div className="glass-stat-icon glass-stat-icon-orange">
+                <Minus className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Simulation utilisée</p>
-                <p className="text-xl font-bold text-orange-500">{totalStats.totalSimulatedUsed.toFixed(2)}€</p>
+                <p className="glass-stat-label">Simulation utilisée</p>
+                <p className="glass-stat-value glass-stat-value-orange">{totalStats.totalSimulatedUsed.toFixed(2)}€</p>
               </div>
             </div>
           </div>
@@ -239,21 +222,21 @@ export default function CalculatorPage() {
       </div>
 
       {/* Barre de recherche */}
-      <div className="relative mb-6 animate-fade-up delay-2">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="glass-search glass-animate-fade-up glass-stagger-4">
+        <Search className="glass-search-icon h-4 w-4" />
         <input
           type="text"
           placeholder="Rechercher un produit..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 rounded-xl bg-card border border-border focus:border-primary transition-colors"
+          className="glass-search-input pl-10"
         />
       </div>
 
       {/* Liste des stocks avec calculateur */}
-      <div className="space-y-4 animate-fade-up delay-3">
+      <div className="space-y-4">
         {filteredStocks.length > 0 ? (
-          filteredStocks.map((stock) => {
+          filteredStocks.map((stock, index) => {
             const calc = calculateStock(stock, simulatedUsage[stock.id] || 0)
             const unit = stock.product?.unit || 'unités'
             const isSelected = selectedStock?.id === stock.id
@@ -261,17 +244,18 @@ export default function CalculatorPage() {
             return (
               <div 
                 key={stock.id} 
-                className={`banking-card-ellipse p-5 cursor-pointer transition-all ${isSelected ? 'ring-2 ring-primary' : ''}`}
+                className={`glass-stat-card cursor-pointer transition-all glass-animate-fade-up ${isSelected ? 'ring-2 ring-blue-500/50' : ''}`}
+                style={{ animationDelay: `${0.1 * (index % 5)}s` }}
                 onClick={() => setSelectedStock(isSelected ? null : stock)}
               >
                 {/* Ligne principale */}
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center text-2xl">
-                    {stock.product?.icon || <Package className="h-7 w-7 text-primary" />}
+                  <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30 flex items-center justify-center text-2xl">
+                    {stock.product?.icon || <Package className="h-7 w-7 text-blue-400" />}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-foreground text-lg">{stock.product?.name}</h3>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <h3 className="font-bold text-white text-lg">{stock.product?.name}</h3>
+                    <div className="flex items-center gap-4 text-sm text-slate-400">
                       <span className="flex items-center gap-1">
                         <Building2 className="h-3 w-3" />
                         {getSupplierName(stock.supplier_id)}
@@ -283,47 +267,71 @@ export default function CalculatorPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-primary">{calc.remainingValue.toFixed(2)}€</p>
-                    <p className="text-sm text-muted-foreground">en stock</p>
+                    <p className="text-2xl font-bold text-blue-400">{calc.remainingValue.toFixed(2)}€</p>
+                    <p className="text-sm text-slate-400">en stock</p>
                   </div>
                 </div>
 
                 {/* Grille de calculs */}
                 <div className="grid grid-cols-4 gap-3 mb-4">
                   {/* Prix unitaire */}
-                  <div className="p-3 rounded-lg bg-primary/10 text-center">
-                    <p className="text-xs text-muted-foreground mb-1">
+                  <div 
+                    className="p-3 rounded-xl text-center"
+                    style={{
+                      background: "rgba(59, 130, 246, 0.1)",
+                      border: "1px solid rgba(59, 130, 246, 0.2)",
+                    }}
+                  >
+                    <p className="text-xs text-slate-400 mb-1">
                       Prix {isPackageUnit(unit) ? 'par pièce' : `par ${unit}`}
                     </p>
-                    <p className="font-bold text-primary text-lg">{formatPrice(calc.unitPrice)}€</p>
+                    <p className="font-bold text-blue-400 text-lg">{formatPrice(calc.unitPrice)}€</p>
                     {(unit === 'kg' || unit === 'L') && (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-slate-500">
                         {formatPrice(unit === 'kg' ? calc.pricePerGram : calc.pricePerMl)}€/{getBaseUnit(unit)}
                       </p>
                     )}
                   </div>
 
                   {/* Quantité en stock */}
-                  <div className="p-3 rounded-lg bg-secondary/30 text-center">
-                    <p className="text-xs text-muted-foreground mb-1">En stock</p>
-                    <p className="font-bold text-foreground text-lg">{Number(stock.quantity)} {unit}</p>
+                  <div 
+                    className="p-3 rounded-xl text-center"
+                    style={{
+                      background: "rgba(30, 41, 59, 0.4)",
+                      border: "1px solid rgba(100, 130, 180, 0.1)",
+                    }}
+                  >
+                    <p className="text-xs text-slate-400 mb-1">En stock</p>
+                    <p className="font-bold text-white text-lg">{Number(stock.quantity)} {unit}</p>
                   </div>
 
                   {/* Valeur en stock */}
-                  <div className="p-3 rounded-lg bg-accent/10 text-center">
-                    <p className="text-xs text-muted-foreground mb-1">Valeur en stock</p>
-                    <p className="font-bold text-accent text-lg">{calc.remainingValue.toFixed(2)}€</p>
+                  <div 
+                    className="p-3 rounded-xl text-center"
+                    style={{
+                      background: "rgba(34, 197, 94, 0.1)",
+                      border: "1px solid rgba(34, 197, 94, 0.2)",
+                    }}
+                  >
+                    <p className="text-xs text-slate-400 mb-1">Valeur en stock</p>
+                    <p className="font-bold text-green-400 text-lg">{calc.remainingValue.toFixed(2)}€</p>
                   </div>
 
                   {/* Fournisseur */}
-                  <div className="p-3 rounded-lg bg-secondary/30 text-center">
-                    <p className="text-xs text-muted-foreground mb-1">Fournisseur</p>
+                  <div 
+                    className="p-3 rounded-xl text-center"
+                    style={{
+                      background: "rgba(30, 41, 59, 0.4)",
+                      border: "1px solid rgba(100, 130, 180, 0.1)",
+                    }}
+                  >
+                    <p className="text-xs text-slate-400 mb-1">Fournisseur</p>
                     {editingField === `${stock.id}-supplier_id` ? (
                       <div className="flex items-center gap-1">
                         <select
                           value={tempValue}
                           onChange={(e) => setTempValue(e.target.value)}
-                          className="h-8 text-xs rounded px-1 flex-1"
+                          className="h-8 text-xs rounded px-1 flex-1 bg-slate-800 border border-slate-600 text-white"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <option value="">Aucun</option>
@@ -331,16 +339,19 @@ export default function CalculatorPage() {
                             <option key={s.id} value={s.id}>{s.name}</option>
                           ))}
                         </select>
-                        <Button size="icon-sm" variant="ghost" onClick={(e) => {
-                          e.stopPropagation()
-                          updateStockField(stock.id, 'supplier_id', tempValue || null)
-                        }}>
-                          <Check className="h-3 w-3 text-accent" />
-                        </Button>
+                        <button 
+                          className="glass-btn-icon w-6 h-6"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            updateStockField(stock.id, 'supplier_id', tempValue || null)
+                          }}
+                        >
+                          <Check className="h-3 w-3 text-green-400" />
+                        </button>
                       </div>
                     ) : (
                       <p 
-                        className="font-medium text-foreground cursor-pointer hover:text-primary flex items-center justify-center gap-1 text-sm"
+                        className="font-medium text-white cursor-pointer hover:text-blue-400 flex items-center justify-center gap-1 text-sm"
                         onClick={(e) => {
                           e.stopPropagation()
                           setEditingField(`${stock.id}-supplier_id`)
@@ -356,18 +367,24 @@ export default function CalculatorPage() {
 
                 {/* Section détaillée (si sélectionné) */}
                 {isSelected && (
-                  <div className="pt-4 border-t border-border space-y-4 animate-fade-up">
+                  <div className="pt-4 border-t border-white/10 space-y-4 glass-animate-fade-up">
                     {/* Simulateur d'utilisation */}
-                    <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/20">
+                    <div 
+                      className="p-4 rounded-xl"
+                      style={{
+                        background: "rgba(251, 146, 60, 0.08)",
+                        border: "1px solid rgba(251, 146, 60, 0.2)",
+                      }}
+                    >
                       <div className="flex items-center gap-2 mb-3">
-                        <Info className="h-4 w-4 text-orange-500" />
-                        <span className="text-sm font-medium text-foreground">Simuler une utilisation</span>
+                        <Info className="h-4 w-4 text-orange-400" />
+                        <span className="text-sm font-medium text-white">Simuler une utilisation</span>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="flex-1">
-                          <label className="text-xs text-muted-foreground mb-1 block">Quantité à utiliser</label>
+                          <label className="text-xs text-slate-400 mb-1 block">Quantité à utiliser</label>
                           <div className="flex items-center gap-2">
-                            <Input
+                            <input
                               type="number"
                               step="0.01"
                               min="0"
@@ -378,33 +395,37 @@ export default function CalculatorPage() {
                                 [stock.id]: parseFloat(e.target.value) || 0
                               }))}
                               placeholder="0"
-                              className="w-32"
+                              className="w-32 h-10 px-3 rounded-lg bg-slate-800/50 border border-slate-600/30 text-white"
                               onClick={(e) => e.stopPropagation()}
                             />
-                            <span className="text-muted-foreground">{unit}</span>
+                            <span className="text-slate-400">{unit}</span>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs text-muted-foreground mb-1">Valeur utilisée</p>
-                          <p className="text-lg font-bold text-orange-500">
+                          <p className="text-xs text-slate-400 mb-1">Valeur utilisée</p>
+                          <p className="text-lg font-bold text-orange-400">
                             {((simulatedUsage[stock.id] || 0) * calc.unitPrice).toFixed(2)}€
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs text-muted-foreground mb-1">Il restera</p>
-                          <p className="text-lg font-bold text-primary">
+                          <p className="text-xs text-slate-400 mb-1">Il restera</p>
+                          <p className="text-lg font-bold text-blue-400">
                             {(calc.remainingValue - (simulatedUsage[stock.id] || 0) * calc.unitPrice).toFixed(2)}€
                           </p>
                         </div>
                       </div>
                       
-                      {/* Message clair */}
                       {simulatedUsage[stock.id] > 0 && (
-                        <div className="mt-3 p-3 rounded-lg bg-secondary/50 text-sm">
-                          <p className="text-foreground">
-                            📊 Vous utilisez <span className="font-bold text-orange-500">{simulatedUsage[stock.id]} {unit}</span> 
+                        <div 
+                          className="mt-3 p-3 rounded-lg text-sm"
+                          style={{
+                            background: "rgba(30, 41, 59, 0.4)",
+                          }}
+                        >
+                          <p className="text-slate-200">
+                            📊 Vous utilisez <span className="font-bold text-orange-400">{simulatedUsage[stock.id]} {unit}</span> 
                             {' '}({((simulatedUsage[stock.id] || 0) * calc.unitPrice).toFixed(2)}€), 
-                            il restera <span className="font-bold text-primary">
+                            il restera <span className="font-bold text-blue-400">
                               {(Number(stock.quantity) - (simulatedUsage[stock.id] || 0)).toFixed(2)} {unit}
                             </span> 
                             {' '}({(calc.remainingValue - (simulatedUsage[stock.id] || 0) * calc.unitPrice).toFixed(2)}€ en stock)
@@ -415,83 +436,112 @@ export default function CalculatorPage() {
 
                     {/* Prix de vente et marge */}
                     <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div className="p-4 rounded-xl bg-secondary/30">
-                        <p className="text-xs text-muted-foreground mb-2">Prix de vente unitaire</p>
+                      <div 
+                        className="p-4 rounded-xl"
+                        style={{
+                          background: "rgba(30, 41, 59, 0.4)",
+                          border: "1px solid rgba(100, 130, 180, 0.1)",
+                        }}
+                      >
+                        <p className="text-xs text-slate-400 mb-2">Prix de vente unitaire</p>
                         {editingField === `${stock.id}-selling_price` ? (
                           <div className="flex items-center gap-2">
-                            <Input
+                            <input
                               type="number"
                               step="0.01"
                               value={tempValue}
                               onChange={(e) => setTempValue(e.target.value)}
-                              className="flex-1"
+                              className="flex-1 h-10 px-3 rounded-lg bg-slate-800/50 border border-slate-600/30 text-white"
                               autoFocus
                               onClick={(e) => e.stopPropagation()}
                             />
-                            <Button size="sm" onClick={(e) => {
-                              e.stopPropagation()
-                              updateStockField(stock.id, 'selling_price', parseFloat(tempValue) || null)
-                            }}>
+                            <button 
+                              className="glass-btn-success glass-btn-sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                updateStockField(stock.id, 'selling_price', parseFloat(tempValue) || null)
+                              }}
+                            >
                               <Check className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={(e) => {
-                              e.stopPropagation()
-                              setEditingField(null)
-                            }}>
+                            </button>
+                            <button 
+                              className="glass-btn-secondary glass-btn-sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingField(null)
+                              }}
+                            >
                               <X className="h-4 w-4" />
-                            </Button>
+                            </button>
                           </div>
                         ) : (
                           <div 
-                            className="flex items-center justify-between cursor-pointer hover:bg-secondary/50 p-2 rounded-lg -m-2"
+                            className="flex items-center justify-between cursor-pointer hover:bg-white/5 p-2 rounded-lg -m-2"
                             onClick={(e) => {
                               e.stopPropagation()
                               setEditingField(`${stock.id}-selling_price`)
                               setTempValue(String(stock.selling_price || ''))
                             }}
                           >
-                            <span className="text-xl font-bold text-foreground">
+                            <span className="text-xl font-bold text-white">
                               {stock.selling_price ? `${Number(stock.selling_price).toFixed(2)}€` : 'Non défini'}
                             </span>
-                            <Edit3 className="h-4 w-4 text-muted-foreground" />
+                            <Edit3 className="h-4 w-4 text-slate-500" />
                           </div>
                         )}
                       </div>
                       
-                      <div className="p-4 rounded-xl bg-accent/10">
-                        <p className="text-xs text-muted-foreground mb-2">Marge par unité</p>
+                      <div 
+                        className="p-4 rounded-xl"
+                        style={{
+                          background: "rgba(34, 197, 94, 0.1)",
+                          border: "1px solid rgba(34, 197, 94, 0.2)",
+                        }}
+                      >
+                        <p className="text-xs text-slate-400 mb-2">Marge par unité</p>
                         {calc.marginPercent > 0 ? (
                           <div>
-                            <span className={`text-xl font-bold ${calc.marginPercent >= 60 ? 'text-accent' : calc.marginPercent >= 40 ? 'text-orange-500' : 'text-destructive'}`}>
+                            <span className={`text-xl font-bold ${calc.marginPercent >= 60 ? 'text-green-400' : calc.marginPercent >= 40 ? 'text-orange-400' : 'text-red-400'}`}>
                               {calc.marginPercent.toFixed(1)}%
                             </span>
-                            <span className="text-sm text-muted-foreground ml-2">
+                            <span className="text-sm text-slate-400 ml-2">
                               ({calc.marginAmount.toFixed(2)}€/unité)
                             </span>
                           </div>
                         ) : (
-                          <span className="text-muted-foreground">Définir un prix de vente</span>
+                          <span className="text-slate-400">Définir un prix de vente</span>
                         )}
                       </div>
                     </div>
 
                     {/* CA et Bénéfice potentiel */}
                     {stock.selling_price && Number(stock.selling_price) > 0 && (
-                      <div className="p-4 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20">
+                      <div 
+                        className="p-4 rounded-xl"
+                        style={{
+                          background: "linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(34, 197, 94, 0.1) 100%)",
+                          border: "1px solid rgba(59, 130, 246, 0.2)",
+                        }}
+                      >
                         <div className="flex items-center justify-between mb-4">
-                          <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                            <TrendingUp className="h-4 w-4 text-primary" />
+                          <p className="text-sm font-medium text-white flex items-center gap-2">
+                            <TrendingUp className="h-4 w-4 text-blue-400" />
                             Calculer mon CA
                           </p>
                         </div>
                         
                         {/* Quantité éditable */}
-                        <div className="mb-4 p-3 rounded-lg bg-background/50">
-                          <label className="text-xs text-muted-foreground mb-2 block">
+                        <div 
+                          className="mb-4 p-3 rounded-lg"
+                          style={{
+                            background: "rgba(15, 23, 42, 0.5)",
+                          }}
+                        >
+                          <label className="text-xs text-slate-400 mb-2 block">
                             Quantité à vendre ({unit})
                           </label>
                           <div className="flex items-center gap-2">
-                            <Input
+                            <input
                               type="number"
                               step="1"
                               min="0"
@@ -500,15 +550,14 @@ export default function CalculatorPage() {
                                 ...prev,
                                 [`sales-${stock.id}`]: parseFloat(e.target.value) || 0
                               }))}
-                              className="flex-1 text-lg font-bold text-center"
+                              className="flex-1 text-lg font-bold text-center h-10 px-3 rounded-lg bg-slate-800/50 border border-slate-600/30 text-white"
                               onClick={(e) => e.stopPropagation()}
                             />
-                            <span className="text-muted-foreground">{unit}</span>
+                            <span className="text-slate-400">{unit}</span>
                             {(simulatedUsage[`sales-${stock.id}`] !== undefined && 
                               simulatedUsage[`sales-${stock.id}`] !== Number(stock.quantity)) && (
-                              <Button 
-                                size="sm" 
-                                className="bg-accent hover:bg-accent/80"
+                              <button 
+                                className="glass-btn-success"
                                 onClick={async (e) => {
                                   e.stopPropagation()
                                   await updateStockField(stock.id, 'quantity', simulatedUsage[`sales-${stock.id}`])
@@ -519,12 +568,12 @@ export default function CalculatorPage() {
                                   })
                                 }}
                               >
-                                <Check className="h-4 w-4 mr-1" />
+                                <Check className="h-4 w-4" />
                                 Confirmer
-                              </Button>
+                              </button>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-xs text-slate-500 mt-1">
                             Stock actuel : {Number(stock.quantity)} {unit}
                           </p>
                         </div>
@@ -537,21 +586,27 @@ export default function CalculatorPage() {
                           
                           return (
                             <div className="grid grid-cols-2 gap-4">
-                              <div className="text-center p-3 rounded-lg bg-background/50">
-                                <p className="text-xs text-muted-foreground mb-1">Chiffre d'affaires</p>
-                                <p className="text-2xl font-bold text-primary">
+                              <div 
+                                className="text-center p-3 rounded-lg"
+                                style={{ background: "rgba(15, 23, 42, 0.5)" }}
+                              >
+                                <p className="text-xs text-slate-400 mb-1">Chiffre d'affaires</p>
+                                <p className="text-2xl font-bold text-blue-400">
                                   {ca.toFixed(2)}€
                                 </p>
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-xs text-slate-500">
                                   {qtyToSell} × {Number(stock.selling_price).toFixed(2)}€
                                 </p>
                               </div>
-                              <div className="text-center p-3 rounded-lg bg-background/50">
-                                <p className="text-xs text-muted-foreground mb-1">Bénéfice brut</p>
-                                <p className={`text-2xl font-bold ${calc.marginPercent >= 60 ? 'text-accent' : calc.marginPercent >= 40 ? 'text-orange-500' : 'text-destructive'}`}>
+                              <div 
+                                className="text-center p-3 rounded-lg"
+                                style={{ background: "rgba(15, 23, 42, 0.5)" }}
+                              >
+                                <p className="text-xs text-slate-400 mb-1">Bénéfice brut</p>
+                                <p className={`text-2xl font-bold ${calc.marginPercent >= 60 ? 'text-green-400' : calc.marginPercent >= 40 ? 'text-orange-400' : 'text-red-400'}`}>
                                   {benefice.toFixed(2)}€
                                 </p>
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-xs text-slate-500">
                                   {qtyToSell} × {calc.marginAmount.toFixed(2)}€
                                 </p>
                               </div>
@@ -566,12 +621,16 @@ export default function CalculatorPage() {
             )
           })
         ) : (
-          <div className="banking-card p-12 text-center">
-            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <p className="text-muted-foreground mb-2">Aucun produit en stock</p>
-            <p className="text-sm text-muted-foreground">
-              Ajoutez des produits dans l'onglet Stock pour utiliser le calculateur
-            </p>
+          <div className="glass-stat-card glass-animate-fade-up">
+            <div className="glass-empty-state">
+              <div className="glass-empty-icon">
+                <Package className="h-10 w-10" />
+              </div>
+              <p className="glass-empty-title">Aucun produit en stock</p>
+              <p className="glass-empty-desc">
+                Ajoutez des produits dans l'onglet Stock pour utiliser le calculateur
+              </p>
+            </div>
           </div>
         )}
       </div>

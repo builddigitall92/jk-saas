@@ -29,10 +29,10 @@ import { useSuppliers } from "@/lib/hooks/use-suppliers"
 interface OrderItem {
   id: string
   name: string
-  quantity: number      // Nombre de colis/unités commandés
-  packageSize: number   // Contenu par colis (ex: 5 kg, 24 pièces)
-  packageUnit: string   // Unité du contenu (kg, pièces, L...)
-  unitPrice: number     // Prix par colis
+  quantity: number
+  packageSize: number
+  packageUnit: string
+  unitPrice: number
 }
 
 interface Order {
@@ -55,25 +55,21 @@ export default function ManagerOrdersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   
-  // Popup de succès après validation
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
   const [validatedOrder, setValidatedOrder] = useState<Order | null>(null)
   
-  // Formulaire nouvelle commande
   const [supplierName, setSupplierName] = useState("")
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [notes, setNotes] = useState("")
   
-  // Ajout d'un article
   const [newItemName, setNewItemName] = useState("")
-  const [newItemQty, setNewItemQty] = useState("")           // Nombre de colis
-  const [newItemPackageSize, setNewItemPackageSize] = useState("")  // Contenu par colis
-  const [newItemPackageUnit, setNewItemPackageUnit] = useState("kg") // Unité du contenu
-  const [newItemPrice, setNewItemPrice] = useState("")       // Prix par colis
+  const [newItemQty, setNewItemQty] = useState("")
+  const [newItemPackageSize, setNewItemPackageSize] = useState("")
+  const [newItemPackageUnit, setNewItemPackageUnit] = useState("kg")
+  const [newItemPrice, setNewItemPrice] = useState("")
 
   const supabase = createClient()
 
-  // Charger les commandes
   const fetchOrders = async () => {
     try {
       setLoading(true)
@@ -98,7 +94,6 @@ export default function ManagerOrdersPage() {
 
       if (error) throw error
 
-      // Transformer les données
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const ordersWithItems = (data || []).map((order: any) => ({
         ...order,
@@ -113,7 +108,6 @@ export default function ManagerOrdersPage() {
     }
   }
 
-  // Parser les items depuis les notes (format JSON)
   const parseOrderItems = (notes: string): OrderItem[] => {
     try {
       const parsed = JSON.parse(notes)
@@ -127,7 +121,6 @@ export default function ManagerOrdersPage() {
     fetchOrders()
   }, [])
 
-  // Ajouter un article à la commande
   const addItem = () => {
     if (!newItemName.trim() || !newItemQty || !newItemPrice) return
 
@@ -147,17 +140,14 @@ export default function ManagerOrdersPage() {
     setNewItemPrice("")
   }
 
-  // Supprimer un article
   const removeItem = (id: string) => {
     setOrderItems(orderItems.filter(item => item.id !== id))
   }
 
-  // Calculer le total
   const calculateTotal = () => {
     return orderItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)
   }
 
-  // Créer la commande
   const createOrder = async () => {
     if (!supplierName.trim() || orderItems.length === 0) {
       setErrorMessage("Veuillez remplir le nom du fournisseur et ajouter au moins un article")
@@ -197,7 +187,6 @@ export default function ManagerOrdersPage() {
 
       if (error) throw error
 
-      // Reset et refresh
       setSupplierName("")
       setOrderItems([])
       setNotes("")
@@ -213,7 +202,6 @@ export default function ManagerOrdersPage() {
     }
   }
 
-  // Mettre à jour le statut
   const updateStatus = async (orderId: string, newStatus: string) => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -222,7 +210,6 @@ export default function ManagerOrdersPage() {
         .update({ status: newStatus })
         .eq('id', orderId)
       
-      // Si livré, afficher le popup de redirection
       if (newStatus === 'delivered') {
         const order = orders.find(o => o.id === orderId)
         if (order) {
@@ -237,13 +224,11 @@ export default function ManagerOrdersPage() {
     }
   }
 
-  // Rediriger vers les stocks
   const goToStocks = () => {
     setShowSuccessPopup(false)
     router.push('/manager/stock')
   }
 
-  // Supprimer une commande
   const deleteOrder = async (orderId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cet achat ?')) return
     
@@ -265,55 +250,68 @@ export default function ManagerOrdersPage() {
   const getStatusConfig = (status: string) => {
     switch (status) {
       case "pending":
-        return { label: "En attente", class: "badge-orange", icon: Clock }
+        return { label: "En attente", color: "orange", icon: Clock }
       case "confirmed":
-        return { label: "Confirmée", class: "badge-green", icon: Check }
+        return { label: "Confirmée", color: "blue", icon: Check }
       case "delivered":
-        return { label: "Livrée", class: "badge-green", icon: CheckCircle }
+        return { label: "Livrée", color: "green", icon: CheckCircle }
       default:
-        return { label: status, class: "badge-orange", icon: Clock }
+        return { label: status, color: "orange", icon: Clock }
     }
   }
 
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-blue-400" />
+          </div>
+          <p className="text-slate-400 text-sm">Chargement des achats...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="p-8">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8 animate-fade-up">
+      <div className="flex items-center justify-between glass-animate-fade-up">
         <div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">Achats</h1>
-          <p className="text-muted-foreground">Gérez vos achats fournisseurs</p>
+          <h1 className="text-2xl font-semibold text-slate-100 tracking-tight">Achats</h1>
+          <p className="text-sm text-slate-400">Gérez vos achats fournisseurs</p>
         </div>
 
-        <Button className="btn-primary" onClick={() => setIsDialogOpen(true)}>
-          <Plus className="h-5 w-5 mr-2" />
+        <button className="glass-btn-primary" onClick={() => setIsDialogOpen(true)}>
+          <Plus className="h-5 w-5" />
           Nouvel Achat
-        </Button>
+        </button>
       </div>
 
       {/* Dialog création commande */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="banking-card border-border sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent 
+          className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto border-0"
+          style={{
+            background: "linear-gradient(145deg, rgba(20, 27, 45, 0.98) 0%, rgba(15, 20, 35, 0.99) 100%)",
+            backdropFilter: "blur(24px)",
+            border: "1px solid rgba(100, 130, 180, 0.2)",
+            borderRadius: "20px",
+          }}
+        >
           <DialogHeader>
-            <DialogTitle className="text-foreground text-lg">Créer un Achat</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-white">Créer un Achat</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-5 py-4">
             {/* Fournisseur */}
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Nom du fournisseur</label>
-              <Input
+              <label className="text-sm text-slate-400 mb-2 block">Nom du fournisseur</label>
+              <input
                 placeholder="Ex: Metro, Brake, Transgourmet..."
                 value={supplierName}
                 onChange={(e) => setSupplierName(e.target.value)}
-                className="h-11 rounded-xl"
+                className="glass-search-input"
                 list="suppliers-list"
               />
               <datalist id="suppliers-list">
@@ -322,7 +320,7 @@ export default function ManagerOrdersPage() {
                 ))}
               </datalist>
               {suppliers.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   {suppliers.length} fournisseur(s) enregistré(s)
                 </p>
               )}
@@ -331,55 +329,65 @@ export default function ManagerOrdersPage() {
             {/* Articles ajoutés */}
             {orderItems.length > 0 && (
               <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Articles ({orderItems.length})</label>
+                <label className="text-sm text-slate-400 mb-2 block">Articles ({orderItems.length})</label>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {orderItems.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30">
+                    <div 
+                      key={item.id} 
+                      className="flex items-center justify-between p-3 rounded-xl"
+                      style={{
+                        background: "rgba(30, 41, 59, 0.5)",
+                        border: "1px solid rgba(100, 130, 180, 0.15)",
+                      }}
+                    >
                       <div className="flex-1">
-                        <p className="font-medium text-foreground">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="font-medium text-white">{item.name}</p>
+                        <p className="text-xs text-slate-500">
                           {item.quantity} colis × {item.packageSize} {item.packageUnit} = {(item.quantity * item.packageSize).toFixed(1)} {item.packageUnit}
                         </p>
-                        <p className="text-xs text-primary">
+                        <p className="text-xs text-blue-400">
                           {item.quantity} × {item.unitPrice.toFixed(2)}€/colis
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-primary text-lg">
+                        <span className="font-bold text-green-400 text-lg">
                           {(item.quantity * item.unitPrice).toFixed(2)}€
                         </span>
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="h-8 w-8 text-destructive"
+                        <button 
+                          className="glass-btn-icon w-8 h-8 hover:!bg-red-500/20 hover:!border-red-500/40 hover:text-red-400"
                           onClick={() => removeItem(item.id)}
                         >
                           <X className="h-4 w-4" />
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   ))}
                 </div>
-                <div className="flex justify-between mt-3 pt-3 border-t border-border">
-                  <span className="font-medium text-foreground">Total achat</span>
-                  <span className="text-xl font-bold text-primary">{calculateTotal().toFixed(2)}€</span>
+                <div className="flex justify-between mt-3 pt-3 border-t border-white/10">
+                  <span className="font-medium text-slate-300">Total achat</span>
+                  <span className="text-xl font-bold text-green-400">{calculateTotal().toFixed(2)}€</span>
                 </div>
               </div>
             )}
 
             {/* Ajouter un article */}
-            <div className="p-4 rounded-xl bg-secondary/20 border border-border">
-              <p className="text-sm font-medium text-foreground mb-3">Ajouter un article</p>
+            <div 
+              className="p-4 rounded-xl"
+              style={{
+                background: "rgba(30, 41, 59, 0.4)",
+                border: "1px solid rgba(100, 130, 180, 0.15)",
+              }}
+            >
+              <p className="text-sm font-medium text-white mb-3">Ajouter un article</p>
               
               <div className="space-y-3">
-                {/* Ligne 1: Produit */}
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Produit</label>
-                  <Input
+                  <label className="text-xs text-slate-500 mb-1 block">Produit</label>
+                  <input
                     placeholder="Ex: Frites surgelées, Pain burger..."
                     value={newItemName}
                     onChange={(e) => setNewItemName(e.target.value)}
-                    className="h-10 rounded-lg"
+                    className="glass-search-input"
                     list="products-list"
                   />
                   <datalist id="products-list">
@@ -389,41 +397,37 @@ export default function ManagerOrdersPage() {
                   </datalist>
                 </div>
 
-                {/* Ligne 2: Nombre de colis */}
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">
-                    Nombre de colis / cartons
-                  </label>
-                  <Input
+                  <label className="text-xs text-slate-500 mb-1 block">Nombre de colis / cartons</label>
+                  <input
                     type="number"
                     min="1"
                     step="1"
                     placeholder="Ex: 2"
                     value={newItemQty}
                     onChange={(e) => setNewItemQty(e.target.value)}
-                    className="h-10 rounded-lg"
+                    className="glass-search-input"
                   />
                 </div>
 
-                {/* Ligne 3: Contenu par colis */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Contenu par colis</label>
-                    <Input
+                    <label className="text-xs text-slate-500 mb-1 block">Contenu par colis</label>
+                    <input
                       type="number"
                       step="0.01"
                       placeholder="Ex: 5"
                       value={newItemPackageSize}
                       onChange={(e) => setNewItemPackageSize(e.target.value)}
-                      className="h-10 rounded-lg"
+                      className="glass-search-input"
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Unité</label>
+                    <label className="text-xs text-slate-500 mb-1 block">Unité</label>
                     <select
                       value={newItemPackageUnit}
                       onChange={(e) => setNewItemPackageUnit(e.target.value)}
-                      className="w-full h-10 px-3 rounded-lg bg-input border border-border text-sm"
+                      className="glass-search-input"
                     >
                       <option value="kg">kg</option>
                       <option value="g">g</option>
@@ -434,36 +438,38 @@ export default function ManagerOrdersPage() {
                   </div>
                 </div>
 
-                {/* Ligne 4: Prix par colis */}
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">
-                    Prix par colis (€)
-                  </label>
-                  <Input
+                  <label className="text-xs text-slate-500 mb-1 block">Prix par colis (€)</label>
+                  <input
                     type="number"
                     step="0.01"
                     placeholder="Ex: 25.00"
                     value={newItemPrice}
                     onChange={(e) => setNewItemPrice(e.target.value)}
-                    className="h-10 rounded-lg"
+                    className="glass-search-input"
                   />
                 </div>
 
-                {/* Aperçu du calcul */}
                 {newItemQty && newItemPrice && (
-                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                  <div 
+                    className="p-3 rounded-xl"
+                    style={{
+                      background: "rgba(59, 130, 246, 0.1)",
+                      border: "1px solid rgba(59, 130, 246, 0.2)",
+                    }}
+                  >
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Quantité totale :</span>
-                        <span className="font-medium text-foreground">
+                        <span className="text-slate-400">Quantité totale :</span>
+                        <span className="font-medium text-white">
                           {newItemPackageSize ? (parseFloat(newItemQty) * parseFloat(newItemPackageSize)).toFixed(1) : newItemQty} {newItemPackageUnit}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-sm text-slate-400">
                           {newItemQty} colis × {parseFloat(newItemPrice).toFixed(2)}€
                         </span>
-                        <span className="text-lg font-bold text-primary">
+                        <span className="text-lg font-bold text-blue-400">
                           = {(parseFloat(newItemQty) * parseFloat(newItemPrice)).toFixed(2)}€
                         </span>
                       </div>
@@ -471,32 +477,37 @@ export default function ManagerOrdersPage() {
                   </div>
                 )}
 
-                {/* Bouton Ajouter */}
-                <Button 
+                <button 
+                  className="glass-btn-secondary w-full justify-center"
                   onClick={addItem}
                   disabled={!newItemName.trim() || !newItemQty || !newItemPrice}
-                  className="w-full h-10"
                 >
-                  <Plus className="h-4 w-4 mr-1" />
+                  <Plus className="h-4 w-4" />
                   Ajouter cet article
-                </Button>
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Message d'erreur */}
           {errorMessage && (
-            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+            <div 
+              className="p-3 rounded-xl text-sm"
+              style={{
+                background: "rgba(239, 68, 68, 0.1)",
+                border: "1px solid rgba(239, 68, 68, 0.3)",
+                color: "#f87171",
+              }}
+            >
               {errorMessage}
             </div>
           )}
 
           <div className="flex gap-3">
-            <Button variant="outline" className="flex-1" onClick={() => { setIsDialogOpen(false); setErrorMessage(null); }}>
+            <button className="glass-btn-secondary flex-1 justify-center" onClick={() => { setIsDialogOpen(false); setErrorMessage(null); }}>
               Annuler
-            </Button>
-            <Button 
-              className="flex-1 btn-primary" 
+            </button>
+            <button 
+              className="glass-btn-primary flex-1 justify-center"
               onClick={createOrder}
               disabled={!supplierName.trim() || orderItems.length === 0 || isSubmitting}
             >
@@ -504,37 +515,51 @@ export default function ManagerOrdersPage() {
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>
-                  <Check className="h-4 w-4 mr-2" />
+                  <Check className="h-4 w-4" />
                   Créer ({calculateTotal().toFixed(2)}€)
                 </>
               )}
-            </Button>
+            </button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Popup de succès - Redirection vers Stocks */}
+      {/* Popup de succès */}
       <Dialog open={showSuccessPopup} onOpenChange={setShowSuccessPopup}>
-        <DialogContent className="banking-card border-border sm:max-w-[450px]">
+        <DialogContent 
+          className="sm:max-w-[450px] border-0"
+          style={{
+            background: "linear-gradient(145deg, rgba(20, 27, 45, 0.98) 0%, rgba(15, 20, 35, 0.99) 100%)",
+            backdropFilter: "blur(24px)",
+            border: "1px solid rgba(100, 130, 180, 0.2)",
+            borderRadius: "20px",
+          }}
+        >
           <div className="text-center py-6">
-            <div className="h-16 w-16 rounded-full bg-accent/20 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="h-8 w-8 text-accent" />
+            <div className="h-16 w-16 rounded-2xl bg-green-500/20 border border-green-500/30 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="h-8 w-8 text-green-400" />
             </div>
-            <h2 className="text-xl font-bold text-foreground mb-2">Achat validé ! ✅</h2>
-            <p className="text-muted-foreground mb-6">
-              L'achat de <span className="font-semibold text-foreground">{validatedOrder?.supplier_name}</span> a été validé.
+            <h2 className="text-xl font-bold text-white mb-2">Achat validé ! ✅</h2>
+            <p className="text-slate-400 mb-6">
+              L'achat de <span className="font-semibold text-white">{validatedOrder?.supplier_name}</span> a été validé.
               <br />
               Ajoutez maintenant les articles à votre stock.
             </p>
 
             {validatedOrder && validatedOrder.items.length > 0 && (
-              <div className="bg-secondary/30 rounded-xl p-4 mb-6 text-left">
-                <p className="text-xs text-muted-foreground mb-2">Articles à ajouter :</p>
+              <div 
+                className="rounded-xl p-4 mb-6 text-left"
+                style={{
+                  background: "rgba(30, 41, 59, 0.5)",
+                  border: "1px solid rgba(100, 130, 180, 0.15)",
+                }}
+              >
+                <p className="text-xs text-slate-500 mb-2">Articles à ajouter :</p>
                 <div className="space-y-2">
                   {validatedOrder.items.map((item, i) => (
                     <div key={i} className="flex items-center justify-between text-sm">
-                      <span className="text-foreground">{item.name}</span>
-                      <span className="text-muted-foreground">
+                      <span className="text-white">{item.name}</span>
+                      <span className="text-slate-400">
                         {(item.quantity * item.packageSize).toFixed(1)} {item.packageUnit}
                       </span>
                     </div>
@@ -544,20 +569,19 @@ export default function ManagerOrdersPage() {
             )}
 
             <div className="flex gap-3">
-              <Button 
-                variant="outline" 
-                className="flex-1"
+              <button 
+                className="glass-btn-secondary flex-1 justify-center"
                 onClick={() => setShowSuccessPopup(false)}
               >
                 Plus tard
-              </Button>
-              <Button 
-                className="flex-1 btn-primary"
+              </button>
+              <button 
+                className="glass-btn-primary flex-1 justify-center"
                 onClick={goToStocks}
               >
                 Aller aux Stocks
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
+                <ArrowRight className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </DialogContent>
@@ -573,35 +597,44 @@ export default function ManagerOrdersPage() {
             return (
               <div
                 key={order.id}
-                className="banking-card p-5 animate-fade-up"
+                className="glass-stat-card glass-animate-fade-up"
                 style={{ animationDelay: `${idx * 0.05}s` }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${
-                      order.status === "pending" ? "bg-orange-500/10" : "bg-accent/10"
-                    }`}>
-                      <ShoppingCart className={`h-6 w-6 ${
-                        order.status === "pending" ? "text-primary" : "text-accent"
-                      }`} />
+                    <div className={`glass-stat-icon glass-stat-icon-${statusConfig.color}`}>
+                      <ShoppingCart className="h-6 w-6" />
                     </div>
 
                     <div>
                       <div className="flex items-center gap-3 mb-1">
-                        <h3 className="font-semibold text-foreground">{order.supplier_name || 'Fournisseur'}</h3>
-                        <span className={statusConfig.class}>
-                          <StatusIcon className="h-3 w-3 inline mr-1" />
+                        <h3 className="font-semibold text-white">{order.supplier_name || 'Fournisseur'}</h3>
+                        <span 
+                          className="px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1"
+                          style={{
+                            background: statusConfig.color === 'orange' ? 'rgba(251, 146, 60, 0.15)' : 
+                                        statusConfig.color === 'blue' ? 'rgba(59, 130, 246, 0.15)' :
+                                        'rgba(34, 197, 94, 0.15)',
+                            color: statusConfig.color === 'orange' ? '#fb923c' : 
+                                   statusConfig.color === 'blue' ? '#60a5fa' :
+                                   '#4ade80',
+                            border: `1px solid ${statusConfig.color === 'orange' ? 'rgba(251, 146, 60, 0.3)' : 
+                                                 statusConfig.color === 'blue' ? 'rgba(59, 130, 246, 0.3)' :
+                                                 'rgba(34, 197, 94, 0.3)'}`,
+                          }}
+                        >
+                          <StatusIcon className="h-3 w-3" />
                           {statusConfig.label}
                         </span>
                       </div>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-slate-400">
                         {order.items.map(i => {
                           const totalQty = i.packageSize ? (i.quantity * i.packageSize) : i.quantity
                           const unit = i.packageUnit || 'unités'
                           return `${i.name} (${totalQty}${unit})`
                         }).join(' • ') || 'Aucun article'}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-slate-500 mt-1">
                         {new Date(order.created_at).toLocaleDateString('fr-FR', { 
                           day: 'numeric', 
                           month: 'short', 
@@ -612,36 +645,32 @@ export default function ManagerOrdersPage() {
                   </div>
 
                   <div className="text-right">
-                    <p className="text-xl font-bold text-foreground">{Number(order.total_amount).toFixed(2)}€</p>
+                    <p className="text-xl font-bold text-white">{Number(order.total_amount).toFixed(2)}€</p>
                     <div className="flex gap-2 mt-2">
                       {order.status === "pending" && (
-                        <Button 
-                          size="sm" 
-                          variant="outline"
+                        <button 
+                          className="glass-btn-secondary glass-btn-sm"
                           onClick={() => updateStatus(order.id, 'confirmed')}
                         >
-                          <Check className="h-3 w-3 mr-1" />
+                          <Check className="h-3 w-3" />
                           Confirmer
-                        </Button>
+                        </button>
                       )}
                       {order.status === "confirmed" && (
-                        <Button 
-                          size="sm" 
-                          className="bg-accent text-accent-foreground hover:bg-accent/90"
+                        <button 
+                          className="glass-btn-success glass-btn-sm"
                           onClick={() => updateStatus(order.id, 'delivered')}
                         >
-                          <Package className="h-3 w-3 mr-1" />
+                          <Package className="h-3 w-3" />
                           Valider + Stock
-                        </Button>
+                        </button>
                       )}
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive"
+                      <button 
+                        className="glass-btn-icon w-8 h-8 hover:!bg-red-500/20 hover:!border-red-500/40 hover:text-red-400"
                         onClick={() => deleteOrder(order.id)}
                       >
                         <Trash2 className="h-4 w-4" />
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -649,16 +678,18 @@ export default function ManagerOrdersPage() {
             )
           })
         ) : (
-          <div className="banking-card p-12 text-center animate-fade-up">
-            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">Aucun achat</h3>
-            <p className="text-muted-foreground mb-4">
-              Créez votre premier achat fournisseur
-            </p>
-            <Button className="btn-primary" onClick={() => setIsDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvel Achat
-            </Button>
+          <div className="glass-stat-card glass-animate-fade-up">
+            <div className="glass-empty-state">
+              <div className="glass-empty-icon">
+                <Package className="h-10 w-10" />
+              </div>
+              <p className="glass-empty-title">Aucun achat</p>
+              <p className="glass-empty-desc">Créez votre premier achat fournisseur</p>
+              <button className="glass-btn-primary" onClick={() => setIsDialogOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Nouvel Achat
+              </button>
+            </div>
           </div>
         )}
       </div>

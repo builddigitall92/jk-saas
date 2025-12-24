@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { createClient } from "@/utils/supabase/client"
 import type { User } from "@supabase/supabase-js"
 import type { Profile } from "@/lib/database.types"
@@ -30,6 +30,38 @@ export function useAuth() {
 
   const supabase = createClient()
 
+  // Fonction pour récupérer le profil
+  const fetchProfile = useCallback(async (userId: string) => {
+    try {
+      const { data: profileData } = await (supabase as any)
+        .from("profiles")
+        .select("*, establishment:establishments(id, name, address, phone, email)")
+        .eq("id", userId)
+        .single()
+
+      setProfile(profileData)
+
+      if (profileData?.establishment) {
+        setEstablishment(profileData.establishment)
+      } else {
+        setEstablishment(null)
+      }
+
+      return profileData
+    } catch (error) {
+      console.error("Error fetching profile:", error)
+      return null
+    }
+  }, [supabase])
+
+  // Fonction publique pour rafraîchir le profil
+  const refetchProfile = useCallback(async () => {
+    if (user) {
+      return await fetchProfile(user.id)
+    }
+    return null
+  }, [user, fetchProfile])
+
   useEffect(() => {
     const getUser = async () => {
       try {
@@ -37,19 +69,7 @@ export function useAuth() {
         setUser(user)
 
         if (user) {
-          // Récupérer le profil avec l'établissement en jointure
-          const { data: profileData } = await (supabase as any)
-            .from("profiles")
-            .select("*, establishment:establishments(id, name, address, phone, email)")
-            .eq("id", user.id)
-            .single()
-
-          setProfile(profileData)
-
-          // Extraire les données de l'établissement
-          if (profileData?.establishment) {
-            setEstablishment(profileData.establishment)
-          }
+          await fetchProfile(user.id)
         }
       } catch (error) {
         console.error("Error fetching user:", error)
@@ -66,19 +86,7 @@ export function useAuth() {
         setUser(session?.user ?? null)
 
         if (session?.user) {
-          const { data: profileData } = await (supabase as any)
-            .from("profiles")
-            .select("*, establishment:establishments(id, name, address, phone, email)")
-            .eq("id", session.user.id)
-            .single()
-
-          setProfile(profileData)
-
-          if (profileData?.establishment) {
-            setEstablishment(profileData.establishment)
-          } else {
-            setEstablishment(null)
-          }
+          await fetchProfile(session.user.id)
         } else {
           setProfile(null)
           setEstablishment(null)
@@ -87,7 +95,7 @@ export function useAuth() {
     )
 
     return () => subscription.unsubscribe()
-  }, [supabase])
+  }, [supabase, fetchProfile])
 
   const isManager = profile?.role === "manager" || profile?.role === "admin"
   const isEmployee = profile?.role === "employee"
@@ -100,6 +108,7 @@ export function useAuth() {
     isManager,
     isEmployee,
     establishmentId: profile?.establishment_id,
+    refetchProfile, // Nouvelle fonction pour rafraîchir le profil
   }
 }
 

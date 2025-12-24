@@ -3,6 +3,30 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
+import { headers } from "next/headers"
+
+export async function getOAuthUrl(provider: "google" | "apple") {
+  const supabase = await createClient()
+  const headersList = await headers()
+  const origin = headersList.get("origin") || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+  
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: `${origin}/auth/callback`,
+      queryParams: provider === "google" ? {
+        access_type: "offline",
+        prompt: "consent",
+      } : undefined,
+    },
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  return { url: data.url }
+}
 
 export async function login(formData: FormData) {
   const supabase = await createClient()

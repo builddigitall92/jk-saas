@@ -1,7 +1,23 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Flame, Boxes, BellRing, ClipboardCheck, Clock, ChevronRight, Loader2, X, Bell, Sparkles, Building2, MapPin, Home, Settings, Menu, LayoutDashboard, Camera, User, Package, Check, CheckCircle2 } from "lucide-react"
+import { 
+  Flame, 
+  Boxes, 
+  BellRing, 
+  ClipboardCheck, 
+  Clock, 
+  Loader2, 
+  X, 
+  Sparkles, 
+  Building2, 
+  MapPin, 
+  CheckCircle2,
+  TrendingUp,
+  Calendar,
+  Target,
+  Zap,
+} from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { createClient } from "@/utils/supabase/client"
@@ -25,47 +41,226 @@ interface Establishment {
   address: string
 }
 
+// Composant GlassTile adapté
+function GlassTile({ 
+  children, 
+  className = "", 
+  animationDelay = 0,
+  href,
+  onClick,
+}: { 
+  children: React.ReactNode
+  className?: string
+  animationDelay?: number
+  href?: string
+  onClick?: () => void
+}) {
+  const baseStyles: React.CSSProperties = {
+    position: "relative",
+    background: "linear-gradient(145deg, rgba(20, 27, 45, 0.92) 0%, rgba(15, 20, 35, 0.95) 50%, rgba(12, 17, 30, 0.98) 100%)",
+    backdropFilter: "blur(16px)",
+    WebkitBackdropFilter: "blur(16px)",
+    border: "1px solid rgba(100, 130, 180, 0.15)",
+    borderRadius: "20px",
+    padding: "24px",
+    overflow: "hidden",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    boxShadow: "0 4px 24px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15)",
+    animation: `glassEnter 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${animationDelay}s forwards`,
+    opacity: 0,
+  }
+
+  const content = (
+    <>
+      {/* Reflet diagonal */}
+      <div 
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "50%",
+          background: "linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(120, 160, 220, 0.04) 30%, transparent 60%)",
+          pointerEvents: "none",
+          borderRadius: "20px 20px 0 0",
+        }}
+      />
+      
+      {/* Ligne lumineuse */}
+      <div 
+        style={{
+          position: "absolute",
+          top: 0,
+          left: "20px",
+          right: "20px",
+          height: "1px",
+          background: "linear-gradient(90deg, transparent 0%, rgba(251, 146, 60, 0.3) 20%, rgba(255, 180, 120, 0.4) 50%, rgba(251, 146, 60, 0.3) 80%, transparent 100%)",
+          pointerEvents: "none",
+        }}
+      />
+      
+      {/* Contenu */}
+      <div style={{ position: "relative", zIndex: 1 }}>
+        {children}
+      </div>
+    </>
+  )
+
+  if (href) {
+    return (
+      <Link 
+        href={href} 
+        className={`group block hover:translate-y-[-3px] hover:border-[rgba(251,146,60,0.35)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.35),0_0_30px_rgba(251,146,60,0.08)] ${className}`}
+        style={baseStyles}
+      >
+        {content}
+      </Link>
+    )
+  }
+
+  if (onClick) {
+    return (
+      <button 
+        onClick={onClick}
+        className={`group block w-full text-left hover:translate-y-[-3px] hover:border-[rgba(251,146,60,0.35)] ${className}`}
+        style={baseStyles}
+      >
+        {content}
+      </button>
+    )
+  }
+
+  return (
+    <div 
+      className={`group hover:translate-y-[-3px] hover:border-[rgba(251,146,60,0.35)] ${className}`}
+      style={baseStyles}
+    >
+      {content}
+    </div>
+  )
+}
+
+// Icône colorée
+function TileIcon({ Icon, color }: { Icon: React.ElementType; color: string }) {
+  const colors: Record<string, { bg: string; border: string; text: string }> = {
+    blue: { bg: "linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.15) 100%)", border: "rgba(59, 130, 246, 0.3)", text: "#60a5fa" },
+    green: { bg: "linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(22, 163, 74, 0.15) 100%)", border: "rgba(34, 197, 94, 0.3)", text: "#4ade80" },
+    orange: { bg: "linear-gradient(135deg, rgba(251, 146, 60, 0.2) 0%, rgba(234, 88, 12, 0.15) 100%)", border: "rgba(251, 146, 60, 0.3)", text: "#fb923c" },
+    red: { bg: "linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.15) 100%)", border: "rgba(239, 68, 68, 0.3)", text: "#f87171" },
+    purple: { bg: "linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(139, 92, 246, 0.15) 100%)", border: "rgba(168, 85, 247, 0.3)", text: "#a78bfa" },
+    cyan: { bg: "linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(8, 145, 178, 0.15) 100%)", border: "rgba(6, 182, 212, 0.3)", text: "#22d3ee" },
+    pink: { bg: "linear-gradient(135deg, rgba(236, 72, 153, 0.2) 0%, rgba(219, 39, 119, 0.15) 100%)", border: "rgba(236, 72, 153, 0.3)", text: "#f472b6" },
+    amber: { bg: "linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.15) 100%)", border: "rgba(245, 158, 11, 0.3)", text: "#fbbf24" },
+  }
+  const c = colors[color] || colors.orange
+  
+  return (
+    <div style={{
+      width: "44px",
+      height: "44px",
+      borderRadius: "12px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: "16px",
+      background: c.bg,
+      border: `1px solid ${c.border}`,
+      color: c.text,
+      transition: "all 0.3s ease",
+    }} className="group-hover:scale-110">
+      <Icon className="w-5 h-5" />
+    </div>
+  )
+}
+
+// Titre coloré
+function TileTitle({ children, color }: { children: React.ReactNode; color: string }) {
+  const colors: Record<string, string> = {
+    blue: "#60a5fa",
+    green: "#4ade80",
+    orange: "#fb923c",
+    red: "#f87171",
+    purple: "#a78bfa",
+    cyan: "#22d3ee",
+    pink: "#f472b6",
+    amber: "#fbbf24",
+    white: "#f1f5f9",
+  }
+  
+  return (
+    <h3 style={{
+      fontSize: "17px",
+      fontWeight: 600,
+      marginBottom: "8px",
+      letterSpacing: "-0.01em",
+      color: colors[color] || colors.orange,
+    }}>
+      {children}
+    </h3>
+  )
+}
+
+// Mot clé coloré
+function K({ children, c }: { children: React.ReactNode; c: string }) {
+  const colors: Record<string, string> = {
+    b: "#60a5fa",
+    g: "#4ade80",
+    o: "#fb923c",
+    r: "#f87171",
+    p: "#a78bfa",
+    c: "#22d3ee",
+    pk: "#f472b6",
+    a: "#fbbf24",
+  }
+  
+  return (
+    <span 
+      className="group-hover:drop-shadow-[0_0_8px_currentColor] transition-all duration-300"
+      style={{ color: colors[c] || colors.o, fontWeight: 500 }}
+    >
+      {children}
+    </span>
+  )
+}
+
 const modules = [
   {
+    id: "waste",
     title: "Gaspillage",
-    description: "Déclarer les pertes et réduire le gâchis",
+    description: <>Déclarer les <K c="r">pertes</K> et réduire le <K c="o">gâchis</K> quotidien.</>,
     icon: Flame,
+    iconColor: "red",
+    titleColor: "red",
     href: "/employee/waste",
-    gradient: "from-rose-500 via-red-500 to-orange-500",
-    glow: "shadow-[0_0_30px_rgba(244,63,94,0.4)]"
   },
   {
+    id: "stock",
     title: "Stock",
-    description: "Mettre à jour l'inventaire en temps réel",
+    description: <>Mettre à jour l'<K c="c">inventaire</K> en <K c="g">temps réel</K>.</>,
     icon: Boxes,
+    iconColor: "cyan",
+    titleColor: "cyan",
     href: "/employee/stock-update",
-    gradient: "from-orange-400 via-amber-500 to-yellow-500",
-    glow: "shadow-[0_0_30px_rgba(251,146,60,0.4)]"
   },
   {
+    id: "alerts",
     title: "Alertes",
-    description: "Consulter les notifications importantes",
+    description: <>Consulter les <K c="o">notifications</K> importantes.</>,
     icon: BellRing,
+    iconColor: "amber",
+    titleColor: "amber",
     href: "/employee/alerts",
-    gradient: "from-amber-400 via-yellow-500 to-lime-500",
-    glow: "shadow-[0_0_30px_rgba(250,204,21,0.4)]"
+    hasBadge: true,
   },
   {
+    id: "checkin",
     title: "Check-in",
-    description: "Valider le contrôle du service",
+    description: <>Valider le <K c="g">contrôle</K> du service.</>,
     icon: ClipboardCheck,
+    iconColor: "green",
+    titleColor: "green",
     href: "/employee/service-check",
-    gradient: "from-emerald-400 via-green-500 to-teal-500",
-    glow: "shadow-[0_0_30px_rgba(34,197,94,0.4)]"
   },
-]
-
-const sidebarItems = [
-  { title: "Tableau de bord", icon: LayoutDashboard, href: "/employee", active: true },
-  { title: "Stock", icon: Boxes, href: "/employee/stock-update" },
-  { title: "Gaspillage", icon: Flame, href: "/employee/waste" },
-  { title: "Alertes", icon: BellRing, href: "/employee/alerts" },
-  { title: "Check-in", icon: ClipboardCheck, href: "/employee/service-check" },
 ]
 
 export default function EmployeePage() {
@@ -79,7 +274,6 @@ export default function EmployeePage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [establishment, setEstablishment] = useState<Establishment | null>(null)
   const [showWelcome, setShowWelcome] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const currentHour = new Date().getHours()
   const greeting = currentHour < 12 ? "Bonjour" : currentHour < 18 ? "Bon après-midi" : "Bonsoir"
@@ -88,6 +282,7 @@ export default function EmployeePage() {
     day: 'numeric',
     month: 'long'
   })
+  const currentTime = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 
   // Obtenir les initiales
   const getInitials = () => {
@@ -190,302 +385,281 @@ export default function EmployeePage() {
   const tasksCompleted = (status.checkInDone ? 1 : 0) + (status.stockUpdated ? 1 : 0)
 
   return (
-    <div className="min-h-screen bg-background flex relative overflow-hidden">
-      {/* Animated Background Glows */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-orange-500/8 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-primary/8 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-      </div>
+    <>
+      <style jsx global>{`
+        @keyframes glassEnter {
+          from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.98);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+      `}</style>
 
       {/* Popup de bienvenue - uniquement à la connexion */}
       {showWelcome && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
-          <div className="bg-card/95 backdrop-blur-xl border border-border/50 rounded-3xl p-8 max-w-md mx-4 text-center shadow-2xl shadow-orange-500/10">
-            <div className="relative h-20 w-20 rounded-full mx-auto mb-5 shadow-xl shadow-orange-500/30">
-              {userProfile?.avatar_url ? (
-                <Image src={userProfile.avatar_url} alt="Avatar" fill className="rounded-full object-cover" />
-              ) : (
-                <div className="h-full w-full rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
-                  <span className="text-2xl font-black text-white">{getInitials()}</span>
-                </div>
-              )}
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-md">
+          <div 
+            className="relative max-w-md mx-4 text-center overflow-hidden"
+            style={{
+              background: "linear-gradient(145deg, rgba(20, 27, 45, 0.98) 0%, rgba(15, 20, 35, 0.99) 100%)",
+              border: "1px solid rgba(251, 146, 60, 0.2)",
+              borderRadius: "24px",
+              padding: "32px",
+              boxShadow: "0 25px 50px rgba(0, 0, 0, 0.5), 0 0 40px rgba(251, 146, 60, 0.1)",
+            }}
+          >
+            {/* Glow effect */}
+            <div className="absolute -top-20 -right-20 w-40 h-40 bg-orange-500/20 rounded-full blur-3xl" />
+            <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-red-500/20 rounded-full blur-3xl" />
+            
+            <div className="relative z-10">
+              <div className="relative h-20 w-20 rounded-2xl mx-auto mb-5 shadow-xl shadow-orange-500/30">
+                {userProfile?.avatar_url ? (
+                  <Image src={userProfile.avatar_url} alt="Avatar" fill className="rounded-2xl object-cover" />
+                ) : (
+                  <div className="h-full w-full rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
+                    <span className="text-2xl font-black text-white">{getInitials()}</span>
+                  </div>
+                )}
+              </div>
+              
+              <h2 className="text-2xl font-bold text-white mb-2">
+                {greeting}, {userName} ! 👋
+              </h2>
+              <p className="text-slate-400 mb-2 capitalize">{currentDate}</p>
+              {establishment && <p className="text-orange-400 font-semibold mb-4">{establishment.name}</p>}
+              
+              <div className="flex items-center justify-center gap-2 mb-6">
+                <Sparkles className="h-4 w-4 text-orange-500 animate-pulse" />
+                <span className="text-orange-400 font-semibold text-sm">
+                  {allTasksDone ? "Toutes les tâches sont faites !" : `${tasksCompleted}/2 tâches complétées`}
+                </span>
+              </div>
+              
+              <button
+                onClick={() => setShowWelcome(false)}
+                className="w-full py-3 rounded-xl text-white font-bold hover:scale-[1.02] transition-all duration-300"
+                style={{
+                  background: "linear-gradient(135deg, #fb923c 0%, #ea580c 50%, #dc2626 100%)",
+                  boxShadow: "0 4px 20px rgba(251, 146, 60, 0.4)",
+                }}
+              >
+                C'est parti ! 🚀
+              </button>
             </div>
-            <h2 className="text-2xl font-black text-foreground mb-2" style={{ fontFamily: 'var(--font-sf-pro)' }}>
-              {greeting}, {userName} ! 👋
-            </h2>
-            <p className="text-muted-foreground mb-2 capitalize">{currentDate}</p>
-            {establishment && <p className="text-primary font-bold mb-4">{establishment.name}</p>}
-            <div className="flex items-center justify-center gap-2 mb-5">
-              <Sparkles className="h-4 w-4 text-orange-500 animate-pulse" />
-              <span className="text-orange-500 font-bold text-sm">
-                {allTasksDone ? "Toutes les tâches sont faites !" : `${tasksCompleted}/2 tâches complétées`}
-              </span>
-            </div>
-            <button
-              onClick={() => setShowWelcome(false)}
-              className="w-full py-3 rounded-2xl bg-gradient-to-r from-orange-500 via-red-500 to-rose-500 text-white font-black hover:scale-[1.02] hover:shadow-xl hover:shadow-orange-500/30 transition-all duration-300"
-              style={{ fontFamily: 'var(--font-sf-pro)' }}
-            >
-              C'est parti ! 🚀
-            </button>
           </div>
         </div>
       )}
-
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-card/80 backdrop-blur-xl border-b border-border/50 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="h-10 w-10 rounded-xl bg-secondary/80 flex items-center justify-center">
-            <Menu className="h-5 w-5 text-foreground" />
-          </button>
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
-            <Package className="h-4 w-4 text-white" />
-          </div>
-          <span className="font-black text-foreground text-sm" style={{ fontFamily: 'var(--font-sf-pro)' }}>StockGuard</span>
+      
+      <div className="p-6 space-y-6">
+        {/* Header Section */}
+        <div className="mb-2">
+          <h1 className="text-2xl font-semibold text-slate-100 mb-1 tracking-tight">
+            {greeting}, <span className="text-orange-400">{userName}</span> !
+          </h1>
+          <p className="text-sm text-slate-400 capitalize">{currentDate}</p>
         </div>
-        {unreadCount > 0 && (
-          <Link href="/employee/alerts">
-            <div className="relative">
-              <div className="h-9 w-9 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                <Bell className="h-4 w-4 text-orange-500" />
-              </div>
-              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-                {unreadCount}
-              </span>
-            </div>
-          </Link>
-        )}
-      </div>
 
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && <div className="lg:hidden fixed inset-0 z-40 bg-black/60" onClick={() => setSidebarOpen(false)} />}
-
-      {/* Sidebar - Compact */}
-      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-56 bg-card/95 backdrop-blur-xl border-r border-border/50 flex flex-col transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-        <div className="p-4 border-b border-border/50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
-                <Package className="h-5 w-5 text-white" />
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <GlassTile animationDelay={0}>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/10 border border-orange-500/30 flex items-center justify-center">
+                <Target className="w-6 h-6 text-orange-400" />
               </div>
               <div>
-                <h1 className="font-black text-foreground text-sm" style={{ fontFamily: 'var(--font-sf-pro)' }}>StockGuard</h1>
-                <p className="text-[10px] text-muted-foreground">Espace Employé</p>
+                <p className="text-xs text-slate-500 uppercase tracking-wide">Tâches</p>
+                <p className="text-2xl font-bold text-white">{tasksCompleted}/2</p>
               </div>
             </div>
-            <button onClick={() => setSidebarOpen(false)} className="lg:hidden h-7 w-7 rounded-lg bg-secondary/80 flex items-center justify-center">
-              <X className="h-4 w-4 text-foreground" />
-            </button>
-          </div>
+          </GlassTile>
+          
+          <GlassTile animationDelay={0.05}>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 border border-amber-500/30 flex items-center justify-center">
+                <BellRing className="w-6 h-6 text-amber-400" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 uppercase tracking-wide">Alertes</p>
+                <p className={`text-2xl font-bold ${unreadCount > 0 ? 'text-amber-400' : 'text-white'}`}>{unreadCount}</p>
+              </div>
+            </div>
+          </GlassTile>
+          
+          <GlassTile animationDelay={0.1}>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-500/10 border border-emerald-500/30 flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 uppercase tracking-wide">Statut</p>
+                <p className={`text-lg font-bold ${allTasksDone ? 'text-emerald-400' : 'text-orange-400'}`}>
+                  {allTasksDone ? 'Prêt ✓' : 'En cours'}
+                </p>
+              </div>
+            </div>
+          </GlassTile>
+          
+          <GlassTile animationDelay={0.15}>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/10 border border-blue-500/30 flex items-center justify-center">
+                <Clock className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 uppercase tracking-wide">Heure</p>
+                <p className="text-2xl font-bold text-white">{currentTime}</p>
+              </div>
+            </div>
+          </GlassTile>
         </div>
 
-        <nav className="flex-1 p-3">
-          <ul className="space-y-1">
-            {sidebarItems.map((item) => {
-              const Icon = item.icon
-              return (
-                <li key={item.href}>
-                  <Link href={item.href} onClick={() => setSidebarOpen(false)}>
-                    <div className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all ${item.active ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-secondary/80 hover:text-foreground'}`}>
-                      <Icon className="h-4 w-4" />
-                      <span className="font-semibold text-sm">{item.title}</span>
-                      {item.title === "Alertes" && unreadCount > 0 && (
-                        <span className="ml-auto h-5 w-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">{unreadCount}</span>
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Modules Section */}
+          <div className="lg:col-span-2">
+            <h2 className="text-lg font-semibold text-white mb-4">Modules</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {modules.map((module, index) => {
+                const Icon = module.icon
+                const isCompleted = (module.id === "checkin" && status.checkInDone) || (module.id === "stock" && status.stockUpdated)
+                
+                return (
+                  <GlassTile key={module.id} href={module.href} animationDelay={0.2 + index * 0.05}>
+                    <div className="flex items-start justify-between">
+                      <TileIcon Icon={Icon} color={module.iconColor} />
+                      {isCompleted && (
+                        <div className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        </div>
+                      )}
+                      {module.hasBadge && unreadCount > 0 && (
+                        <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
+                          <span className="text-[10px] font-bold text-white">{unreadCount}</span>
+                        </div>
                       )}
                     </div>
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
-
-        <div className="p-3 border-t border-border/50">
-          <Link href="/employee/settings" onClick={() => setSidebarOpen(false)}>
-            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/80 hover:text-foreground transition-all">
-              <Settings className="h-4 w-4" />
-              <span className="font-semibold text-sm">Paramètres</span>
+                    <TileTitle color={module.titleColor}>{module.title}</TileTitle>
+                    <p className="text-[13px] leading-relaxed text-slate-400/85">{module.description}</p>
+                  </GlassTile>
+                )
+              })}
             </div>
-          </Link>
-        </div>
-      </aside>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col lg:flex-row pt-14 lg:pt-0 min-h-screen">
-        {/* Centre - Contenu principal */}
-        <div className="flex-1 p-4 lg:p-6 overflow-auto">
-          {/* Welcome Header */}
-          <div className="mb-5">
-            <h1 className="text-2xl lg:text-3xl font-black text-foreground" style={{ fontFamily: 'var(--font-sf-pro)' }}>
-              Bienvenue, {userName} !
-            </h1>
-            <p className="text-muted-foreground capitalize text-sm">{currentDate}</p>
           </div>
 
-          {/* Stats Cards Row */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-            {modules.map((module) => {
-              const Icon = module.icon
-              const showBadge = module.title === "Alertes" && unreadCount > 0
-              const isCompleted = (module.title === "Check-in" && status.checkInDone) || (module.title === "Stock" && status.stockUpdated)
-
-              return (
-                <Link key={module.href} href={module.href}>
-                  <div className={`relative bg-card/90 border border-border/50 rounded-2xl p-4 group cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ${isCompleted ? 'ring-1 ring-green-500/50' : ''}`}>
-                    <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${module.gradient} flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform`}>
-                      <Icon className="h-5 w-5 text-white" />
-                    </div>
-                    <p className="font-black text-foreground text-sm" style={{ fontFamily: 'var(--font-sf-pro)' }}>{module.title}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{module.description}</p>
-                    {isCompleted && (
-                      <div className="absolute top-2 right-2 h-5 w-5 rounded-full bg-green-500 flex items-center justify-center">
-                        <Check className="h-3 w-3 text-white" />
-                      </div>
-                    )}
-                    {showBadge && (
-                      <div className="absolute top-2 right-2 h-5 w-5 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
-                        <span className="text-[10px] font-bold text-white">{unreadCount}</span>
-                      </div>
-                    )}
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Right Panel */}
+          <div className="space-y-4">
             {/* Tâches du jour */}
-            <div className="bg-card/90 border border-border/50 rounded-2xl p-4">
+            <GlassTile animationDelay={0.4}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-black text-foreground" style={{ fontFamily: 'var(--font-sf-pro)' }}>Tâches du jour</h3>
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${allTasksDone ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                <TileTitle color="white">Tâches du jour</TileTitle>
+                <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                  allTasksDone 
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                    : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                }`}>
                   {tasksCompleted}/2
                 </span>
               </div>
 
               {status.loading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <Loader2 className="h-6 w-6 animate-spin text-orange-400" />
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className={`flex items-center gap-3 p-3 rounded-xl border ${status.checkInDone ? 'bg-green-500/10 border-green-500/30' : 'bg-orange-500/10 border-orange-500/30'}`}>
-                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${status.checkInDone ? 'bg-green-500/20' : 'bg-orange-500/20'}`}>
-                      {status.checkInDone ? <CheckCircle2 className="h-5 w-5 text-green-400" /> : <X className="h-5 w-5 text-orange-400" />}
+                  <div className={`flex items-center gap-3 p-3 rounded-xl border ${
+                    status.checkInDone 
+                      ? 'bg-emerald-500/10 border-emerald-500/30' 
+                      : 'bg-orange-500/10 border-orange-500/30'
+                  }`}>
+                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                      status.checkInDone ? 'bg-emerald-500/20' : 'bg-orange-500/20'
+                    }`}>
+                      {status.checkInDone 
+                        ? <CheckCircle2 className="h-5 w-5 text-emerald-400" /> 
+                        : <X className="h-5 w-5 text-orange-400" />
+                      }
                     </div>
                     <div>
-                      <p className="font-bold text-foreground text-sm">Check-in service</p>
-                      <p className="text-xs text-muted-foreground">{status.checkInDone ? '✓ Complété' : 'À faire'}</p>
+                      <p className="font-semibold text-white text-sm">Check-in service</p>
+                      <p className="text-xs text-slate-400">{status.checkInDone ? '✓ Complété' : 'À faire'}</p>
                     </div>
                   </div>
-                  <div className={`flex items-center gap-3 p-3 rounded-xl border ${status.stockUpdated ? 'bg-green-500/10 border-green-500/30' : 'bg-orange-500/10 border-orange-500/30'}`}>
-                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${status.stockUpdated ? 'bg-green-500/20' : 'bg-orange-500/20'}`}>
-                      {status.stockUpdated ? <CheckCircle2 className="h-5 w-5 text-green-400" /> : <X className="h-5 w-5 text-orange-400" />}
+                  
+                  <div className={`flex items-center gap-3 p-3 rounded-xl border ${
+                    status.stockUpdated 
+                      ? 'bg-emerald-500/10 border-emerald-500/30' 
+                      : 'bg-orange-500/10 border-orange-500/30'
+                  }`}>
+                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                      status.stockUpdated ? 'bg-emerald-500/20' : 'bg-orange-500/20'
+                    }`}>
+                      {status.stockUpdated 
+                        ? <CheckCircle2 className="h-5 w-5 text-emerald-400" /> 
+                        : <X className="h-5 w-5 text-orange-400" />
+                      }
                     </div>
                     <div>
-                      <p className="font-bold text-foreground text-sm">Mise à jour inventaire</p>
-                      <p className="text-xs text-muted-foreground">{status.stockUpdated ? '✓ Complété' : 'À faire'}</p>
+                      <p className="font-semibold text-white text-sm">Mise à jour inventaire</p>
+                      <p className="text-xs text-slate-400">{status.stockUpdated ? '✓ Complété' : 'À faire'}</p>
                     </div>
                   </div>
                 </div>
               )}
 
               {allTasksDone && (
-                <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-xl text-center">
-                  <p className="text-green-400 font-bold text-sm">🎉 Excellent travail !</p>
+                <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center">
+                  <p className="text-emerald-400 font-semibold text-sm">🎉 Excellent travail !</p>
                 </div>
               )}
-            </div>
+            </GlassTile>
 
-            {/* Prévision & Infos */}
-            <div className="space-y-4">
-              {/* Prévision */}
-              <div className="bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/30 rounded-2xl p-4 flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-                  <Clock className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Prévision du service</p>
-                  <p className="font-black text-foreground" style={{ fontFamily: 'var(--font-sf-pro)' }}>Affluence normale prévue</p>
-                </div>
-              </div>
-
-              {/* Infos entreprise */}
-              <div className="bg-card/90 border border-border/50 rounded-2xl p-4">
-                <h3 className="font-black text-foreground mb-3" style={{ fontFamily: 'var(--font-sf-pro)' }}>Mon établissement</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="flex items-center gap-3 p-3 bg-secondary/30 rounded-xl">
-                    <div className="h-9 w-9 rounded-lg bg-primary/15 flex items-center justify-center">
-                      <Building2 className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] text-muted-foreground">Entreprise</p>
-                      <p className="font-bold text-foreground text-sm truncate">{establishment?.name || 'Non défini'}</p>
-                    </div>
+            {/* Établissement */}
+            <GlassTile animationDelay={0.45}>
+              <TileTitle color="white">Mon établissement</TileTitle>
+              <div className="space-y-3 mt-4">
+                <div className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-xl">
+                  <div className="h-9 w-9 rounded-lg bg-blue-500/15 border border-blue-500/25 flex items-center justify-center">
+                    <Building2 className="h-4 w-4 text-blue-400" />
                   </div>
-                  <div className="flex items-center gap-3 p-3 bg-secondary/30 rounded-xl">
-                    <div className="h-9 w-9 rounded-lg bg-primary/15 flex items-center justify-center">
-                      <MapPin className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] text-muted-foreground">Adresse</p>
-                      <p className="font-medium text-foreground text-sm truncate">{establishment?.address || 'Non définie'}</p>
-                    </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-slate-500 uppercase tracking-wide">Entreprise</p>
+                    <p className="font-semibold text-white text-sm truncate">{establishment?.name || 'Non défini'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-xl">
+                  <div className="h-9 w-9 rounded-lg bg-purple-500/15 border border-purple-500/25 flex items-center justify-center">
+                    <MapPin className="h-4 w-4 text-purple-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-slate-500 uppercase tracking-wide">Adresse</p>
+                    <p className="font-medium text-slate-300 text-sm truncate">{establishment?.address || 'Non définie'}</p>
                   </div>
                 </div>
               </div>
-            </div>
+            </GlassTile>
           </div>
         </div>
 
-        {/* Panneau droit - Résumé */}
-        <aside className="hidden lg:flex flex-col w-64 bg-card/90 border-l border-border/50 p-4">
-          {/* Profil */}
-          <div className="flex items-center gap-3 mb-5">
-            <div className="relative h-12 w-12 rounded-xl overflow-hidden shadow-lg shadow-orange-500/20">
-              {userProfile?.avatar_url ? (
-                <Image src={userProfile.avatar_url} alt="Avatar" fill className="object-cover" />
-              ) : (
-                <div className="h-full w-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
-                  <span className="text-lg font-black text-white">{getInitials()}</span>
-                </div>
-              )}
-            </div>
+        {/* Conseil du Jour */}
+        <GlassTile animationDelay={0.5}>
+          <div className="flex items-start gap-4">
+            <TileIcon Icon={Zap} color="cyan" />
             <div>
-              <h3 className="font-black text-foreground text-sm" style={{ fontFamily: 'var(--font-sf-pro)' }}>{fullName}</h3>
-              <p className="text-xs text-muted-foreground capitalize">{userProfile?.role || 'Employé'}</p>
+              <TileTitle color="white">Conseil du Jour</TileTitle>
+              <p className="text-[13px] leading-relaxed text-slate-400/85">
+                Pensez à effectuer votre <K c="g">check-in</K> dès votre arrivée. 
+                Une mise à jour régulière du <K c="c">stock</K> permet d'éviter les 
+                <K c="r"> ruptures</K> et d'optimiser les <K c="o">commandes</K>.
+              </p>
             </div>
           </div>
-
-          {/* Résumé */}
-          <div className="flex-1">
-            <h4 className="font-black text-foreground mb-3 text-sm" style={{ fontFamily: 'var(--font-sf-pro)' }}>Résumé du jour</h4>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-xl">
-                <span className="text-xs text-muted-foreground">Tâches</span>
-                <span className="font-black text-foreground text-sm">{tasksCompleted}/2</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-xl">
-                <span className="text-xs text-muted-foreground">Alertes</span>
-                <span className={`font-black text-sm ${unreadCount > 0 ? 'text-orange-400' : 'text-foreground'}`}>{unreadCount}</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-xl">
-                <span className="text-xs text-muted-foreground">Statut</span>
-                <span className={`font-black text-sm ${allTasksDone ? 'text-green-400' : 'text-orange-400'}`}>{allTasksDone ? 'Prêt' : 'En cours'}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Heure */}
-          <div className="mt-4 p-4 bg-gradient-to-br from-primary/15 to-primary/5 rounded-2xl text-center">
-            <p className="text-[10px] text-muted-foreground mb-1">Heure actuelle</p>
-            <p className="text-3xl font-black text-foreground" style={{ fontFamily: 'var(--font-sf-pro)' }}>
-              {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-            </p>
-          </div>
-        </aside>
+        </GlassTile>
       </div>
-    </div>
+    </>
   )
 }

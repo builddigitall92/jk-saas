@@ -1,8 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
@@ -16,12 +14,10 @@ export default function SuppliersPage() {
   const { suppliers, loading, avgRating, avgReliability, createSupplier, deleteSupplier, fetchSuppliers } = useSuppliers()
   const [searchQuery, setSearchQuery] = useState("")
   
-  // Dialog ajout
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   
-  // Formulaire
   const [name, setName] = useState("")
   const [category, setCategory] = useState("")
   const [phone, setPhone] = useState("")
@@ -77,51 +73,62 @@ export default function SuppliersPage() {
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-blue-400" />
+          </div>
+          <p className="text-slate-400 text-sm">Chargement des fournisseurs...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="p-8">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8 animate-fade-up">
+      <div className="flex items-center justify-between glass-animate-fade-up">
         <div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">Fournisseurs</h1>
-          <p className="text-muted-foreground">Gérez vos partenaires</p>
+          <h1 className="text-2xl font-semibold text-slate-100 tracking-tight">Fournisseurs</h1>
+          <p className="text-sm text-slate-400">Gérez vos partenaires</p>
         </div>
-        <Button className="btn-primary" onClick={() => setIsDialogOpen(true)}>
-          <Plus className="h-5 w-5 mr-2" />
+        <button className="glass-btn-primary" onClick={() => setIsDialogOpen(true)}>
+          <Plus className="h-5 w-5" />
           Ajouter
-        </Button>
+        </button>
       </div>
 
       {/* Dialog ajout fournisseur */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="banking-card border-border sm:max-w-[500px]">
+        <DialogContent 
+          className="sm:max-w-[500px] border-0"
+          style={{
+            background: "linear-gradient(145deg, rgba(20, 27, 45, 0.98) 0%, rgba(15, 20, 35, 0.99) 100%)",
+            backdropFilter: "blur(24px)",
+            border: "1px solid rgba(100, 130, 180, 0.2)",
+            borderRadius: "20px",
+          }}
+        >
           <DialogHeader>
-            <DialogTitle className="text-foreground text-lg">Ajouter un Fournisseur</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-white">Ajouter un Fournisseur</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            {/* Nom */}
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Nom du fournisseur *</label>
-              <Input
+              <label className="text-sm text-slate-400 mb-2 block">Nom du fournisseur *</label>
+              <input
                 placeholder="Ex: Metro, Brake, Transgourmet..."
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="h-11 rounded-lg"
+                className="glass-search-input"
               />
             </div>
 
-            {/* Catégorie */}
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Catégorie</label>
+              <label className="text-sm text-slate-400 mb-2 block">Catégorie</label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full h-11 px-3 rounded-lg bg-input border border-border text-sm"
+                className="glass-search-input"
               >
                 <option value="">Sélectionner une catégorie</option>
                 <option value="Alimentaire">Alimentaire</option>
@@ -138,58 +145,60 @@ export default function SuppliersPage() {
               </select>
             </div>
 
-            {/* Téléphone & Email */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Téléphone</label>
-                <Input
+                <label className="text-sm text-slate-400 mb-2 block">Téléphone</label>
+                <input
                   placeholder="Ex: 01 23 45 67 89"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="h-11 rounded-lg"
+                  className="glass-search-input"
                 />
               </div>
               <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Email</label>
-                <Input
+                <label className="text-sm text-slate-400 mb-2 block">Email</label>
+                <input
                   type="email"
                   placeholder="Ex: contact@fournisseur.fr"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-11 rounded-lg"
+                  className="glass-search-input"
                 />
               </div>
             </div>
 
-            {/* Adresse */}
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Adresse</label>
-              <Input
+              <label className="text-sm text-slate-400 mb-2 block">Adresse</label>
+              <input
                 placeholder="Ex: 123 rue du Commerce, 75001 Paris"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="h-11 rounded-lg"
+                className="glass-search-input"
               />
             </div>
 
-            {/* Message d'erreur */}
             {errorMessage && (
-              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+              <div 
+                className="p-3 rounded-xl text-sm"
+                style={{
+                  background: "rgba(239, 68, 68, 0.1)",
+                  border: "1px solid rgba(239, 68, 68, 0.3)",
+                  color: "#f87171",
+                }}
+              >
                 {errorMessage}
               </div>
             )}
 
-            {/* Boutons */}
             <div className="flex gap-3 pt-2">
-              <Button 
-                variant="outline" 
-                className="flex-1" 
+              <button 
+                className="glass-btn-secondary flex-1 justify-center" 
                 onClick={() => { setIsDialogOpen(false); setErrorMessage(null); }}
               >
                 Annuler
-              </Button>
-              <Button 
-                className="flex-1 btn-primary" 
+              </button>
+              <button 
+                className="glass-btn-primary flex-1 justify-center"
                 onClick={handleCreate}
                 disabled={!name.trim() || isSubmitting}
               >
@@ -197,82 +206,113 @@ export default function SuppliersPage() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
-                    <Check className="h-4 w-4 mr-2" />
+                    <Check className="h-4 w-4" />
                     Ajouter
                   </>
                 )}
-              </Button>
+              </button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6 animate-fade-up delay-1">
-        <div className="banking-card p-5">
-          <Building2 className="h-5 w-5 text-primary mb-3" />
-          <p className="text-2xl font-bold text-foreground">{suppliers.length}</p>
-          <p className="text-sm text-muted-foreground">Fournisseurs actifs</p>
+      <div className="grid grid-cols-4 gap-4">
+        <div className="glass-stat-card glass-animate-fade-up glass-stagger-1">
+          <div className="glass-stat-icon glass-stat-icon-blue">
+            <Building2 className="h-5 w-5" />
+          </div>
+          <p className="glass-stat-value glass-stat-value-blue">{suppliers.length}</p>
+          <p className="glass-stat-label">Fournisseurs actifs</p>
         </div>
-        <div className="banking-card p-5">
-          <Star className="h-5 w-5 text-primary mb-3" />
-          <p className="text-2xl font-bold text-foreground">{avgRating.toFixed(1)}</p>
-          <p className="text-sm text-muted-foreground">Note moyenne</p>
+        <div className="glass-stat-card glass-animate-fade-up glass-stagger-2">
+          <div className="glass-stat-icon glass-stat-icon-orange">
+            <Star className="h-5 w-5" />
+          </div>
+          <p className="glass-stat-value glass-stat-value-orange">{avgRating.toFixed(1)}</p>
+          <p className="glass-stat-label">Note moyenne</p>
         </div>
-        <div className="banking-card p-5">
-          <Package className="h-5 w-5 text-accent mb-3" />
-          <p className="text-2xl font-bold text-foreground">{avgReliability}%</p>
-          <p className="text-sm text-muted-foreground">Fiabilité</p>
+        <div className="glass-stat-card glass-animate-fade-up glass-stagger-3">
+          <div className="glass-stat-icon glass-stat-icon-green">
+            <Package className="h-5 w-5" />
+          </div>
+          <p className="glass-stat-value glass-stat-value-green">{avgReliability}%</p>
+          <p className="glass-stat-label">Fiabilité</p>
         </div>
-        <div className="banking-card p-5">
-          <Clock className="h-5 w-5 text-primary mb-3" />
-          <p className="text-2xl font-bold text-foreground">14h</p>
-          <p className="text-sm text-muted-foreground">Délai moyen</p>
+        <div className="glass-stat-card glass-animate-fade-up glass-stagger-4">
+          <div className="glass-stat-icon glass-stat-icon-purple">
+            <Clock className="h-5 w-5" />
+          </div>
+          <p className="glass-stat-value glass-stat-value-purple">14h</p>
+          <p className="glass-stat-label">Délai moyen</p>
         </div>
       </div>
 
       {/* Search */}
-      <div className="relative mb-6 animate-fade-up delay-2">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-        <Input
+      <div className="glass-search glass-animate-fade-up glass-stagger-5">
+        <Search className="glass-search-icon h-5 w-5" />
+        <input
           placeholder="Rechercher un fournisseur..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-12 h-12 rounded-xl"
+          className="glass-search-input pl-12"
         />
       </div>
 
       {/* Suppliers Grid */}
-      <div className="grid grid-cols-1 gap-4 animate-fade-up delay-3">
+      <div className="grid grid-cols-1 gap-4">
         {filteredSuppliers.length === 0 ? (
-          <div className="banking-card p-12 text-center">
-            <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">Aucun fournisseur</h3>
-            <p className="text-muted-foreground mb-4">Ajoutez votre premier fournisseur</p>
-            <Button className="btn-primary" onClick={() => setIsDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter un Fournisseur
-            </Button>
+          <div className="glass-stat-card glass-animate-fade-up">
+            <div className="glass-empty-state">
+              <div className="glass-empty-icon">
+                <Building2 className="h-10 w-10" />
+              </div>
+              <p className="glass-empty-title">Aucun fournisseur</p>
+              <p className="glass-empty-desc">Ajoutez votre premier fournisseur</p>
+              <button className="glass-btn-primary" onClick={() => setIsDialogOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Ajouter un Fournisseur
+              </button>
+            </div>
           </div>
         ) : (
-          filteredSuppliers.map((supplier) => (
-            <div key={supplier.id} className="banking-card p-5">
+          filteredSuppliers.map((supplier, index) => (
+            <div 
+              key={supplier.id} 
+              className="glass-stat-card glass-animate-fade-up"
+              style={{ animationDelay: `${0.1 * index}s` }}
+            >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4">
-                  <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Building2 className="h-7 w-7 text-primary" />
+                  <div className="glass-stat-icon glass-stat-icon-blue w-14 h-14">
+                    <Building2 className="h-7 w-7" />
                   </div>
                   <div>
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-foreground text-lg">{supplier.name}</h3>
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-primary text-primary" />
-                        <span className="text-sm font-medium text-foreground">{Number(supplier.rating).toFixed(1)}</span>
+                      <h3 className="font-semibold text-white text-lg">{supplier.name}</h3>
+                      <div 
+                        className="flex items-center gap-1 px-2 py-0.5 rounded-full"
+                        style={{
+                          background: "rgba(251, 146, 60, 0.15)",
+                          border: "1px solid rgba(251, 146, 60, 0.3)",
+                        }}
+                      >
+                        <Star className="h-3 w-3 fill-orange-400 text-orange-400" />
+                        <span className="text-xs font-medium text-orange-400">{Number(supplier.rating).toFixed(1)}</span>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-3">{supplier.category || "Non catégorisé"}</p>
+                    <p 
+                      className="text-sm mb-3 px-2 py-0.5 rounded-full inline-block"
+                      style={{
+                        background: "rgba(59, 130, 246, 0.15)",
+                        border: "1px solid rgba(59, 130, 246, 0.3)",
+                        color: "#60a5fa",
+                      }}
+                    >
+                      {supplier.category || "Non catégorisé"}
+                    </p>
 
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-4 text-sm text-slate-400">
                       {supplier.phone && (
                         <span className="flex items-center gap-1">
                           <Phone className="h-3 w-3" />
@@ -292,28 +332,24 @@ export default function SuppliersPage() {
                 <div className="text-right">
                   <div className="flex items-center gap-4 mb-3">
                     <div>
-                      <p className="text-xs text-muted-foreground">Fiabilité</p>
-                      <p className="font-semibold text-foreground">{supplier.reliability_percent}%</p>
+                      <p className="text-xs text-slate-500">Fiabilité</p>
+                      <p className="font-semibold text-green-400">{supplier.reliability_percent}%</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Délai</p>
-                      <p className="font-semibold text-foreground">{supplier.avg_delivery_time || "-"}</p>
+                      <p className="text-xs text-slate-500">Délai</p>
+                      <p className="font-semibold text-purple-400">{supplier.avg_delivery_time || "-"}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Commandes</p>
-                      <p className="font-semibold text-foreground">{supplier.total_orders}</p>
+                      <p className="text-xs text-slate-500">Commandes</p>
+                      <p className="font-semibold text-blue-400">{supplier.total_orders}</p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(supplier.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <button 
+                    className="glass-btn-icon hover:!bg-red-500/20 hover:!border-red-500/40 hover:text-red-400"
+                    onClick={() => handleDelete(supplier.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             </div>
