@@ -4,14 +4,30 @@ import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 
 // Créer un client Supabase avec la clé service (pour bypasser RLS)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Si les variables ne sont pas définies, on retournera une erreur dans la fonction POST
+const getSupabaseAdmin = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error('Supabase configuration manquante. NEXT_PUBLIC_SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY sont requis.')
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey)
+}
 
 export async function POST(request: NextRequest) {
   if (!isStripeConfigured() || !stripe) {
     return NextResponse.json({ error: 'Stripe non configuré' }, { status: 500 })
+  }
+
+  // Vérifier que Supabase est configuré
+  let supabaseAdmin
+  try {
+    supabaseAdmin = getSupabaseAdmin()
+  } catch (error) {
+    console.error('Erreur configuration Supabase:', error)
+    return NextResponse.json({ error: 'Configuration Supabase manquante' }, { status: 500 })
   }
 
   const body = await request.text()
@@ -38,32 +54,32 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
-        await handleCheckoutCompleted(session)
+        await handleCheckoutCompleted(session, supabaseAdmin)
         break
       }
 
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription
-        await handleSubscriptionUpdated(subscription)
+        await handleSubscriptionUpdated(subscription, supabaseAdmin)
         break
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
-        await handleSubscriptionDeleted(subscription)
+        await handleSubscriptionDeleted(subscription, supabaseAdmin)
         break
       }
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice
-        await handlePaymentFailed(invoice)
+        await handlePaymentFailed(invoice, supabaseAdmin)
         break
       }
 
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice
-        await handlePaymentSucceeded(invoice)
+        await handlePaymentSucceeded(invoice, supabaseAdmin)
         break
       }
 
@@ -78,7 +94,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session, supabaseAdmin: ReturnType<typeof getSupabaseAdmin>) {
   const customerId = session.customer as string
   const subscriptionId = session.subscription as string
 
@@ -104,7 +120,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     .eq('id', establishment.id)
 }
 
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription, supabaseAdmin: ReturnType<typeof getSupabaseAdmin>) {
   const customerId = subscription.customer as string
   const priceId = subscription.items.data[0]?.price.id
   const planId = getPlanFromPriceId(priceId)
@@ -122,13 +138,16 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   }
 
   // Mettre à jour le plan et le statut
+  const currentPeriodEnd = (subscription as any).current_period_end as number | undefined
   await supabaseAdmin
     .from('establishments')
     .update({
       stripe_subscription_id: subscription.id,
       subscription_plan: planId.toLowerCase(),
       subscription_status: subscription.status,
-      subscription_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      subscription_period_end: currentPeriodEnd 
+        ? new Date(currentPeriodEnd * 1000).toISOString()
+        : null,
       trial_ends_at: subscription.trial_end 
         ? new Date(subscription.trial_end * 1000).toISOString() 
         : null,
@@ -136,7 +155,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     .eq('id', establishment.id)
 }
 
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription, supabaseAdmin: ReturnType<typeof getSupabaseAdmin>) {
   const customerId = subscription.customer as string
 
   // Trouver l'établissement
@@ -162,7 +181,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     .eq('id', establishment.id)
 }
 
-async function handlePaymentFailed(invoice: Stripe.Invoice) {
+async function handlePaymentFailed(invoice: Stripe.Invoice, supabaseAdmin: ReturnType<typeof getSupabaseAdmin>) {
   const customerId = invoice.customer as string
 
   // Trouver l'établissement
@@ -185,7 +204,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
   // TODO: Envoyer un email de notification
 }
 
-async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
+async function handlePaymentSucceeded(invoice: Stripe.Invoice, supabaseAdmin: ReturnType<typeof getSupabaseAdmin>) {
   const customerId = invoice.customer as string
 
   // Trouver l'établissement
