@@ -15,10 +15,12 @@ import {
   Minus,
   TrendingUp,
   Info,
+  Sparkles,
 } from "lucide-react"
 import { useStock, type StockWithProduct } from "@/lib/hooks/use-stock"
 import { useSuppliers } from "@/lib/hooks/use-suppliers"
 import { createClient } from "@/utils/supabase/client"
+import { AIAssistant } from "@/components/ai-assistant/AIAssistant"
 
 interface StockCalculation {
   unitPrice: number
@@ -43,6 +45,7 @@ export default function CalculatorPage() {
   const [tempValue, setTempValue] = useState("")
   
   const [simulatedUsage, setSimulatedUsage] = useState<Record<string, number>>({})
+  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false)
 
   const loading = stocksLoading || suppliersLoading
 
@@ -180,6 +183,13 @@ export default function CalculatorPage() {
             Calculez automatiquement les prix unitaires et la valeur de votre stock
           </p>
         </div>
+        <button 
+          className="ai-trigger-btn"
+          onClick={() => setIsAIAssistantOpen(true)}
+        >
+          <Sparkles className="h-4 w-4" />
+          <span>Analyser mes marges</span>
+        </button>
       </div>
 
       {/* Stats globales */}
@@ -634,6 +644,13 @@ export default function CalculatorPage() {
           </div>
         )}
       </div>
+
+      {/* AI Assistant */}
+      <AIAssistant
+        isOpen={isAIAssistantOpen}
+        onClose={() => setIsAIAssistantOpen(false)}
+        mode="margin"
+      />
     </div>
   )
 }

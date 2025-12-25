@@ -38,7 +38,8 @@ import {
   Bell,
   Calculator,
   FileSpreadsheet,
-  RefreshCw
+  RefreshCw,
+  Bot
 } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
@@ -113,7 +114,7 @@ function FAQItem({ question, answer, isOpen, onClick }: {
 }
 
 export default function LandingPage() {
-  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly")
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("annual")
   const [openFAQ, setOpenFAQ] = useState<number | null>(null)
   const [isVisible, setIsVisible] = useState(false)
 
@@ -202,71 +203,101 @@ export default function LandingPage() {
     }
   ]
 
+  // Prix officiels (source unique de vérité)
   const plans = {
     starter: {
       name: "Starter",
-      tagline: "Pour démarrer sans risque",
-      monthlyPrice: 20,
-      annualPrice: 200,
+      tagline: "Premiers pas vers la maîtrise du stock",
+      target: "Petits restos, snacks, food trucks",
+      monthlyPrice: 60,
+      annualPrice: 649,
+      annualOriginal: 720,
+      annualSavings: "~1 mois offert",
       features: [
         "1 établissement",
-        "3 utilisateurs max",
-        "Gestion stocks & gaspillage",
-        "Alertes automatiques",
-        "Rapports basiques"
+        "Jusqu'à 3 utilisateurs",
+        "Gestion Stock de base : articles, catégories, mouvements, valeur de stock",
+        "Menu & recettes : création manuelle avec calcul automatique du coût matière",
+        "Rapports essentiels : valeur de stock, top 5 produits, alertes basiques",
+      ],
+      aiFeatures: [
+        "🤖 IA intégrée (version Light)",
+        "Assistant texte dans Stock, Menu et Calculateur",
+        "Création de produits, recettes et estimations de marge",
       ],
       bullets: [
         "Arrête les Excel qui cassent en plein service",
-        "Visibilité basique mais déjà 100× mieux que ton cahier",
-        "Tu sais enfin ce que tu as en stock"
+        "Tu sais enfin ce que tu as en stock",
+        "L'IA t'aide même dans la version de base",
       ],
-      cta: "14 jours d'essai gratuit",
+      cta: "Commencer avec Starter",
       highlighted: false
     },
     pro: {
       name: "Pro",
       tagline: "Le choix des équipes sérieuses",
-      monthlyPrice: 80,
-      annualPrice: 800,
+      target: "Restaurants établis, brasseries",
+      monthlyPrice: 120,
+      annualPrice: 1199,
+      annualOriginal: 1440,
+      annualSavings: "~2 mois offerts",
       features: [
-        "Jusqu'à 3 établissements",
-        "Utilisateurs illimités",
-        "Toutes fonctionnalités Starter",
-        "Prévisions intelligentes",
-        "Calculateur de marges",
-        "Gestion fournisseurs",
-        "Rapports détaillés",
-        "Support prioritaire"
+        "1 établissement",
+        "Jusqu'à 10 utilisateurs",
+        "Tout Starter inclus",
+        "Stock avancé : historique complet, upload factures fournisseurs",
+        "Recettes complètes, coûts matière multi-ingrédients",
+        "Calculateur de marges avancé : marges par plat/catégorie, simulation",
+        "Prévisions intelligentes + export CSV",
+        "Rapports détaillés : bénéfices, pertes, gaspillage",
+        "Gestion équipe & feedbacks",
+        "Support email prioritaire",
+      ],
+      aiFeatures: [
+        "🤖 IA avancée (quota élargi)",
+        "Flux guidé : produit → recette → prix → marge",
+        "Recommandations d'ajustement de prix",
       ],
       bullets: [
         "Automatise les commandes avant la rupture",
         "Réduis les pertes sans embaucher quelqu'un de plus",
-        "Tu passes de pompier à pilote"
+        "L'IA pilote tes marges en continu",
       ],
-      cta: "Passer en Pro",
+      cta: "Commencer avec Pro",
       highlighted: true
     },
     premium: {
       name: "Premium",
       tagline: "Pour les opérations à grande échelle",
-      monthlyPrice: 110,
-      annualPrice: 1100,
+      target: "Groupes, dark kitchens, chaînes",
+      monthlyPrice: 200,
+      annualPrice: 1799,
+      annualOriginal: 2400,
+      annualSavings: ">3 mois offerts",
       features: [
         "Établissements illimités",
         "Utilisateurs illimités",
-        "Toutes les fonctionnalités Pro",
-        "Vue consolidée multi-sites",
-        "Intégrations API avancées",
-        "Support 24/7",
+        "Tout Pro inclus",
+        "Multi-sites : gestion centralisée, recettes partagées avec prix localisés",
+        "Automatisations : alertes marge, surstock, ruptures",
+        "Suggestions de commandes fournisseurs",
+        "Intégrations externes (POS, compta…)",
+        "Support prioritaire 24/7",
+        "Onboarding personnalisé",
         "Account manager dédié",
-        "Formation sur-mesure"
+      ],
+      aiFeatures: [
+        "🤖 IA étendue (quasi-illimitée)",
+        "Recommandations d'achats automatiques",
+        "Détection d'anomalies de marges",
+        "Menu engineering avancé",
       ],
       bullets: [
         "Standards d'enseigne, pas de restaurant isolé",
         "Pilotage multi-sites en temps réel",
-        "Un interlocuteur dédié qui connaît ton business"
+        "L'IA optimise tout ton réseau",
       ],
-      cta: "Parler à un expert",
+      cta: "Commencer avec Premium",
       highlighted: false
     }
   }
@@ -638,6 +669,14 @@ export default function LandingPage() {
         
         <div className="max-w-7xl mx-auto relative">
           <div className="text-center mb-12">
+            {/* Badge annuel */}
+            {billingPeriod === "annual" && (
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 mb-6 animate-pulse">
+                <Sparkles className="h-4 w-4 text-emerald-400" />
+                <span className="text-sm font-semibold text-emerald-400">Jusqu'à 3 mois offerts en annuel</span>
+              </div>
+            )}
+            
             {/* Toggle */}
             <div className="inline-flex items-center gap-4 p-2 rounded-full bg-white/5 border border-white/10">
               <button
@@ -661,13 +700,16 @@ export default function LandingPage() {
                 Annuel
                 <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
                   billingPeriod === "annual"
-                    ? "bg-red-500 text-white"
-                    : "bg-red-500/80 text-white"
+                    ? "bg-emerald-500 text-white"
+                    : "bg-emerald-500/80 text-white"
                 }`}>
-                  -17%
+                  Économise
                 </span>
               </button>
             </div>
+            
+            {/* Tag par établissement */}
+            <p className="text-sm text-gray-500 mt-4">Prix par établissement</p>
           </div>
 
           {/* Pricing Cards */}
@@ -677,8 +719,8 @@ export default function LandingPage() {
               {/* Promo badge - annual only */}
               {billingPeriod === "annual" && (
                 <div className="absolute -top-3 right-4">
-                  <div className="bg-gradient-to-r from-red-600 to-orange-600 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-red-500/30 animate-pulse">
-                    -17%
+                  <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-emerald-500/30">
+                    {plans.starter.annualSavings}
                   </div>
                 </div>
               )}
@@ -686,13 +728,14 @@ export default function LandingPage() {
               <div className="mb-6">
                 <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{plans.starter.tagline}</span>
                 <h3 className="text-2xl font-bold text-white mt-2">{plans.starter.name}</h3>
+                <p className="text-xs text-gray-500 mt-1">{plans.starter.target}</p>
               </div>
 
               <div className="mb-6">
                 <div className="flex items-baseline gap-2">
-                  {billingPeriod === "annual" && (
+                  {billingPeriod === "annual" && plans.starter.annualOriginal && (
                     <span className="text-xl font-medium text-gray-500 line-through">
-                      {(plans.starter.monthlyPrice * 12).toFixed(0)}€
+                      {plans.starter.annualOriginal}€
                     </span>
                   )}
                   <span className="text-5xl font-black text-white">
@@ -700,9 +743,9 @@ export default function LandingPage() {
                   </span>
                   <span className="text-gray-500">/{billingPeriod === "monthly" ? "mois" : "an"}</span>
                 </div>
-                {billingPeriod === "annual" && (
-                  <p className="text-sm text-red-400 font-semibold mt-1">
-                    Économise {(plans.starter.monthlyPrice * 12) - plans.starter.annualPrice}€
+                {billingPeriod === "annual" && plans.starter.annualOriginal && (
+                  <p className="text-sm text-emerald-400 font-semibold mt-1">
+                    Économise {plans.starter.annualOriginal - plans.starter.annualPrice}€/an
                   </p>
                 )}
               </div>
@@ -714,17 +757,33 @@ export default function LandingPage() {
                 ))}
               </div>
 
-              <ul className="space-y-3 mb-8">
+              <ul className="space-y-2.5 mb-4">
                 {plans.starter.features.map((feature, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-emerald-500 shrink-0" />
+                  <li key={i} className="flex items-start gap-3">
+                    <Check className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
                     <span className="text-gray-300 text-sm">{feature}</span>
                   </li>
                 ))}
               </ul>
 
+              {/* AI Features - Highlighted */}
+              <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20">
+                <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <Brain className="h-3.5 w-3.5" />
+                  IA incluse
+                </p>
+                <ul className="space-y-2">
+                  {plans.starter.aiFeatures.map((feature, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <Sparkles className="h-3.5 w-3.5 text-purple-400 shrink-0 mt-0.5" />
+                      <span className="text-gray-300 text-xs">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
               <Link href="/login" className="block">
-                <Button className="w-full h-12 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold shadow-lg shadow-emerald-500/30 animate-pulse">
+                <Button className="w-full h-12 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold shadow-lg shadow-emerald-500/30">
                   {plans.starter.cta}
                 </Button>
               </Link>
@@ -739,16 +798,16 @@ export default function LandingPage() {
                 {/* Popular badge */}
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
                   <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-emerald-500/30">
-                    <Sparkles className="h-4 w-4" />
-                    Le plus populaire
+                    <Crown className="h-4 w-4" />
+                    Recommandé
                   </div>
                 </div>
 
                 {/* Promo badge - annual only */}
                 {billingPeriod === "annual" && (
                   <div className="absolute -top-3 right-4 z-10">
-                    <div className="bg-gradient-to-r from-red-600 to-orange-600 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-red-500/30 animate-pulse">
-                      -17%
+                    <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-emerald-500/30">
+                      {plans.pro.annualSavings}
                     </div>
                   </div>
                 )}
@@ -756,13 +815,14 @@ export default function LandingPage() {
                 <div className="mb-6 pt-2">
                   <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">{plans.pro.tagline}</span>
                   <h3 className="text-2xl font-bold text-white mt-2">{plans.pro.name}</h3>
+                  <p className="text-xs text-gray-500 mt-1">{plans.pro.target}</p>
                 </div>
 
                 <div className="mb-6">
                   <div className="flex items-baseline gap-2">
-                    {billingPeriod === "annual" && (
+                    {billingPeriod === "annual" && plans.pro.annualOriginal && (
                       <span className="text-xl font-medium text-gray-500 line-through">
-                        {(plans.pro.monthlyPrice * 12).toFixed(0)}€
+                        {plans.pro.annualOriginal}€
                       </span>
                     )}
                     <span className="text-5xl font-black text-emerald-400">
@@ -770,9 +830,9 @@ export default function LandingPage() {
                     </span>
                     <span className="text-gray-500">/{billingPeriod === "monthly" ? "mois" : "an"}</span>
                   </div>
-                  {billingPeriod === "annual" && (
-                    <p className="text-sm text-red-400 font-semibold mt-1">
-                      Économise {(plans.pro.monthlyPrice * 12) - plans.pro.annualPrice}€
+                  {billingPeriod === "annual" && plans.pro.annualOriginal && (
+                    <p className="text-sm text-emerald-400 font-semibold mt-1">
+                      Économise {plans.pro.annualOriginal - plans.pro.annualPrice}€/an
                     </p>
                   )}
                 </div>
@@ -784,14 +844,30 @@ export default function LandingPage() {
                   ))}
                 </div>
 
-                <ul className="space-y-3 mb-8">
+                <ul className="space-y-2.5 mb-4">
                   {plans.pro.features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-3">
-                      <Check className="h-4 w-4 text-emerald-400 shrink-0" />
+                    <li key={i} className="flex items-start gap-3">
+                      <Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
                       <span className="text-white text-sm">{feature}</span>
                     </li>
                   ))}
                 </ul>
+
+                {/* AI Features - Highlighted */}
+                <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-purple-500/15 to-blue-500/15 border border-purple-500/30">
+                  <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <Brain className="h-3.5 w-3.5" />
+                    IA avancée
+                  </p>
+                  <ul className="space-y-2">
+                    {plans.pro.aiFeatures.map((feature, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <Sparkles className="h-3.5 w-3.5 text-purple-400 shrink-0 mt-0.5" />
+                        <span className="text-white text-xs">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
                 <Link href="/login" className="block">
                   <Button className="w-full h-12 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold shadow-lg shadow-emerald-500/30">
@@ -807,8 +883,8 @@ export default function LandingPage() {
               {/* Promo badge - annual only */}
               {billingPeriod === "annual" && (
                 <div className="absolute -top-3 right-4">
-                  <div className="bg-gradient-to-r from-red-600 to-orange-600 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-red-500/30 animate-pulse">
-                    -17%
+                  <div className="bg-gradient-to-r from-amber-600 to-amber-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-amber-500/30">
+                    {plans.premium.annualSavings}
                   </div>
                 </div>
               )}
@@ -816,13 +892,14 @@ export default function LandingPage() {
               <div className="mb-6">
                 <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">{plans.premium.tagline}</span>
                 <h3 className="text-2xl font-bold text-white mt-2">{plans.premium.name}</h3>
+                <p className="text-xs text-gray-500 mt-1">{plans.premium.target}</p>
               </div>
 
               <div className="mb-6">
                 <div className="flex items-baseline gap-2">
-                  {billingPeriod === "annual" && (
+                  {billingPeriod === "annual" && plans.premium.annualOriginal && (
                     <span className="text-xl font-medium text-gray-500 line-through">
-                      {(plans.premium.monthlyPrice * 12).toFixed(0)}€
+                      {plans.premium.annualOriginal}€
                     </span>
                   )}
                   <span className="text-5xl font-black text-amber-400">
@@ -830,9 +907,9 @@ export default function LandingPage() {
                   </span>
                   <span className="text-gray-500">/{billingPeriod === "monthly" ? "mois" : "an"}</span>
                 </div>
-                {billingPeriod === "annual" && (
-                  <p className="text-sm text-red-400 font-semibold mt-1">
-                    Économise {(plans.premium.monthlyPrice * 12) - plans.premium.annualPrice}€
+                {billingPeriod === "annual" && plans.premium.annualOriginal && (
+                  <p className="text-sm text-amber-400 font-semibold mt-1">
+                    Économise {plans.premium.annualOriginal - plans.premium.annualPrice}€/an
                   </p>
                 )}
               </div>
@@ -844,17 +921,33 @@ export default function LandingPage() {
                 ))}
               </div>
 
-              <ul className="space-y-3 mb-8">
+              <ul className="space-y-2.5 mb-4">
                 {plans.premium.features.map((feature, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-amber-400 shrink-0" />
+                  <li key={i} className="flex items-start gap-3">
+                    <Check className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
                     <span className="text-gray-300 text-sm">{feature}</span>
                   </li>
                 ))}
               </ul>
 
-              <Link href="#contact" className="block">
-                <Button variant="outline" className="w-full h-12 border-amber-500/30 hover:bg-amber-500/10 text-amber-400 font-semibold">
+              {/* AI Features - Highlighted */}
+              <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20">
+                <p className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <Brain className="h-3.5 w-3.5" />
+                  IA étendue
+                </p>
+                <ul className="space-y-2">
+                  {plans.premium.aiFeatures.map((feature, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5" />
+                      <span className="text-gray-300 text-xs">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <Link href="/login" className="block">
+                <Button className="w-full h-12 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold shadow-lg shadow-amber-500/30">
                   {plans.premium.cta}
                 </Button>
               </Link>

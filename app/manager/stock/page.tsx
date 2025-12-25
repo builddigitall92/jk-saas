@@ -8,12 +8,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Package, AlertCircle, Plus, Minus, Trash2, Snowflake, Leaf, Wheat, Calendar, Loader2, Check, Search } from "lucide-react"
+import { Package, AlertCircle, Plus, Minus, Trash2, Snowflake, Leaf, Wheat, Calendar, Loader2, Check, Search, Sparkles } from "lucide-react"
 import { useState } from "react"
 import { useStock, type StockWithProduct } from "@/lib/hooks/use-stock"
 import type { ProductCategory } from "@/lib/database.types"
 import { createClient } from "@/utils/supabase/client"
 import { detectCategory, suggestIcon } from "@/lib/utils/auto-category"
+import { AIAssistant } from "@/components/ai-assistant/AIAssistant"
 
 export default function ManagerStockPage() {
   const { stocks, loading, updateQuantity, deleteStock, getByCategory, getCategoryTotal, fetchStocks } = useStock()
@@ -22,6 +23,7 @@ export default function ManagerStockPage() {
   // Dialog ajout stock
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false)
   
   // Formulaire
   const [productName, setProductName] = useState("")
@@ -186,14 +188,30 @@ export default function ManagerStockPage() {
           <h1 className="text-2xl font-semibold text-slate-100 tracking-tight">Stocks</h1>
           <p className="text-sm text-slate-400">Gestion des produits par catégorie</p>
         </div>
-        <button 
-          className="glass-btn-primary"
-          onClick={() => setIsAddDialogOpen(true)}
-        >
-          <Plus className="h-5 w-5" />
-          Ajouter un Stock
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            className="ai-trigger-btn"
+            onClick={() => setIsAIAssistantOpen(true)}
+          >
+            <Sparkles className="h-4 w-4" />
+            Assistant IA
+          </button>
+          <button 
+            className="glass-btn-primary"
+            onClick={() => setIsAddDialogOpen(true)}
+          >
+            <Plus className="h-5 w-5" />
+            Ajouter un Stock
+          </button>
+        </div>
       </div>
+
+      {/* AI Assistant */}
+      <AIAssistant
+        isOpen={isAIAssistantOpen}
+        onClose={() => setIsAIAssistantOpen(false)}
+        mode="stock"
+      />
 
       {/* Dialog ajout stock */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>

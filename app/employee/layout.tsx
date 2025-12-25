@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
+import { createClient } from "@/utils/supabase/client"
 import {
   LayoutDashboard,
   Trash2,
@@ -45,7 +46,7 @@ export default function EmployeeLayout({
 }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { profile } = useAuth()
+  const { profile, loading: authLoading } = useAuth()
   const { unreadCount } = useAlerts()
   const userName = profile?.first_name || "Employé"
   const [isProfileOpen, setIsProfileOpen] = useState(false)
@@ -55,6 +56,82 @@ export default function EmployeeLayout({
   const [isLoading, setIsLoading] = useState(true)
   const [theme, setTheme] = useState<"dark" | "light">("dark")
   const [tooltip, setTooltip] = useState<{ text: string; top: number } | null>(null)
+  const [noEstablishment, setNoEstablishment] = useState(false)
+
+  // Fonction de vérification directe depuis la base de données
+  const checkEmployeeAccess = async () => {
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        return false
+      }
+
+      // Requête directe à la base
+      const { data: profileData, error } = await (supabase as any)
+        .from('profiles')
+        .select('establishment_id, is_active')
+        .eq('id', user.id)
+        .single()
+
+      if (error) {
+        console.error('Erreur requête profil:', error)
+        return false
+      }
+
+      // Si pas d'établissement = rediriger vers onboarding
+      if (!profileData?.establishment_id) {
+        console.log('🚫 Employé retiré - Redirection vers onboarding')
+        setNoEstablishment(true)
+        // Redirection vers onboarding pour re-saisir le code
+        router.push('/onboarding')
+        return true
+      }
+
+      return false
+    } catch (err) {
+      console.error('Erreur vérification accès:', err)
+      return false
+    }
+  }
+
+  // Vérification au montage et à chaque changement de page
+  useEffect(() => {
+    checkEmployeeAccess()
+  }, [pathname])
+
+  // Polling toutes les 5 secondes pour vérifier l'accès
+  useEffect(() => {
+    if (noEstablishment) return
+
+    const interval = setInterval(() => {
+      checkEmployeeAccess()
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [noEstablishment])
+
+  // Heartbeat de présence - signale que l'employé est en ligne
+  useEffect(() => {
+    if (noEstablishment) return
+
+    const sendPresenceHeartbeat = async () => {
+      try {
+        await fetch('/api/presence', { method: 'POST' })
+      } catch (err) {
+        // Silencieux
+      }
+    }
+
+    // Envoyer immédiatement
+    sendPresenceHeartbeat()
+
+    // Puis toutes les 30 secondes
+    const interval = setInterval(sendPresenceHeartbeat, 30000)
+
+    return () => clearInterval(interval)
+  }, [noEstablishment])
 
   // Charger le thème depuis localStorage au démarrage
   useEffect(() => {
@@ -211,6 +288,19 @@ export default function EmployeeLayout({
         <div className="glass-loader-overlay">
           <div className="glass-loader-ring" />
           <p className="glass-loader-text">Chargement de l'espace employé...</p>
+        </div>
+      )}
+
+      {/* Écran de chargement pendant la redirection */}
+      {noEstablishment && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-[#0a0a0a]">
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center animate-pulse">
+              <AlertTriangle className="w-8 h-8 text-orange-400" />
+            </div>
+            <p className="text-white font-medium mb-2">Accès retiré</p>
+            <p className="text-slate-400 text-sm">Redirection en cours...</p>
+          </div>
         </div>
       )}
 

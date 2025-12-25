@@ -13,6 +13,12 @@ import {
   UserX,
   Search,
   Building2,
+  Trash2,
+  X,
+  AlertTriangle,
+  MoreVertical,
+  UserMinus,
+  RefreshCw,
 } from "lucide-react"
 import { createClient } from "@/utils/supabase/client"
 
@@ -24,6 +30,9 @@ interface TeamMember {
   is_active: boolean
   avatar_url?: string | null
   created_at: string
+  email?: string | null
+  is_online?: boolean
+  last_seen?: string
 }
 
 export default function ManagerTeamPage() {
@@ -33,6 +42,30 @@ export default function ManagerTeamPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [filterRole, setFilterRole] = useState<"all" | "employee" | "manager">("all")
   const [establishment, setEstablishment] = useState<{ name: string } | null>(null)
+  const [currentEstablishmentId, setCurrentEstablishmentId] = useState<string | null>(null)
+  
+  // États pour la suppression
+  const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null)
+  const [isRemoving, setIsRemoving] = useState(false)
+  const [removeError, setRemoveError] = useState<string | null>(null)
+
+  // Fonction pour charger les membres avec leur statut de présence
+  const fetchMembers = async () => {
+    try {
+      const response = await fetch('/api/presence')
+      const data = await response.json()
+
+      if (response.ok && data.members) {
+        // Filtrer pour exclure l'utilisateur actuel
+        const { data: { user } } = await supabase.auth.getUser()
+        const filteredMembers = data.members.filter((m: TeamMember) => m.id !== user?.id)
+        console.log('Membres chargés:', filteredMembers.length)
+        setTeamMembers(filteredMembers)
+      }
+    } catch (err) {
+      console.error('Erreur:', err)
+    }
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,7 +80,13 @@ export default function ManagerTeamPage() {
           .eq('id', user.id)
           .single()
 
-        if (!profile?.establishment_id) return
+        if (!profile?.establishment_id) {
+          console.log('Manager sans établissement')
+          setLoading(false)
+          return
+        }
+
+        setCurrentEstablishmentId(profile.establishment_id)
 
         // Récupérer l'établissement
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -61,18 +100,8 @@ export default function ManagerTeamPage() {
           setEstablishment(estab)
         }
 
-        // Récupérer tous les membres (sauf l'utilisateur actuel)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: members } = await (supabase as any)
-          .from('profiles')
-          .select('id, first_name, last_name, role, is_active, avatar_url, created_at')
-          .eq('establishment_id', profile.establishment_id)
-          .neq('id', user.id)
-          .order('created_at', { ascending: false })
-
-        if (members) {
-          setTeamMembers(members)
-        }
+        // Récupérer les membres avec leur statut de présence
+        await fetchMembers()
       } catch (err) {
         console.error('Erreur:', err)
       } finally {
@@ -82,27 +111,63 @@ export default function ManagerTeamPage() {
 
     fetchData()
 
-    // Écouter les changements en temps réel
-    const channel = supabase
-      .channel('team-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'profiles',
-        },
-        () => {
-          // Refetch des données quand un profil change
-          fetchData()
-        }
-      )
-      .subscribe()
+    // Rafraîchir les statuts de présence toutes les 10 secondes
+    const presenceInterval = setInterval(() => {
+      fetchMembers()
+    }, 10000)
 
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    return () => clearInterval(presenceInterval)
   }, [supabase])
+
+  // Fonction pour retirer un membre de l'établissement via l'API
+  const handleRemoveMember = async () => {
+    if (!memberToRemove) return
+    
+    setIsRemoving(true)
+    setRemoveError(null)
+    
+    const memberIdToRemove = memberToRemove.id
+    
+    try {
+      console.log('🔄 Tentative de suppression du membre via API:', memberIdToRemove)
+      
+      // Appeler l'API qui utilise le client admin (bypass RLS)
+      const response = await fetch('/api/team/remove-member', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId: memberIdToRemove })
+      })
+      
+      const result = await response.json()
+      
+      if (!response.ok) {
+        console.error('❌ Erreur API:', result.error)
+        throw new Error(result.error || 'Erreur lors de la suppression')
+      }
+      
+      console.log('✅ Membre retiré avec succès:', result)
+      
+      // Mettre à jour la liste locale
+      setTeamMembers(prev => {
+        const newList = prev.filter(m => m.id !== memberIdToRemove)
+        console.log('Liste mise à jour:', newList.length, 'membres restants')
+        return newList
+      })
+      
+      setMemberToRemove(null)
+      
+    } catch (err) {
+      console.error('Erreur lors de la suppression:', err)
+      setRemoveError(err instanceof Error ? err.message : 'Une erreur est survenue')
+    } finally {
+      setIsRemoving(false)
+    }
+  }
+
+  // Fonction pour rafraîchir manuellement la liste
+  const handleRefresh = async () => {
+    await fetchMembers()
+  }
 
   // Filtrer les membres
   const filteredMembers = teamMembers.filter(member => {
@@ -112,7 +177,7 @@ export default function ManagerTeamPage() {
     return matchesSearch && matchesRole
   })
 
-  const activeCount = teamMembers.filter(m => m.is_active).length
+  const onlineCount = teamMembers.filter(m => m.is_online).length
   const employeeCount = teamMembers.filter(m => m.role === 'employee').length
   const managerCount = teamMembers.filter(m => m.role === 'manager' || m.role === 'admin').length
 
@@ -144,14 +209,23 @@ export default function ManagerTeamPage() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="glass-animate-fade-up">
-        <h1 className="text-2xl font-semibold text-slate-100 tracking-tight glass-title-black">
-          Mon <span className="glow-cyan">Équipe</span>
-        </h1>
-        <p className="text-sm text-slate-400 flex items-center gap-2">
-          <Building2 className="h-4 w-4 text-orange-400" />
-          {establishment?.name || 'Mon établissement'}
-        </p>
+      <div className="glass-animate-fade-up flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-100 tracking-tight glass-title-black">
+            Mon <span className="glow-cyan">Équipe</span>
+          </h1>
+          <p className="text-sm text-slate-400 flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-orange-400" />
+            {establishment?.name || 'Mon établissement'}
+          </p>
+        </div>
+        <button
+          onClick={handleRefresh}
+          className="p-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-slate-400 hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-500/10 transition-all"
+          title="Rafraîchir la liste"
+        >
+          <RefreshCw className="h-5 w-5" />
+        </button>
       </div>
 
       {/* Stats */}
@@ -169,9 +243,9 @@ export default function ManagerTeamPage() {
           <div className="glass-stat-icon glass-stat-icon-green">
             <UserCheck className="h-5 w-5" />
           </div>
-          <p className="glass-stat-value glass-stat-value-green glass-title-black">{activeCount}</p>
+          <p className="glass-stat-value glass-stat-value-green glass-title-black">{onlineCount}</p>
           <p className="glass-stat-label">
-            <span className="glow-green">Actifs</span>
+            <span className="glow-green">En ligne</span>
           </p>
         </div>
         <div className="glass-stat-card glass-animate-fade-up glass-stagger-3">
@@ -324,20 +398,15 @@ export default function ManagerTeamPage() {
                         )}
                       </div>
                       
-                      {/* Indicateur de statut */}
+                      {/* Indicateur de présence en ligne */}
                       <div 
-                        className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center"
+                        className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full ${member.is_online ? 'animate-pulse' : ''}`}
                         style={{
-                          background: member.is_active ? '#22c55e' : '#ef4444',
+                          background: member.is_online ? '#22c55e' : '#64748b',
                           border: '2px solid #0f172a',
                         }}
-                      >
-                        {member.is_active ? (
-                          <UserCheck className="h-2.5 w-2.5 text-white" />
-                        ) : (
-                          <UserX className="h-2.5 w-2.5 text-white" />
-                        )}
-                      </div>
+                        title={member.is_online ? 'En ligne' : 'Hors ligne'}
+                      />
                     </div>
 
                     {/* Infos */}
@@ -359,18 +428,21 @@ export default function ManagerTeamPage() {
                           {isEmployee ? 'Employé' : 'Manager'}
                         </span>
                         <span 
-                          className="text-xs font-medium px-2 py-0.5 rounded-full"
+                          className="text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1"
                           style={{
-                            background: member.is_active 
+                            background: member.is_online 
                               ? 'rgba(34, 197, 94, 0.15)' 
-                              : 'rgba(239, 68, 68, 0.15)',
-                            color: member.is_active ? '#4ade80' : '#f87171',
-                            border: member.is_active
+                              : 'rgba(100, 116, 139, 0.15)',
+                            color: member.is_online ? '#4ade80' : '#94a3b8',
+                            border: member.is_online
                               ? '1px solid rgba(34, 197, 94, 0.3)'
-                              : '1px solid rgba(239, 68, 68, 0.3)',
+                              : '1px solid rgba(100, 116, 139, 0.3)',
                           }}
                         >
-                          {member.is_active ? 'Actif' : 'Inactif'}
+                          <span 
+                            className={`w-1.5 h-1.5 rounded-full ${member.is_online ? 'bg-green-400 animate-pulse' : 'bg-slate-400'}`}
+                          />
+                          {member.is_online ? 'En ligne' : 'Hors ligne'}
                         </span>
                       </div>
                       <div className="flex items-center gap-1 mt-2 text-xs text-slate-500">
@@ -378,6 +450,18 @@ export default function ManagerTeamPage() {
                         <span>Depuis {formatDate(member.created_at)}</span>
                       </div>
                     </div>
+
+                    {/* Bouton supprimer */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setMemberToRemove(member)
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/40"
+                      title="Retirer de l'équipe"
+                    >
+                      <UserMinus className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               )
@@ -385,6 +469,103 @@ export default function ManagerTeamPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de confirmation de suppression */}
+      {memberToRemove && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Overlay */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => !isRemoving && setMemberToRemove(null)}
+          />
+          
+          {/* Modal */}
+          <div 
+            className="relative w-full max-w-md rounded-2xl p-6 animate-in zoom-in-95 duration-200"
+            style={{
+              background: 'linear-gradient(145deg, rgba(20, 27, 45, 0.98) 0%, rgba(15, 20, 35, 0.99) 100%)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5), 0 0 100px rgba(239, 68, 68, 0.1)',
+            }}
+          >
+            {/* Bouton fermer */}
+            <button
+              onClick={() => !isRemoving && setMemberToRemove(null)}
+              disabled={isRemoving}
+              className="absolute top-4 right-4 p-2 rounded-lg bg-slate-800/50 border border-white/10 text-slate-400 hover:text-white hover:bg-slate-800 transition-all disabled:opacity-50"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            {/* Icône d'alerte */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center">
+                <AlertTriangle className="h-8 w-8 text-red-400" />
+              </div>
+            </div>
+
+            {/* Titre */}
+            <h3 className="text-xl font-bold text-white text-center mb-2">
+              Retirer ce membre ?
+            </h3>
+
+            {/* Description */}
+            <p className="text-slate-400 text-center mb-4">
+              Vous êtes sur le point de retirer{' '}
+              <span className="text-white font-semibold">
+                {memberToRemove.first_name} {memberToRemove.last_name}
+              </span>{' '}
+              de votre établissement.
+            </p>
+
+            {/* Info sur les conséquences */}
+            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 mb-6">
+              <p className="text-sm text-red-300 flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>
+                  Cette personne sera <strong>immédiatement déconnectée</strong> de l'établissement 
+                  et ne pourra plus y accéder. Elle devra être ré-invitée pour rejoindre à nouveau l'équipe.
+                </span>
+              </p>
+            </div>
+
+            {/* Erreur */}
+            {removeError && (
+              <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/30 mb-4">
+                <p className="text-sm text-red-400">{removeError}</p>
+              </div>
+            )}
+
+            {/* Boutons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setMemberToRemove(null)}
+                disabled={isRemoving}
+                className="flex-1 py-3 px-4 rounded-xl bg-slate-800/50 border border-white/10 text-slate-300 font-medium hover:bg-slate-800 transition-all disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleRemoveMember}
+                disabled={isRemoving}
+                className="flex-1 py-3 px-4 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isRemoving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Suppression...
+                  </>
+                ) : (
+                  <>
+                    <UserMinus className="h-4 w-4" />
+                    Retirer
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

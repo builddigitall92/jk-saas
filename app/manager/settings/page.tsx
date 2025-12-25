@@ -32,7 +32,8 @@ import {
   CreditCard,
   Crown,
   ExternalLink,
-  AlertTriangle
+  AlertTriangle,
+  UserMinus
 } from "lucide-react"
 import { createClient } from "@/utils/supabase/client"
 import { useAuth } from "@/lib/hooks/use-auth"
@@ -107,6 +108,10 @@ export default function SettingsPage() {
   const [newCheckItem, setNewCheckItem] = useState({ item_label: "", icon: "Package" })
   const [savingCheckItem, setSavingCheckItem] = useState(false)
   const [deletingCheckItem, setDeletingCheckItem] = useState<string | null>(null)
+
+  // Gestion de la suppression de membres
+  const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null)
+  const [isRemovingMember, setIsRemovingMember] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -256,6 +261,38 @@ export default function SettingsPage() {
     }
 
     setDeletingCheckItem(null)
+  }
+
+  // Fonction pour retirer un membre de l'équipe via l'API
+  async function handleRemoveMember() {
+    if (!memberToRemove) return
+
+    setIsRemovingMember(true)
+
+    try {
+      // Appeler l'API qui utilise le client admin (bypass RLS)
+      const response = await fetch('/api/team/remove-member', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId: memberToRemove.id })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erreur lors de la suppression')
+      }
+
+      console.log('✅ Membre retiré:', result)
+
+      // Mettre à jour la liste locale
+      setTeamMembers(prev => prev.filter(m => m.id !== memberToRemove.id))
+      setMemberToRemove(null)
+    } catch (err) {
+      console.error("Erreur lors de la suppression:", err)
+    } finally {
+      setIsRemovingMember(false)
+    }
   }
 
   async function addProduct() {
@@ -469,7 +506,7 @@ export default function SettingsPage() {
               {teamMembers.map((member) => (
                 <div 
                   key={member.id} 
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50 group"
                 >
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
@@ -486,11 +523,22 @@ export default function SettingsPage() {
                       </p>
                     </div>
                   </div>
-                  {member.id === profile?.id && (
-                    <span className="text-xs bg-orange-500/10 text-orange-500 px-2 py-1 rounded">
-                      Vous
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {member.id === profile?.id ? (
+                      <span className="text-xs bg-orange-500/10 text-orange-500 px-2 py-1 rounded">
+                        Vous
+                      </span>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setMemberToRemove(member)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                      >
+                        <UserMinus className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))}
               
@@ -1026,6 +1074,91 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de confirmation de suppression de membre */}
+      {memberToRemove && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Overlay */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => !isRemovingMember && setMemberToRemove(null)}
+          />
+          
+          {/* Modal */}
+          <div className="relative w-full max-w-md rounded-2xl p-6 bg-background border shadow-xl">
+            {/* Bouton fermer */}
+            <button
+              onClick={() => !isRemovingMember && setMemberToRemove(null)}
+              disabled={isRemovingMember}
+              className="absolute top-4 right-4 p-2 rounded-lg hover:bg-muted transition-all disabled:opacity-50"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            {/* Icône d'alerte */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center">
+                <AlertTriangle className="h-8 w-8 text-red-500" />
+              </div>
+            </div>
+
+            {/* Titre */}
+            <h3 className="text-xl font-bold text-center mb-2">
+              Retirer ce membre ?
+            </h3>
+
+            {/* Description */}
+            <p className="text-muted-foreground text-center mb-4">
+              Vous êtes sur le point de retirer{' '}
+              <span className="text-foreground font-semibold">
+                {memberToRemove.first_name} {memberToRemove.last_name}
+              </span>{' '}
+              de votre établissement.
+            </p>
+
+            {/* Info sur les conséquences */}
+            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 mb-6">
+              <p className="text-sm text-red-600 dark:text-red-400 flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>
+                  Cette personne sera <strong>immédiatement déconnectée</strong> de l'établissement 
+                  et ne pourra plus y accéder.
+                </span>
+              </p>
+            </div>
+
+            {/* Boutons */}
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setMemberToRemove(null)}
+                disabled={isRemovingMember}
+                className="flex-1"
+              >
+                Annuler
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleRemoveMember}
+                disabled={isRemovingMember}
+                className="flex-1"
+              >
+                {isRemovingMember ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Suppression...
+                  </>
+                ) : (
+                  <>
+                    <UserMinus className="h-4 w-4 mr-2" />
+                    Retirer
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

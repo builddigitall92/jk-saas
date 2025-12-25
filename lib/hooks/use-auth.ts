@@ -63,6 +63,8 @@ export function useAuth() {
   }, [user, fetchProfile])
 
   useEffect(() => {
+    let profileChannel: ReturnType<typeof supabase.channel> | null = null
+
     const getUser = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
@@ -70,6 +72,25 @@ export function useAuth() {
 
         if (user) {
           await fetchProfile(user.id)
+          
+          // Écouter les changements en temps réel sur le profil de l'utilisateur
+          profileChannel = supabase
+            .channel(`profile-changes-${user.id}`)
+            .on(
+              'postgres_changes',
+              {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'profiles',
+                filter: `id=eq.${user.id}`,
+              },
+              async (payload) => {
+                console.log('Profile updated:', payload)
+                // Le profil a été mis à jour, on refetch
+                await fetchProfile(user.id)
+              }
+            )
+            .subscribe()
         }
       } catch (error) {
         console.error("Error fetching user:", error)
@@ -94,7 +115,12 @@ export function useAuth() {
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+      if (profileChannel) {
+        supabase.removeChannel(profileChannel)
+      }
+    }
   }, [supabase, fetchProfile])
 
   const isManager = profile?.role === "manager" || profile?.role === "admin"

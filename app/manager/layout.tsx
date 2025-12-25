@@ -26,11 +26,14 @@ import {
   Shield,
   HelpCircle,
   CreditCard,
+  ChefHat,
 } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { useSubscription } from "@/lib/hooks/use-subscription"
 
 const mainNavItems = [
   { name: "Dashboard", href: "/manager", icon: LayoutDashboard, color: "blue" },
+  { name: "Menu", href: "/manager/menu", icon: ChefHat, color: "emerald" },
   { name: "Stocks", href: "/manager/stock", icon: Package, badge: 4, color: "cyan" },
   { name: "Commandes", href: "/manager/orders", icon: ShoppingCart, color: "purple" },
   { name: "Fournisseurs", href: "/manager/suppliers", icon: Truck, badge: 3, color: "green" },
@@ -53,7 +56,8 @@ export default function ManagerLayout({
 }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { profile } = useAuth()
+  const { profile, user } = useAuth()
+  const { subscription, currentPlan, isTrialing, loading: subscriptionLoading } = useSubscription()
   const userName = profile?.first_name || "Manager"
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
@@ -556,7 +560,7 @@ export default function ManagerLayout({
                 }}
                 className="profile-button flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-800/50 border border-white/[0.06] hover:bg-slate-800/70 transition-all"
               >
-                <div className="w-8 h-8 rounded-lg overflow-hidden">
+                <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-white/10">
                   {profile?.avatar_url ? (
                     <Image 
                       src={profile.avatar_url} 
@@ -573,39 +577,104 @@ export default function ManagerLayout({
                 </div>
                 <div className="text-left hidden lg:block">
                   <p className="text-sm font-medium text-white">{userName}</p>
-                  <p className="text-[10px] text-slate-400">Admin</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[10px] text-slate-400">Admin</p>
+                    {!subscriptionLoading && subscription && (
+                      <span className={`subscription-badge subscription-badge-${subscription.plan.toLowerCase()} ${isTrialing ? 'subscription-badge-trial' : ''}`}>
+                        <span className="subscription-badge-dot" />
+                        <span className="subscription-badge-text">
+                          {isTrialing ? 'Trial' : subscription.plan === 'FREE' ? 'Free' : currentPlan?.name}
+                        </span>
+                        <span className="subscription-badge-shine" />
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Menu Dropdown */}
+              {/* Profile Menu Dropdown - Modern 2025 Design */}
               {isProfileOpen && (
-                <div className="glass-dropdown z-[999999]">
-                  <div className="px-3 py-2 mb-2">
-                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Mon Compte</p>
+                <div className="profile-menu-dropdown">
+                  {/* Header utilisateur */}
+                  <div className="profile-menu-header">
+                    <div className="profile-menu-avatar-wrapper">
+                      <div className="profile-menu-avatar">
+                        {profile?.avatar_url ? (
+                          <Image 
+                            src={profile.avatar_url} 
+                            alt="Avatar" 
+                            width={40} 
+                            height={40} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
+                            {userName.substring(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="profile-menu-presence" />
+                    </div>
+                    <div className="profile-menu-info">
+                      <span className="profile-menu-name">{userName}</span>
+                      <span className="profile-menu-email">{user?.email || 'admin@stockguard.fr'}</span>
+                    </div>
+                    {!subscriptionLoading && subscription && (
+                      <div className={`profile-menu-badge profile-menu-badge-${subscription.plan.toLowerCase()} ${isTrialing ? 'profile-menu-badge-trial' : ''}`}>
+                        {isTrialing ? (
+                          <>
+                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            <span>TRIAL</span>
+                          </>
+                        ) : subscription.plan === 'FREE' ? (
+                          <>
+                            <Shield className="w-3 h-3" />
+                            <span>GRATUIT</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                            <span>{subscription.plan}</span>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <Link href="/manager/account" className="glass-dropdown-item">
-                    <User className="w-4 h-4" />
-                    <span>Voir le Profil</span>
-                  </Link>
-                  <Link href="/manager/settings" className="glass-dropdown-item">
-                    <Settings className="w-4 h-4" />
-                    <span>Paramètres</span>
-                  </Link>
-                  <div className="glass-dropdown-divider" />
-                  <Link href="/manager/settings/subscription" className="glass-dropdown-item">
-                    <CreditCard className="w-4 h-4" />
-                    <span>Gérer l'Abonnement</span>
-                  </Link>
-                  <Link href="/manager/help" className="glass-dropdown-item">
-                    <HelpCircle className="w-4 h-4" />
-                    <span>Aide & Support</span>
-                  </Link>
-                  <div className="glass-dropdown-divider" />
-                  <button onClick={handleSignOut} className="glass-dropdown-item text-red-400 w-full">
-                    <LogOut className="w-4 h-4" />
-                    <span>Déconnexion</span>
-                  </button>
+
+                  {/* Liste des options */}
+                  <div className="profile-menu-options">
+                    <Link href="/manager/account" className="profile-menu-item" onClick={() => setIsProfileOpen(false)}>
+                      <User className="profile-menu-item-icon" />
+                      <span>Voir le Profil</span>
+                    </Link>
+                    <Link href="/manager/settings" className="profile-menu-item" onClick={() => setIsProfileOpen(false)}>
+                      <Settings className="profile-menu-item-icon" />
+                      <span>Paramètres</span>
+                    </Link>
+                    
+                    <div className="profile-menu-separator" />
+                    
+                    <Link href="/manager/settings/subscription" className="profile-menu-item" onClick={() => setIsProfileOpen(false)}>
+                      <CreditCard className="profile-menu-item-icon" />
+                      <span>Gérer l'Abonnement</span>
+                    </Link>
+                    <Link href="/manager/help" className="profile-menu-item" onClick={() => setIsProfileOpen(false)}>
+                      <HelpCircle className="profile-menu-item-icon" />
+                      <span>Aide & Support</span>
+                    </Link>
+                    
+                    <div className="profile-menu-separator" />
+                    
+                    <button onClick={handleSignOut} className="profile-menu-item profile-menu-item-danger">
+                      <LogOut className="profile-menu-item-icon" />
+                      <span>Déconnexion</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

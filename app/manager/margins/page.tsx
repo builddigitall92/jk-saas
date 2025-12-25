@@ -1,10 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import { RoleNav } from "@/components/role-nav"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { DollarSign, ArrowLeft, TrendingUp, TrendingDown, AlertTriangle, Shield } from "lucide-react"
+import { DollarSign, ArrowLeft, TrendingUp, TrendingDown, AlertTriangle, Shield, Sparkles } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { AIAssistant } from "@/components/ai-assistant/AIAssistant"
 
 const products = [
   { name: "Tacos Poulet", cost: 2.4, price: 7.5, margin: 68, trend: "stable", sales: 142 },
@@ -25,6 +27,7 @@ const products = [
 
 export default function MarginsPage() {
   const router = useRouter()
+  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-background">
@@ -49,6 +52,13 @@ export default function MarginsPage() {
               <p className="text-muted-foreground">Vous savez enfin ce que vous gagnez</p>
             </div>
           </div>
+          <button 
+            className="ai-trigger-btn"
+            onClick={() => setIsAIAssistantOpen(true)}
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>Optimiser avec l'IA</span>
+          </button>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 mb-8">
@@ -150,6 +160,13 @@ export default function MarginsPage() {
             </Card>
           ))}
         </div>
+
+        {/* AI Assistant */}
+        <AIAssistant
+          isOpen={isAIAssistantOpen}
+          onClose={() => setIsAIAssistantOpen(false)}
+          mode="margin"
+        />
       </main>
     </div>
   )
