@@ -749,7 +749,7 @@ function MenuItemCard({ item, viewMode, onView, onEdit, onDelete }: MenuItemCard
           <span>{item.icon || '🍽️'}</span>
         </div>
         <div className="menu-item-row-info">
-          <h4>{item.name}</h4>
+          <h4>{item.product?.name || item.name}</h4>
           <span className={`menu-item-category menu-item-category-${categoryColor}`}>
             <CategoryIcon className="w-3 h-3" />
             {item.category || 'Autre'}
@@ -820,7 +820,7 @@ function MenuItemCard({ item, viewMode, onView, onEdit, onDelete }: MenuItemCard
           <span className="menu-item-icon">{item.icon || '🍽️'}</span>
         </div>
         <div className="menu-item-card-info">
-          <h3 className="menu-item-name">{item.name}</h3>
+          <h3 className="menu-item-name">{item.product?.name || item.name}</h3>
           <span className={`menu-item-category menu-item-category-${categoryColor}`}>
             <CategoryIcon className="w-3 h-3" />
             {item.category || 'Autre'}
@@ -927,7 +927,7 @@ function MenuItemDetail({ item, isOpen, onClose, onUpdatePrice, getSuggestedPric
           <DialogTitle className="menu-detail-title">
             <span className="menu-detail-icon">{item.icon || '🍽️'}</span>
             <div>
-              <h2>{item.name}</h2>
+              <h2>{item.product?.name || item.name}</h2>
               <span className="menu-detail-category">{item.category || 'Autre'}</span>
             </div>
           </DialogTitle>

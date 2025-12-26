@@ -80,6 +80,7 @@ CREATE TABLE stock (
     expiry_date DATE,
     batch_number VARCHAR(100),
     added_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -130,6 +131,8 @@ CREATE TABLE suppliers (
     reliability_percent INTEGER DEFAULT 100 CHECK (reliability_percent >= 0 AND reliability_percent <= 100),
     avg_delivery_time VARCHAR(20),
     total_orders INTEGER DEFAULT 0,
+    nb_factures INTEGER DEFAULT 0,
+    total_depense DECIMAL(10,2) DEFAULT 0,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -409,6 +412,9 @@ CREATE POLICY "Users can insert stock" ON stock FOR INSERT WITH CHECK (establish
 
 -- Suppliers
 CREATE POLICY "Users can view suppliers" ON suppliers FOR SELECT USING (establishment_id = get_user_establishment_id());
+CREATE POLICY "Users can insert suppliers" ON suppliers FOR INSERT WITH CHECK (establishment_id = get_user_establishment_id());
+CREATE POLICY "Users can update suppliers" ON suppliers FOR UPDATE USING (establishment_id = get_user_establishment_id());
+CREATE POLICY "Users can delete suppliers" ON suppliers FOR DELETE USING (establishment_id = get_user_establishment_id());
 
 -- Orders
 CREATE POLICY "Users can view orders" ON orders FOR SELECT USING (establishment_id = get_user_establishment_id());
@@ -429,6 +435,7 @@ CREATE POLICY "Users can view forecasts" ON forecasts FOR SELECT USING (establis
 -- Waste Logs
 CREATE POLICY "Users can view waste" ON waste_logs FOR SELECT USING (establishment_id = get_user_establishment_id());
 CREATE POLICY "Users can insert waste" ON waste_logs FOR INSERT WITH CHECK (establishment_id = get_user_establishment_id());
+CREATE POLICY "Users can delete waste" ON waste_logs FOR DELETE USING (establishment_id = get_user_establishment_id());
 
 -- Service Checks
 CREATE POLICY "Users can view checks" ON service_checks FOR SELECT USING (establishment_id = get_user_establishment_id());

@@ -1,21 +1,233 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Check, ChevronLeft, Loader2, Package, Trash2, AlertCircle } from "lucide-react"
+import { Check, ChevronLeft, Loader2, Package, Trash2, AlertCircle, X, History } from "lucide-react"
 import Link from "next/link"
 import { useStock, type StockWithProduct } from "@/lib/hooks/use-stock"
 import { createClient } from "@/utils/supabase/client"
 
+interface WasteLog {
+  id: string
+  product_id: string
+  quantity: number
+  unit: string
+  estimated_cost: number
+  reason: string | null
+  created_at: string
+  product: {
+    name: string
+    icon: string | null
+  } | null
+}
+
 export default function WastePage() {
-  const { stocks, loading, updateQuantity } = useStock()
+  const { stocks, loading, updateQuantity, fetchStocks } = useStock()
   
   const [selectedStock, setSelectedStock] = useState<StockWithProduct | null>(null)
   const [wasteQuantity, setWasteQuantity] = useState("")
   const [wasteReason, setWasteReason] = useState("")
   const [showSuccess, setShowSuccess] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [wasteLogs, setWasteLogs] = useState<WasteLog[]>([])
+  const [loadingWasteLogs, setLoadingWasteLogs] = useState(true)
+  const [activeTab, setActiveTab] = useState<'new' | 'history'>('new')
+
+  // Fonction pour charger l'historique des gaspillages
+  const fetchWasteLogs = useCallback(async () => {
+    try {
+      setLoadingWasteLogs(true)
+      const supabase = createClient()
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData.user) {
+        setLoadingWasteLogs(false)
+        return
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('establishment_id')
+        .eq('id', userData.user.id)
+        .single()
+
+      if (!profile?.establishment_id) {
+        setLoadingWasteLogs(false)
+        return
+      }
+
+      // Récupérer les gaspillages des 30 derniers jours
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: logs, error } = await (supabase as any)
+        .from('waste_logs')
+        .select(`
+          *,
+          product:products(name, icon)
+        `)
+        .eq('establishment_id', profile.establishment_id)
+        .gte('created_at', thirtyDaysAgo.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (error) {
+        console.error('Erreur lors du chargement des gaspillages:', error)
+        setWasteLogs([])
+        setLoadingWasteLogs(false)
+        return
+      }
+
+      if (logs && logs.length > 0) {
+        setWasteLogs(logs.map((log: any) => ({
+          id: log.id,
+          product_id: log.product_id,
+          quantity: Number(log.quantity),
+          unit: log.unit,
+          estimated_cost: Number(log.estimated_cost) || 0,
+          reason: log.reason,
+          created_at: log.created_at,
+          product: log.product
+        })))
+      } else {
+        setWasteLogs([])
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des gaspillages:', error)
+      setWasteLogs([])
+    } finally {
+      setLoadingWasteLogs(false)
+    }
+  }, [])
+
+  // Charger l'historique des gaspillages au montage
+  useEffect(() => {
+    fetchWasteLogs()
+
+    // Mise à jour en temps réel
+    const supabase = createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const channel = (supabase as any)
+      .channel('waste-logs-updates')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'waste_logs' },
+        () => { 
+          console.log('Changement détecté dans waste_logs, rechargement...')
+          fetchWasteLogs() 
+        }
+      )
+      .subscribe()
+
+    return () => {
+      channel.unsubscribe()
+    }
+  }, [fetchWasteLogs])
+
+  // Supprimer un gaspillage et restaurer le stock
+  const handleDeleteWaste = async (wasteLog: WasteLog) => {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer ce gaspillage ? Le stock sera restauré.`)) {
+      return
+    }
+
+    // Mettre à jour le state local immédiatement pour un feedback visuel
+    setWasteLogs(prev => prev.filter(w => w.id !== wasteLog.id))
+
+    try {
+      const supabase = createClient()
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData.user) throw new Error('Non authentifié')
+
+      // Récupérer le profil pour avoir l'establishment_id
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('establishment_id')
+        .eq('id', userData.user.id)
+        .single()
+
+      if (!profile?.establishment_id) throw new Error('Pas d\'établissement associé')
+
+      // 1. Trouver le stock correspondant au produit (requête directe pour avoir les données à jour)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: stockData } = await (supabase as any)
+        .from('stock')
+        .select('*, product:products(*)')
+        .eq('product_id', wasteLog.product_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const stock = stockData as StockWithProduct | null
+
+      if (!stock) {
+        // Si le stock n'existe plus, on crée une nouvelle entrée de stock
+        if (profile?.establishment_id) {
+          // Récupérer le prix unitaire depuis le gaspillage (estimated_cost / quantity)
+          const unitPrice = wasteLog.estimated_cost > 0 && wasteLog.quantity > 0
+            ? wasteLog.estimated_cost / wasteLog.quantity
+            : 0
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from('stock')
+            .insert({
+              establishment_id: profile.establishment_id,
+              product_id: wasteLog.product_id,
+              quantity: wasteLog.quantity,
+              unit_price: unitPrice,
+              added_by: userData.user.id
+            })
+        }
+      } else {
+        // 2. Restaurer le stock (ajouter la quantité gaspillée)
+        const newQuantity = Number(stock.quantity) + wasteLog.quantity
+        await updateQuantity(stock.id, newQuantity)
+      }
+
+      // 3. Supprimer l'entrée de gaspillage
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: deleteError, data: deleteData } = await (supabase as any)
+        .from('waste_logs')
+        .delete()
+        .eq('id', wasteLog.id)
+        .eq('establishment_id', profile.establishment_id)
+        .select()
+
+      if (deleteError) {
+        console.error('Erreur lors de la suppression:', deleteError)
+        alert(`Erreur lors de la suppression: ${deleteError.message}`)
+        // Recharger les données en cas d'erreur
+        await fetchWasteLogs()
+        throw deleteError
+      }
+
+      if (!deleteData || deleteData.length === 0) {
+        console.error('Aucune ligne supprimée - vérifier les permissions RLS')
+        alert('La suppression a échoué. Vérifiez que vous avez les permissions nécessaires.')
+        // Recharger pour restaurer l'état
+        await fetchWasteLogs()
+        return
+      }
+
+      console.log('Gaspillage supprimé avec succès:', deleteData)
+
+      // 4. Recharger les données de stock
+      await fetchStocks()
+      
+      // 5. Recharger immédiatement l'historique des gaspillages
+      // La suppression est confirmée par deleteData, donc on peut recharger directement
+      await fetchWasteLogs()
+
+    } catch (error) {
+      console.error('Erreur lors de la suppression du gaspillage:', error)
+      // Recharger les données en cas d'erreur pour restaurer l'état
+      await fetchWasteLogs()
+      alert('Erreur lors de la suppression. Veuillez réessayer.')
+    }
+  }
 
   // Quantités prédéfinies basées sur l'unité du produit
   const getQuantityOptions = (stock: StockWithProduct) => {
@@ -78,6 +290,9 @@ export default function WastePage() {
       const newQuantity = Number(selectedStock.quantity) - qty
       await updateQuantity(selectedStock.id, Math.max(0, newQuantity))
       
+      // Recharger les données
+      await fetchStocks()
+      
       // Afficher le succès
       setShowSuccess(true)
       setTimeout(() => {
@@ -129,14 +344,99 @@ export default function WastePage() {
         </Link>
         <h1 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
           <Trash2 className="h-5 w-5 text-destructive" />
-          Enregistrer un gaspillage
+          Gaspillage
         </h1>
         <p className="text-sm text-muted-foreground">
-          {selectedStock ? "Indiquez la quantité gaspillée" : "Sélectionnez un produit en stock"}
+          Enregistrez un gaspillage ou consultez l'historique
         </p>
       </div>
 
-      {!selectedStock ? (
+      {/* Tabs */}
+      <div className="flex gap-2 mb-6 animate-fade-up delay-1">
+        <button
+          onClick={() => setActiveTab('new')}
+          className={`flex-1 p-3 rounded-xl font-medium transition-all ${
+            activeTab === 'new'
+              ? 'bg-primary text-primary-foreground'
+              : 'banking-card hover:border-primary/50'
+          }`}
+        >
+          <Trash2 className="h-4 w-4 inline mr-2" />
+          Nouveau gaspillage
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`flex-1 p-3 rounded-xl font-medium transition-all ${
+            activeTab === 'history'
+              ? 'bg-primary text-primary-foreground'
+              : 'banking-card hover:border-primary/50'
+          }`}
+        >
+          <History className="h-4 w-4 inline mr-2" />
+          Historique ({wasteLogs.length})
+        </button>
+      </div>
+
+      {/* Tab: Historique */}
+      {activeTab === 'history' && (
+        <div className="space-y-3 animate-fade-up delay-2">
+          {loadingWasteLogs ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : wasteLogs.length === 0 ? (
+            <div className="banking-card p-12 text-center">
+              <Trash2 className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <p className="text-muted-foreground mb-2">Aucun gaspillage enregistré</p>
+              <p className="text-sm text-muted-foreground">Les gaspillages des 30 derniers jours apparaîtront ici</p>
+            </div>
+          ) : (
+            wasteLogs.map((waste) => (
+              <div
+                key={waste.id}
+                className="banking-card p-4 animate-fade-up"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-xl bg-destructive/10 flex items-center justify-center text-2xl">
+                    {waste.product?.icon || <Package className="h-6 w-6 text-destructive" />}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-foreground">{waste.product?.name || 'Produit inconnu'}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {waste.quantity} {waste.unit}
+                      {waste.reason && ` • ${waste.reason}`}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(waste.created_at).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Perte</p>
+                    <p className="font-bold text-destructive">{waste.estimated_cost.toFixed(2)}€</p>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteWaste(waste)}
+                    className="p-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+                    title="Supprimer et restaurer le stock"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Tab: Nouveau gaspillage */}
+      {activeTab === 'new' && (
+        <>
+          {!selectedStock ? (
         <>
           {availableStocks.length > 0 ? (
             <div className="space-y-3 animate-fade-up delay-1">
@@ -308,6 +608,8 @@ export default function WastePage() {
             </div>
           )}
         </div>
+          )}
+        </>
       )}
     </div>
   )

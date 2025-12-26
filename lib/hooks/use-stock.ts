@@ -71,6 +71,8 @@ export function useStock() {
     quantity: number
     unit_price: number
     expiry_date?: string | null
+    supplier_id?: string | null
+    supplier_name?: string | null
   }) => {
     try {
       // Récupérer l'establishment_id de l'utilisateur actuel
@@ -86,18 +88,68 @@ export function useStock() {
 
       if (!profile?.establishment_id) throw new Error('Pas d\'établissement associé')
 
+      // Utiliser le supplier_id fourni (déjà confirmé par l'IA)
+      const finalSupplierId: string | null = data.supplier_id || null
+
+      // Ajouter le stock
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      const { data: newStock, error } = await (supabase as any)
         .from('stock')
         .insert({
           establishment_id: profile.establishment_id,
           product_id: data.product_id,
           quantity: data.quantity,
           unit_price: data.unit_price,
-          expiry_date: data.expiry_date || null
+          expiry_date: data.expiry_date || null,
+          supplier_id: finalSupplierId,
+          added_by: userData.user.id
         })
+        .select()
+        .single()
 
       if (error) throw error
+
+      // Si un fournisseur est associé, créer automatiquement une facture
+      if (finalSupplierId && newStock) {
+        const totalAmount = Number(data.quantity) * Number(data.unit_price)
+        
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: invoiceError } = await (supabase as any)
+          .from('factures_fournisseurs')
+          .insert({
+            establishment_id: profile.establishment_id,
+            fournisseur_id: finalSupplierId,
+            montant_ttc: totalAmount,
+            date_facture: new Date().toISOString().split('T')[0],
+            created_by: userData.user.id
+          })
+
+        if (!invoiceError) {
+          // Attendre un peu pour laisser le trigger s'exécuter
+          await new Promise(resolve => setTimeout(resolve, 300))
+          
+          // Forcer la mise à jour des stats du fournisseur en recalculant depuis les factures
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: factures } = await (supabase as any)
+            .from('factures_fournisseurs')
+            .select('montant_ttc')
+            .eq('fournisseur_id', finalSupplierId)
+          
+          if (factures) {
+            const totalDepense = factures.reduce((sum: number, f: any) => sum + Number(f.montant_ttc || 0), 0)
+            const nbFactures = factures.length
+            
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase as any)
+              .from('suppliers')
+              .update({
+                total_depense: totalDepense,
+                nb_factures: nbFactures
+              })
+              .eq('id', finalSupplierId)
+          }
+        }
+      }
       
       // Les subscriptions temps réel mettront à jour automatiquement
       // mais on peut aussi forcer un refresh
@@ -138,6 +190,7 @@ export function useStock() {
       quantity: number
       unit_price: number
       expiry_date?: string | null
+      supplier_id?: string | null
     }
   ) => {
     try {
@@ -175,19 +228,72 @@ export function useStock() {
       // Ajouter le nouveau produit localement
       setProducts(prev => [...prev, newProduct as Product])
 
-      // 2. Ajouter le stock
+      // 2. Utiliser le supplier_id fourni (déjà confirmé par l'IA)
+      const finalSupplierId: string | null = stockData.supplier_id || null
+
+      // 3. Ajouter le stock
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: stockError } = await (supabase as any)
+      const { data: newStock, error: stockError } = await (supabase as any)
         .from('stock')
         .insert({
           establishment_id: profile.establishment_id,
           product_id: newProduct.id,
           quantity: stockData.quantity,
           unit_price: stockData.unit_price,
-          expiry_date: stockData.expiry_date || null
+          expiry_date: stockData.expiry_date || null,
+          supplier_id: finalSupplierId,
+          added_by: userData.user.id
         })
+        .select()
+        .single()
 
       if (stockError) throw stockError
+
+      // 4. Si un fournisseur est associé, créer automatiquement une facture
+      if (finalSupplierId && newStock) {
+        const totalAmount = Number(stockData.quantity) * Number(stockData.unit_price)
+        
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: invoiceError } = await (supabase as any)
+          .from('factures_fournisseurs')
+          .insert({
+            establishment_id: profile.establishment_id,
+            fournisseur_id: finalSupplierId,
+            montant_ttc: totalAmount,
+            date_facture: new Date().toISOString().split('T')[0],
+            created_by: userData.user.id
+          })
+
+        if (invoiceError) {
+          console.error('Erreur création facture automatique:', invoiceError)
+          // Ne pas faire échouer l'ajout de stock si la facture échoue
+        } else {
+          // Attendre un peu pour laisser le trigger s'exécuter
+          await new Promise(resolve => setTimeout(resolve, 300))
+          
+          // Forcer la mise à jour des stats du fournisseur en recalculant depuis les factures
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: factures } = await (supabase as any)
+            .from('factures_fournisseurs')
+            .select('montant_ttc')
+            .eq('fournisseur_id', finalSupplierId)
+          
+          if (factures) {
+            const totalDepense = factures.reduce((sum: number, f: any) => sum + Number(f.montant_ttc || 0), 0)
+            const nbFactures = factures.length
+            
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase as any)
+              .from('suppliers')
+              .update({
+                total_depense: totalDepense,
+                nb_factures: nbFactures
+              })
+              .eq('id', finalSupplierId)
+          }
+        }
+        // Le trigger update_supplier_stats mettra à jour automatiquement les stats
+      }
 
       // Refresh les stocks
       await fetchStocks()

@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import type { Vente, VenteWithMenuItem, InsertVente, MenuItem } from '@/lib/database.types'
+import type { Vente, VenteWithMenuItem, InsertVente, MenuItem, Product } from '@/lib/database.types'
+
+export interface MenuItemWithProduct extends MenuItem {
+    product: Product | null
+}
 
 export interface VentesStats {
     totalJour: number
@@ -13,7 +17,7 @@ export interface VentesStats {
 
 export function useVentes() {
     const [ventes, setVentes] = useState<VenteWithMenuItem[]>([])
-    const [menuItems, setMenuItems] = useState<MenuItem[]>([])
+    const [menuItems, setMenuItems] = useState<MenuItemWithProduct[]>([])
     const [stats, setStats] = useState<VentesStats>({
         totalJour: 0,
         nbVentesJour: 0,
@@ -34,14 +38,35 @@ export function useVentes() {
                 .from('ventes')
                 .select(`
           *,
-          menu_item:menu_items(*)
+          menu_item:menu_items(
+            *,
+            ingredients:menu_item_ingredients(
+              product:products(*)
+            )
+          )
         `)
                 .gte('created_at', today.toISOString())
                 .order('created_at', { ascending: false })
 
             if (fetchError) throw fetchError
 
-            setVentes(data as VenteWithMenuItem[])
+            // Transformer les données pour inclure le produit principal
+            const ventesWithProducts = (data || []).map((vente: any) => {
+                const menuItem = vente.menu_item
+                if (menuItem && menuItem.ingredients && menuItem.ingredients.length > 0) {
+                    const firstIngredient = menuItem.ingredients[0]
+                    return {
+                        ...vente,
+                        menu_item: {
+                            ...menuItem,
+                            product: firstIngredient?.product || null
+                        }
+                    }
+                }
+                return vente
+            })
+
+            setVentes(ventesWithProducts as VenteWithMenuItem[])
 
             // Calculer les stats du jour
             const totalJour = (data || []).reduce((sum, v) => sum + Number(v.total_price), 0)
@@ -57,17 +82,41 @@ export function useVentes() {
         }
     }, [supabase])
 
-    // Récupérer les menus actifs pour les boutons de vente rapide
+    // Récupérer les menus actifs pour les boutons de vente rapide avec leurs produits associés
     const fetchMenuItems = useCallback(async () => {
         try {
-            const { data, error: fetchError } = await supabase
+            const { data: menuItemsData, error: fetchError } = await supabase
                 .from('menu_items')
                 .select('*')
                 .eq('is_active', true)
                 .order('name')
 
             if (fetchError) throw fetchError
-            setMenuItems(data as MenuItem[])
+
+            // Pour chaque menu, récupérer le premier ingrédient et son produit associé
+            const menuItemsWithProducts = await Promise.all(
+                (menuItemsData || []).map(async (menuItem) => {
+                    // Récupérer le premier ingrédient du menu
+                    const { data: ingredientData } = await supabase
+                        .from('menu_item_ingredients')
+                        .select(`
+                            product_id,
+                            product:products(*)
+                        `)
+                        .eq('menu_item_id', menuItem.id)
+                        .limit(1)
+                        .single()
+
+                    const product = ingredientData?.product as Product | null || null
+
+                    return {
+                        ...menuItem,
+                        product
+                    } as MenuItemWithProduct
+                })
+            )
+
+            setMenuItems(menuItemsWithProducts)
         } catch (err) {
             console.error('Erreur lors du chargement des menus:', err)
         }
@@ -151,14 +200,36 @@ export function useVentes() {
                 .from('ventes')
                 .select(`
           *,
-          menu_item:menu_items(*)
+          menu_item:menu_items(
+            *,
+            ingredients:menu_item_ingredients(
+              product:products(*)
+            )
+          )
         `)
                 .gte('created_at', startDate.toISOString())
                 .lte('created_at', endDate.toISOString())
                 .order('created_at', { ascending: false })
 
             if (fetchError) throw fetchError
-            return data as VenteWithMenuItem[]
+
+            // Transformer les données pour inclure le produit principal
+            const ventesWithProducts = (data || []).map((vente: any) => {
+                const menuItem = vente.menu_item
+                if (menuItem && menuItem.ingredients && menuItem.ingredients.length > 0) {
+                    const firstIngredient = menuItem.ingredients[0]
+                    return {
+                        ...vente,
+                        menu_item: {
+                            ...menuItem,
+                            product: firstIngredient?.product || null
+                        }
+                    }
+                }
+                return vente
+            })
+
+            return ventesWithProducts as VenteWithMenuItem[]
         } catch (err) {
             console.error('Erreur lors du chargement de l\'historique:', err)
             return []

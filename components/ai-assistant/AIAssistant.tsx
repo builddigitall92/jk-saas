@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useStock } from "@/lib/hooks/use-stock"
 import { useMenuItems } from "@/lib/hooks/use-menu-items"
+import { useSuppliers } from "@/lib/hooks/use-suppliers"
 import type { ProductCategory, StockUnit } from "@/lib/database.types"
 
 // ============================================
@@ -50,6 +51,7 @@ interface StockContext {
   totalPrice: number | null
   unitCost: number | null // Coût par unité de base (par g, ml, ou pièce)
   supplier: string | null
+  supplier_id: string | null // ID du fournisseur confirmé
   category: ProductCategory | null
   existingProductId: string | null
 }
@@ -61,6 +63,7 @@ interface RecipeContext {
   ingredients: RecipeIngredient[]
   sellingPrice: number | null
   totalFoodCost: number
+  category: string | null // Catégorie spécifiée par l'utilisateur
 }
 
 interface RecipeIngredient {
@@ -105,16 +108,20 @@ type ConversationPhase =
   | 'stock_price'
   | 'stock_restock_quantity'
   | 'stock_supplier'
+  | 'stock_confirm_supplier'
+  | 'stock_select_supplier'
   | 'stock_category'
   | 'stock_confirm'
   | 'stock_link_menu'
   | 'stock_menu_name'
+  | 'stock_menu_category'
   | 'stock_menu_quantity'
   | 'stock_menu_price'
   | 'stock_menu_confirm'
   // Menu phases
   | 'menu_init'
   | 'menu_dish_name'
+  | 'menu_category'
   | 'menu_ingredient_name'
   | 'menu_ingredient_existing'
   | 'menu_ingredient_type'
@@ -192,6 +199,134 @@ const mapTypeToCategory = (type: ProductType): ProductCategory => {
   }
 }
 
+// Détecte si l'utilisateur a mentionné une catégorie dans sa réponse
+const extractUserCategory = (userInput: string): string | null => {
+  const inputLower = userInput.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  
+  // Patterns pour détecter les mentions de catégorie
+  // Chercher "c'est un plat" ou "c'est une plat" ou juste "plat" après "c'est"
+  if (inputLower.match(/c'?est\s+(un|une)\s+plat/i) || 
+      inputLower.match(/c'?est\s+plat/i) ||
+      inputLower.match(/cat[ée]gorie\s+plat/i) ||
+      (inputLower.includes('c\'est') && inputLower.includes('plat') && !inputLower.includes('boisson'))) {
+    return 'plat'
+  }
+  
+  // Chercher "c'est une boisson" ou "c'est un boisson" ou juste "boisson" après "c'est"
+  if (inputLower.match(/c'?est\s+(un|une)\s+boisson/i) ||
+      inputLower.match(/c'?est\s+boisson/i) ||
+      inputLower.match(/cat[ée]gorie\s+boisson/i) ||
+      (inputLower.includes('c\'est') && inputLower.includes('boisson'))) {
+    return 'boisson'
+  }
+  
+  // Chercher "c'est un dessert" ou "c'est une dessert"
+  if (inputLower.match(/c'?est\s+(un|une)\s+dessert/i) ||
+      inputLower.match(/c'?est\s+dessert/i) ||
+      inputLower.match(/cat[ée]gorie\s+dessert/i)) {
+    return 'dessert'
+  }
+  
+  // Chercher "c'est une entrée" ou "c'est un entrée"
+  if (inputLower.match(/c'?est\s+(un|une)\s+entr[ée]e/i) ||
+      inputLower.match(/c'?est\s+entr[ée]e/i) ||
+      inputLower.match(/cat[ée]gorie\s+entr[ée]e/i)) {
+    return 'entree'
+  }
+  
+  // Chercher "c'est une pizza" ou "c'est un pizza"
+  if (inputLower.match(/c'?est\s+(un|une)\s+pizza/i) ||
+      inputLower.match(/c'?est\s+pizza/i) ||
+      inputLower.match(/cat[ée]gorie\s+pizza/i)) {
+    return 'pizza'
+  }
+  
+  // Chercher "c'est un burger" ou "c'est une burger"
+  if (inputLower.match(/c'?est\s+(un|une)\s+burger/i) ||
+      inputLower.match(/c'?est\s+burger/i) ||
+      inputLower.match(/cat[ée]gorie\s+burger/i)) {
+    return 'burger'
+  }
+  
+  return null
+}
+
+// Détecte automatiquement la catégorie d'un menu item basée sur son nom
+const detectMenuCategory = (menuItemName: string): string => {
+  const nameLower = menuItemName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  
+  // Mots-clés pour les boissons
+  const boissonKeywords = [
+    'cola', 'coca', 'pepsi', 'fanta', 'sprite', 'orangina',
+    'soda', 'boisson', 'drink', 'beverage',
+    'eau', 'water', 'eau gazeuse', 'eau plate',
+    'jus', 'juice', 'smoothie', 'milkshake',
+    'limonade', 'lemon', 'citron', 'citronnade',
+    'bière', 'beer', 'vin', 'wine', 'champagne',
+    'café', 'coffee', 'thé', 'tea', 'infusion',
+    'cocktail', 'mojito', 'margarita', 'daiquiri',
+    'dada cola', 'dada', 'cola', 'lemonade'
+  ]
+  
+  // Mots-clés pour les desserts
+  const dessertKeywords = [
+    'dessert', 'glace', 'ice cream', 'sorbet',
+    'gâteau', 'cake', 'tarte', 'pie', 'mousse',
+    'tiramisu', 'crème brûlée', 'flan', 'pudding'
+  ]
+  
+  // Mots-clés pour les entrées
+  const entreeKeywords = [
+    'entrée', 'entree', 'starter', 'appetizer',
+    'salade', 'salad', 'soupe', 'soup', 'velouté',
+    'terrine', 'rillettes', 'foie gras'
+  ]
+  
+  // Mots-clés pour les pizzas
+  const pizzaKeywords = [
+    'pizza', 'pizz'
+  ]
+  
+  // Mots-clés pour les burgers
+  const burgerKeywords = [
+    'burger', 'hamburger', 'cheeseburger'
+  ]
+  
+  // Vérifier les catégories dans l'ordre de spécificité
+  for (const keyword of boissonKeywords) {
+    if (nameLower.includes(keyword)) {
+      return 'boisson'
+    }
+  }
+  
+  for (const keyword of dessertKeywords) {
+    if (nameLower.includes(keyword)) {
+      return 'dessert'
+    }
+  }
+  
+  for (const keyword of entreeKeywords) {
+    if (nameLower.includes(keyword)) {
+      return 'entree'
+    }
+  }
+  
+  for (const keyword of pizzaKeywords) {
+    if (nameLower.includes(keyword)) {
+      return 'pizza'
+    }
+  }
+  
+  for (const keyword of burgerKeywords) {
+    if (nameLower.includes(keyword)) {
+      return 'burger'
+    }
+  }
+  
+  // Par défaut: plat
+  return 'plat'
+}
+
 const getBaseUnit = (unit: StockUnit): string => {
   switch (unit) {
     case 'kg': return 'g'
@@ -248,6 +383,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
   // Hooks
   const { addProductAndStock, products, stocks, fetchStocks } = useStock()
   const { createMenuItem, addIngredient, updateMenuItem, products: menuProducts, fetchMenuItems, menuItems } = useMenuItems()
+  const { suppliers, fetchSuppliers } = useSuppliers()
 
   // Helper pour récupérer le prix d'un produit depuis le stock
   const getStockPriceForProduct = (productId: string): { unitPrice: number; unit: string } | null => {
@@ -279,6 +415,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
     totalPrice: null,
     unitCost: null,
     supplier: null,
+    supplier_id: null,
     category: null,
     existingProductId: null,
   })
@@ -290,6 +427,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
     ingredients: [],
     sellingPrice: null,
     totalFoodCost: 0,
+    category: null,
   })
 
   const [currentIngredient, setCurrentIngredient] = useState<Partial<RecipeIngredient & { stockContext?: Partial<StockContext> }>>({})
@@ -767,18 +905,134 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         const skipWords = ['aucun', 'non', 'pas', 'skip', 'passer', 'rien', 'je sais pas']
         const hasSupplier = !skipWords.some(w => lowerInput.includes(w))
         
-        if (hasSupplier && trimmed.length > 1) {
-          setStockCtx({ ...stockCtx, supplier: trimmed })
+        if (!hasSupplier || trimmed.length <= 1) {
+          // Pas de fournisseur, passer à la catégorie
+          const suggestedCategory = STOCK_CATEGORIES.find(c => c.id === stockCtx.category)
+          ask(
+            `**Dans quelle catégorie ranger "${stockCtx.name}" ?**\n\n_Je suggère : ${suggestedCategory?.label || 'Sec'}_`,
+            STOCK_CATEGORIES.map(c => c.label)
+          )
+          setPhase('stock_category')
+          break
         }
 
-        // Suggest category based on product type
-        const suggestedCategory = STOCK_CATEGORIES.find(c => c.id === stockCtx.category)
-        
-        ask(
-          `**Dans quelle catégorie ranger "${stockCtx.name}" ?**\n\n_Je suggère : ${suggestedCategory?.label || 'Sec'}_`,
-          STOCK_CATEGORIES.map(c => c.label)
+        // Charger les fournisseurs si pas déjà fait
+        if (suppliers.length === 0) {
+          await fetchSuppliers()
+        }
+
+        // Chercher les fournisseurs correspondants
+        const supplierName = trimmed.toLowerCase()
+        const matchingSuppliers = suppliers.filter(s => 
+          s.name.toLowerCase().includes(supplierName) ||
+          supplierName.includes(s.name.toLowerCase())
         )
-        setPhase('stock_category')
+
+        if (matchingSuppliers.length === 0) {
+          // Aucun fournisseur trouvé, proposer la liste
+          if (suppliers.length === 0) {
+            ask(
+              `Je n'ai trouvé aucun fournisseur correspondant à "${trimmed}".\n\n` +
+              `Tu n'as pas encore de fournisseurs enregistrés. Veux-tu continuer sans fournisseur ?`,
+              ['✅ Oui, continuer', '❌ Annuler']
+            )
+            setPhase('stock_category')
+          } else {
+            const supplierList = suppliers.slice(0, 5).map(s => s.name).join(', ')
+            ask(
+              `Je n'ai trouvé aucun fournisseur correspondant à "${trimmed}".\n\n` +
+              `Fournisseurs disponibles : ${supplierList}${suppliers.length > 5 ? '...' : ''}\n\n` +
+              `**Quel fournisseur ?** _(ou "aucun" pour continuer sans)_`,
+              suppliers.slice(0, 5).map(s => s.name).concat(['Aucun'])
+            )
+            setPhase('stock_select_supplier')
+          }
+        } else if (matchingSuppliers.length === 1) {
+          // Un seul match, demander confirmation
+          const supplier = matchingSuppliers[0]
+          ask(
+            `✅ **Fournisseur trouvé : ${supplier.name}**\n\n` +
+            `C'est bien le bon fournisseur ?`,
+            ['✅ Oui', '❌ Non']
+          )
+          setStockCtx({ ...stockCtx, supplier: supplier.name, supplier_id: supplier.id })
+          setPhase('stock_confirm_supplier')
+        } else {
+          // Plusieurs matches, demander de choisir
+          ask(
+            `J'ai trouvé **${matchingSuppliers.length} fournisseurs** correspondants :\n\n` +
+            matchingSuppliers.map((s, idx) => `${idx + 1}. ${s.name}`).join('\n') +
+            `\n\n**Lequel est le bon ?**`,
+            matchingSuppliers.map(s => s.name).concat(['Aucun'])
+          )
+          setPhase('stock_select_supplier')
+        }
+        break
+      }
+
+      case 'stock_confirm_supplier': {
+        if (lowerInput.includes('oui') || lowerInput.includes('✅') || lowerInput.includes('confirmer')) {
+          // Fournisseur confirmé, passer à la catégorie
+          const suggestedCategory = STOCK_CATEGORIES.find(c => c.id === stockCtx.category)
+          ask(
+            `✅ **Fournisseur : ${stockCtx.supplier}** confirmé !\n\n` +
+            `**Dans quelle catégorie ranger "${stockCtx.name}" ?**\n\n_Je suggère : ${suggestedCategory?.label || 'Sec'}_`,
+            STOCK_CATEGORIES.map(c => c.label)
+          )
+          setPhase('stock_category')
+        } else {
+          // Pas le bon, proposer la liste complète
+          if (suppliers.length === 0) {
+            await fetchSuppliers()
+          }
+          const supplierList = suppliers.slice(0, 5).map(s => s.name).join(', ')
+          ask(
+            `D'accord, quel est le bon fournisseur ?\n\n` +
+            `Fournisseurs disponibles : ${supplierList}${suppliers.length > 5 ? '...' : ''}\n\n` +
+            `_(ou "aucun" pour continuer sans)_`,
+            suppliers.slice(0, 5).map(s => s.name).concat(['Aucun'])
+          )
+          setStockCtx({ ...stockCtx, supplier: null, supplier_id: null })
+          setPhase('stock_select_supplier')
+        }
+        break
+      }
+
+      case 'stock_select_supplier': {
+        const skipWords = ['aucun', 'non', 'pas', 'skip', 'passer', 'rien']
+        if (skipWords.some(w => lowerInput.includes(w))) {
+          // Pas de fournisseur
+          setStockCtx({ ...stockCtx, supplier: null, supplier_id: null })
+          const suggestedCategory = STOCK_CATEGORIES.find(c => c.id === stockCtx.category)
+          ask(
+            `**Dans quelle catégorie ranger "${stockCtx.name}" ?**\n\n_Je suggère : ${suggestedCategory?.label || 'Sec'}_`,
+            STOCK_CATEGORIES.map(c => c.label)
+          )
+          setPhase('stock_category')
+          break
+        }
+
+        // Chercher le fournisseur sélectionné
+        const selectedSupplier = suppliers.find(s => 
+          s.name.toLowerCase() === trimmed.toLowerCase() ||
+          trimmed.toLowerCase().includes(s.name.toLowerCase())
+        )
+
+        if (selectedSupplier) {
+          setStockCtx({ ...stockCtx, supplier: selectedSupplier.name, supplier_id: selectedSupplier.id })
+          const suggestedCategory = STOCK_CATEGORIES.find(c => c.id === stockCtx.category)
+          ask(
+            `✅ **Fournisseur : ${selectedSupplier.name}** sélectionné !\n\n` +
+            `**Dans quelle catégorie ranger "${stockCtx.name}" ?**\n\n_Je suggère : ${suggestedCategory?.label || 'Sec'}_`,
+            STOCK_CATEGORIES.map(c => c.label)
+          )
+          setPhase('stock_category')
+        } else {
+          ask(
+            `Je n'ai pas trouvé ce fournisseur. Peux-tu réessayer ?\n\n` +
+            `_(ou "aucun" pour continuer sans fournisseur)_`
+          )
+        }
         break
       }
 
@@ -845,6 +1099,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
               {
                 quantity: stockCtx.totalQuantity!,
                 unit_price: stockCtx.unitCost!,
+                supplier_name: stockCtx.supplier || undefined,
               }
             )
 
@@ -894,12 +1149,43 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           }],
         })
 
+        ask(
+          `Super ! On va lier **"${stockCtx.name}"** au plat **"${trimmed}"**.\n\n` +
+          `**C'est un plat ou une boisson ?**`,
+          ['Plat', 'Boisson', 'Dessert', 'Entrée', 'Pizza', 'Burger']
+        )
+        setPhase('stock_menu_category')
+        break
+      }
+
+      case 'stock_menu_category': {
+        let selectedCategory = 'plat' // Par défaut
+        
+        if (lowerInput.includes('boisson') || lowerInput.includes('drink')) {
+          selectedCategory = 'boisson'
+        } else if (lowerInput.includes('dessert')) {
+          selectedCategory = 'dessert'
+        } else if (lowerInput.includes('entrée') || lowerInput.includes('entree')) {
+          selectedCategory = 'entree'
+        } else if (lowerInput.includes('pizza')) {
+          selectedCategory = 'pizza'
+        } else if (lowerInput.includes('burger')) {
+          selectedCategory = 'burger'
+        } else if (lowerInput.includes('plat')) {
+          selectedCategory = 'plat'
+        }
+        
+        setRecipeCtx({
+          ...recipeCtx,
+          category: selectedCategory,
+        })
+
         const baseUnit = getBaseUnit(stockCtx.purchaseUnit!)
         const unitLabel = baseUnit === 'g' ? 'grammes' : baseUnit === 'ml' ? 'millilitres' : baseUnit
 
         ask(
-          `Super ! On va lier **"${stockCtx.name}"** au plat **"${trimmed}"**.\n\n` +
-          `**Combien de ${unitLabel} utilises-tu pour UNE portion de "${trimmed}" ?**\n\n` +
+          `Parfait ! **"${recipeCtx.menuItemName}"** sera catégorisé comme **${selectedCategory}** ✅\n\n` +
+          `**Combien de ${unitLabel} utilises-tu pour UNE portion de "${recipeCtx.menuItemName}" ?**\n\n` +
           `_Juste le nombre (ex: 150, 30, 200)_`
         )
         setPhase('stock_menu_quantity')
@@ -1012,9 +1298,12 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           try {
             const finalPrice = priceMatch || recipeCtx.sellingPrice!
             
+            // Utiliser la catégorie spécifiée par l'utilisateur, sinon détecter automatiquement
+            const finalCategory = recipeCtx.category || detectMenuCategory(recipeCtx.menuItemName!)
+            
             const result = await createMenuItem({
               name: recipeCtx.menuItemName!,
-              category: 'plat',
+              category: finalCategory,
               selling_price: finalPrice,
               target_margin_percent: 70,
             })
@@ -1078,6 +1367,37 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
         ask(
           `Parfait ! On crée la recette de **"${trimmed}"** 🍽️\n\n` +
+          `**C'est un plat ou une boisson ?**`,
+          ['Plat', 'Boisson', 'Dessert', 'Entrée', 'Pizza', 'Burger']
+        )
+        setPhase('menu_category')
+        break
+      }
+
+      case 'menu_category': {
+        let selectedCategory = 'plat' // Par défaut
+        
+        if (lowerInput.includes('boisson') || lowerInput.includes('drink')) {
+          selectedCategory = 'boisson'
+        } else if (lowerInput.includes('dessert')) {
+          selectedCategory = 'dessert'
+        } else if (lowerInput.includes('entrée') || lowerInput.includes('entree')) {
+          selectedCategory = 'entree'
+        } else if (lowerInput.includes('pizza')) {
+          selectedCategory = 'pizza'
+        } else if (lowerInput.includes('burger')) {
+          selectedCategory = 'burger'
+        } else if (lowerInput.includes('plat')) {
+          selectedCategory = 'plat'
+        }
+        
+        setRecipeCtx({
+          ...recipeCtx,
+          category: selectedCategory,
+        })
+
+        ask(
+          `Parfait ! **"${recipeCtx.menuItemName}"** sera catégorisé comme **${selectedCategory}** ✅\n\n` +
           `**Quel est le PREMIER ingrédient ?**\n\n` +
           `_Ex: steak haché, fromage, pain, tomates..._`
         )
@@ -1378,6 +1698,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
               {
                 quantity: ctx.totalQuantity,
                 unit_price: ctx.unitCost!,
+                supplier_name: ctx.supplier || undefined,
               }
             )
             if (result.success) {
@@ -1542,9 +1863,12 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
             const finalPrice = priceMatch || recipeCtx.sellingPrice!
             
             // Create the menu item
+            // Utiliser la catégorie spécifiée par l'utilisateur, sinon détecter automatiquement
+            const finalCategory = recipeCtx.category || detectMenuCategory(recipeCtx.menuItemName!)
+            
             const result = await createMenuItem({
               name: recipeCtx.menuItemName!,
-              category: 'plat',
+              category: finalCategory,
               selling_price: finalPrice,
               target_margin_percent: 70,
             })
@@ -2541,11 +2865,11 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
     setStockCtx({
       name: null, productType: null, purchaseUnit: null, isPackaged: false,
       unitsPerPack: null, numberOfPacks: null, totalQuantity: null,
-      totalPrice: null, unitCost: null, supplier: null, category: null, existingProductId: null,
+      totalPrice: null, unitCost: null, supplier: null, supplier_id: null, category: null, existingProductId: null,
     })
     setRecipeCtx({
       menuItemName: null, menuItemId: null, isNewItem: true,
-      ingredients: [], sellingPrice: null, totalFoodCost: 0,
+      ingredients: [], sellingPrice: null, totalFoodCost: 0, category: null,
     })
     setMarginCtx({
       productName: null, productId: null, costPrice: null, currentSellingPrice: null,

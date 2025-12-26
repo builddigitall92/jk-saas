@@ -124,9 +124,23 @@ export interface Supplier {
   reliability_percent: number
   avg_delivery_time: string | null
   total_orders: number
+  nb_factures: number | null
+  total_depense: number | null
   is_active: boolean
   created_at: string
   updated_at: string
+}
+
+export interface SupplierInvoice {
+  id: string
+  establishment_id: string
+  fournisseur_id: string
+  fichier_url: string | null
+  montant_ttc: number
+  date_facture: string | null
+  numero_facture: string | null
+  date_ajout: string
+  created_by: string | null
 }
 
 export interface SupplierProduct {

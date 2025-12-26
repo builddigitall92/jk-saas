@@ -71,6 +71,9 @@ export default function ManagerReportsPage() {
 
         if (!profile?.establishment_id) return
 
+        const allEntries: FinancialEntry[] = []
+
+        // 1. Récupérer les transactions manuelles
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: transactions } = await (supabase as any)
           .from('transactions')
@@ -79,17 +82,76 @@ export default function ManagerReportsPage() {
           .order('transaction_date', { ascending: false })
 
         if (transactions && transactions.length > 0) {
-          const loadedEntries: FinancialEntry[] = transactions.map((t: { id: string; transaction_date: string; description: string; category: string; amount: number; transaction_type: string }) => ({
-            id: t.id,
+          const transactionEntries: FinancialEntry[] = transactions.map((t: { id: string; transaction_date: string; description: string; category: string; amount: number; transaction_type: string }) => ({
+            id: `transaction_${t.id}`,
             date: t.transaction_date,
             libelle: t.description || '',
             category: mapCategory(t.category),
             amount: Number(t.amount),
             type: t.transaction_type as 'income' | 'expense'
           }))
-          setEntries(loadedEntries)
+          allEntries.push(...transactionEntries)
         }
 
+        // 2. Récupérer les ventes réelles (BÉNÉFICES/RECETTES)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: ventes } = await (supabase as any)
+          .from('ventes')
+          .select(`
+            *,
+            menu_item:menu_items(
+              name,
+              ingredients:menu_item_ingredients(
+                product:products(name)
+              )
+            )
+          `)
+          .eq('establishment_id', profile.establishment_id)
+          .order('created_at', { ascending: false })
+
+        if (ventes && ventes.length > 0) {
+          const venteEntries: FinancialEntry[] = ventes.map((v: any) => {
+            const menuName = v.menu_item?.name || 'Menu inconnu'
+            const productName = v.menu_item?.ingredients?.[0]?.product?.name || menuName
+            return {
+              id: `vente_${v.id}`,
+              date: v.created_at.split('T')[0],
+              libelle: `Vente: ${productName} x${v.quantity}`,
+              category: 'revenue' as const,
+              amount: Number(v.total_price),
+              type: 'income' as const
+            }
+          })
+          allEntries.push(...venteEntries)
+        }
+
+        // 3. Récupérer les entrées de stock (DÉPENSES)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: stockEntries } = await (supabase as any)
+          .from('stock')
+          .select(`
+            *,
+            product:products(name)
+          `)
+          .eq('establishment_id', profile.establishment_id)
+          .order('created_at', { ascending: false })
+
+        if (stockEntries && stockEntries.length > 0) {
+          const stockFinancialEntries: FinancialEntry[] = stockEntries.map((s: any) => {
+            const totalCost = Number(s.quantity) * Number(s.unit_price)
+            return {
+              id: `stock_${s.id}`,
+              date: s.created_at.split('T')[0],
+              libelle: `Achat stock: ${s.product?.name || 'Produit'} (${Number(s.quantity)} ${s.product?.unit || 'unités'})`,
+              category: 'cost' as const,
+              amount: totalCost,
+              type: 'expense' as const
+            }
+          })
+          allEntries.push(...stockFinancialEntries)
+        }
+
+        // 4. Récupérer les gaspillages (PERTES)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: wasteLogs } = await (supabase as any)
           .from('waste_logs')
@@ -97,6 +159,17 @@ export default function ManagerReportsPage() {
           .eq('establishment_id', profile.establishment_id)
 
         if (wasteLogs && wasteLogs.length > 0) {
+          const wasteEntries: FinancialEntry[] = wasteLogs.map((w: any) => ({
+            id: `waste_${w.id}`,
+            date: w.created_at.split('T')[0],
+            libelle: `Gaspillage: ${w.product?.name || 'Produit'}`,
+            category: 'waste' as const,
+            amount: Number(w.estimated_cost) || 0,
+            type: 'expense' as const
+          }))
+          allEntries.push(...wasteEntries)
+
+          // Données pour le graphique de gaspillage
           const wasteByCategory: Record<string, number> = {}
           wasteLogs.forEach((log: { product: { category: string }; estimated_cost: number }) => {
             const category = log.product?.category || 'Autre'
@@ -112,6 +185,10 @@ export default function ManagerReportsPage() {
           setWasteData(wasteCategories)
         }
 
+        // Trier toutes les entrées par date (plus récentes en premier)
+        allEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        setEntries(allEntries)
+
       } catch (err) {
         console.error('Erreur chargement données:', err)
       } finally {
@@ -120,7 +197,33 @@ export default function ManagerReportsPage() {
     }
 
     fetchData()
-  }, [])
+
+    // Mise à jour en temps réel
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const channel = (supabase as any)
+      .channel('reports-updates')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'ventes' },
+        () => { fetchData() }
+      )
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'stock' },
+        () => { fetchData() }
+      )
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'waste_logs' },
+        () => { fetchData() }
+      )
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'transactions' },
+        () => { fetchData() }
+      )
+      .subscribe()
+
+    return () => {
+      channel.unsubscribe()
+    }
+  }, [supabase])
 
   const mapCategory = (dbCategory: string): FinancialEntry['category'] => {
     switch (dbCategory) {
@@ -135,12 +238,30 @@ export default function ManagerReportsPage() {
     }
   }
 
-  const totalRevenue = entries.filter(e => e.category === 'revenue').reduce((sum, e) => sum + e.amount, 0)
-  const totalCosts = entries.filter(e => e.category === 'cost').reduce((sum, e) => sum + e.amount, 0)
-  const totalWaste = entries.filter(e => e.category === 'waste').reduce((sum, e) => sum + e.amount, 0)
-  const totalOther = entries.filter(e => e.category === 'other' && e.type === 'expense').reduce((sum, e) => sum + e.amount, 0)
-  const grossMargin = totalRevenue - totalCosts - totalWaste - totalOther
-  const marginPercent = totalRevenue > 0 ? ((grossMargin / totalRevenue) * 100).toFixed(1) : '0'
+  // Calculs basés sur les données réelles
+  const totalRevenue = useMemo(() => {
+    return entries.filter(e => e.category === 'revenue').reduce((sum, e) => sum + e.amount, 0)
+  }, [entries])
+  
+  const totalCosts = useMemo(() => {
+    return entries.filter(e => e.category === 'cost').reduce((sum, e) => sum + e.amount, 0)
+  }, [entries])
+  
+  const totalWaste = useMemo(() => {
+    return entries.filter(e => e.category === 'waste').reduce((sum, e) => sum + e.amount, 0)
+  }, [entries])
+  
+  const totalOther = useMemo(() => {
+    return entries.filter(e => e.category === 'other' && e.type === 'expense').reduce((sum, e) => sum + e.amount, 0)
+  }, [entries])
+  
+  const grossMargin = useMemo(() => {
+    return totalRevenue - totalCosts - totalWaste - totalOther
+  }, [totalRevenue, totalCosts, totalWaste, totalOther])
+  
+  const marginPercent = useMemo(() => {
+    return totalRevenue > 0 ? ((grossMargin / totalRevenue) * 100).toFixed(1) : '0'
+  }, [totalRevenue, grossMargin])
 
   const chartData = useMemo(() => {
     if (entries.length === 0) return []
@@ -491,7 +612,7 @@ export default function ManagerReportsPage() {
               <div className="glass-stat-icon glass-stat-icon-orange">
                 <Trash2 className="h-5 w-5" />
               </div>
-              <p className="text-2xl font-bold text-red-400">{(totalWaste + totalWasteFromLogs).toLocaleString('fr-FR')}€</p>
+              <p className="text-2xl font-bold text-red-400">{totalWaste.toLocaleString('fr-FR')}€</p>
               <p className="glass-stat-label">Pertes/Gaspillage</p>
             </div>
             <div className="glass-stat-card glass-animate-fade-up glass-stagger-4" style={{ borderColor: grossMargin >= 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)' }}>
@@ -501,7 +622,7 @@ export default function ManagerReportsPage() {
               <p className={`glass-stat-value ${grossMargin >= 0 ? 'glass-stat-value-green' : 'text-red-400'}`}>
                 {grossMargin.toLocaleString('fr-FR')}€
               </p>
-              <p className="glass-stat-label">Marge brute</p>
+              <p className="glass-stat-label">Marge brute ({marginPercent}%)</p>
             </div>
           </div>
 

@@ -1,17 +1,35 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Building2, Phone, Mail, Star, Package, Search, Plus, Clock, Loader2, Trash2, Check } from "lucide-react"
+import { Building2, Phone, Mail, Star, Package, Search, Plus, Clock, Loader2, Trash2, Check, X, TrendingDown, Euro } from "lucide-react"
 import { useSuppliers } from "@/lib/hooks/use-suppliers"
+import { useStock } from "@/lib/hooks/use-stock"
+import { createClient } from "@/utils/supabase/client"
+import type { Supplier } from "@/lib/database.types"
 
 export default function SuppliersPage() {
-  const { suppliers, loading, avgRating, avgReliability, createSupplier, deleteSupplier, fetchSuppliers } = useSuppliers()
+  const { suppliers, loading, avgRating, createSupplier, deleteSupplier, fetchSuppliers } = useSuppliers()
+  
+  // Rafraîchir périodiquement pour s'assurer que les stats sont à jour
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchSuppliers()
+    }, 5000) // Rafraîchir toutes les 5 secondes
+
+    return () => clearInterval(interval)
+  }, [fetchSuppliers])
+  
+  // Calculer la somme totale dépensée (avec useMemo pour recalculer quand suppliers change)
+  const totalDepense = useMemo(() => {
+    return suppliers.reduce((sum, supplier) => sum + Number(supplier.total_depense || 0), 0)
+  }, [suppliers])
+  const { stocks, loading: stocksLoading } = useStock()
   const [searchQuery, setSearchQuery] = useState("")
   
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -23,6 +41,7 @@ export default function SuppliersPage() {
   const [phone, setPhone] = useState("")
   const [email, setEmail] = useState("")
   const [address, setAddress] = useState("")
+
 
   const filteredSuppliers = suppliers.filter(
     (supplier) =>
@@ -69,6 +88,56 @@ export default function SuppliersPage() {
       alert("Erreur: " + result.error)
     }
   }
+
+  // Fonction pour obtenir les prix comparés par produit
+  const getProductPriceComparison = useMemo(() => {
+    const comparison: Record<string, Array<{ supplierName: string; price: number; unit: string }>> = {}
+    
+    stocks.forEach(stock => {
+      if (!stock.product || !stock.supplier_id) return
+      
+      const productName = stock.product.name
+      const supplier = suppliers.find(s => s.id === stock.supplier_id)
+      if (!supplier) return
+      
+      if (!comparison[productName]) {
+        comparison[productName] = []
+      }
+      
+      comparison[productName].push({
+        supplierName: supplier.name,
+        price: Number(stock.unit_price),
+        unit: stock.product.unit || 'unités'
+      })
+    })
+    
+    return comparison
+  }, [stocks, suppliers])
+
+  // Composant Comparateur de Prix
+  const PriceComparator = ({ productName }: { productName: string }) => {
+    const prices = getProductPriceComparison[productName] || []
+    if (prices.length < 2) return null
+    
+    const sortedPrices = [...prices].sort((a, b) => a.price - b.price)
+    const bestPrice = sortedPrices[0]
+    
+    return (
+      <div className="mt-2 text-xs text-slate-400">
+        <span className="font-medium text-slate-300">{productName}:</span>{" "}
+        {sortedPrices.map((p, idx) => (
+          <span key={idx}>
+            {p.supplierName} {p.price.toFixed(2)}€/{p.unit}
+            {p.price === bestPrice.price && (
+              <span className="ml-1 text-green-400 font-semibold">← MEILLEUR</span>
+            )}
+            {idx < sortedPrices.length - 1 && " | "}
+          </span>
+        ))}
+      </div>
+    )
+  }
+
 
   if (loading) {
     return (
@@ -217,7 +286,7 @@ export default function SuppliersPage() {
       </Dialog>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div className="glass-stat-card glass-animate-fade-up glass-stagger-1">
           <div className="glass-stat-icon glass-stat-icon-blue">
             <Building2 className="h-5 w-5" />
@@ -234,17 +303,10 @@ export default function SuppliersPage() {
         </div>
         <div className="glass-stat-card glass-animate-fade-up glass-stagger-3">
           <div className="glass-stat-icon glass-stat-icon-green">
-            <Package className="h-5 w-5" />
+            <Euro className="h-5 w-5" />
           </div>
-          <p className="glass-stat-value glass-stat-value-green">{avgReliability}%</p>
-          <p className="glass-stat-label">Fiabilité</p>
-        </div>
-        <div className="glass-stat-card glass-animate-fade-up glass-stagger-4">
-          <div className="glass-stat-icon glass-stat-icon-purple">
-            <Clock className="h-5 w-5" />
-          </div>
-          <p className="glass-stat-value glass-stat-value-purple">14h</p>
-          <p className="glass-stat-label">Délai moyen</p>
+          <p className="glass-stat-value glass-stat-value-green">{totalDepense.toFixed(2)}€</p>
+          <p className="glass-stat-label">Somme totale dépensée</p>
         </div>
       </div>
 
@@ -300,6 +362,21 @@ export default function SuppliersPage() {
                         <Star className="h-3 w-3 fill-orange-400 text-orange-400" />
                         <span className="text-xs font-medium text-orange-400">{Number(supplier.rating).toFixed(1)}</span>
                       </div>
+                      {/* Badge Somme Dépensée */}
+                      {(supplier.total_depense && Number(supplier.total_depense) > 0) && (
+                        <div 
+                          className="flex items-center gap-1 px-2 py-0.5 rounded-full"
+                          style={{
+                            background: "rgba(34, 197, 94, 0.15)",
+                            border: "1px solid rgba(34, 197, 94, 0.3)",
+                          }}
+                        >
+                          <Euro className="h-3 w-3 text-green-400" />
+                          <span className="text-xs font-medium text-green-400">
+                            {Number(supplier.total_depense || 0).toFixed(0)}€
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <p 
                       className="text-sm mb-3 px-2 py-0.5 rounded-full inline-block"
@@ -326,19 +403,19 @@ export default function SuppliersPage() {
                         </span>
                       )}
                     </div>
+
+                    {/* Comparateur de Prix */}
+                    <div className="mt-3 space-y-1">
+                      {Object.keys(getProductPriceComparison).slice(0, 3).map((productName) => (
+                        <PriceComparator key={productName} productName={productName} />
+                      ))}
+                    </div>
+
                   </div>
                 </div>
 
                 <div className="text-right">
                   <div className="flex items-center gap-4 mb-3">
-                    <div>
-                      <p className="text-xs text-slate-500">Fiabilité</p>
-                      <p className="font-semibold text-green-400">{supplier.reliability_percent}%</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Délai</p>
-                      <p className="font-semibold text-purple-400">{supplier.avg_delivery_time || "-"}</p>
-                    </div>
                     <div>
                       <p className="text-xs text-slate-500">Commandes</p>
                       <p className="font-semibold text-blue-400">{supplier.total_orders}</p>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import {
   Package,
@@ -42,6 +42,7 @@ import { useAuth } from "@/lib/hooks/use-auth"
 import { useStock } from "@/lib/hooks/use-stock"
 import { useMenuItems } from "@/lib/hooks/use-menu-items"
 import { useDashboardStats } from "@/lib/hooks/use-dashboard-stats"
+import { createClient } from "@/utils/supabase/client"
 import {
   AreaChart,
   Area,
@@ -151,16 +152,16 @@ function BusinessHealthSection({
   stockValue,
   marginValue,
   marginPercent,
-  dormantStock,
-  dormantCount,
+  wasteCost,
+  wasteCount,
   hasData
 }: {
   caMonth: number
   stockValue: number
   marginValue: number
   marginPercent: number
-  dormantStock: number
-  dormantCount: number
+  wasteCost: number
+  wasteCount: number
   hasData: boolean
 }) {
   const kpis: {
@@ -201,13 +202,13 @@ function BusinessHealthSection({
         noData: !hasData || marginValue === 0,
       },
       {
-        id: "dormant",
+        id: "waste",
         type: "overstock",
-        label: "Stock Dormant / Surstock",
-        value: dormantStock > 0 ? `${dormantStock.toLocaleString('fr-FR')} €` : "0 €",
-        variation: dormantCount > 0 ? dormantCount : null,
-        variationSuffix: " réf.",
-        isWarning: dormantCount > 0,
+        label: "Pertes / Gaspillages",
+        value: wasteCost > 0 ? `${wasteCost.toLocaleString('fr-FR')} €` : "0 €",
+        variation: wasteCount > 0 ? wasteCount : null,
+        variationSuffix: " entrées",
+        isWarning: wasteCost > 0,
         noData: false,
       },
     ]
@@ -530,14 +531,13 @@ function QuickActionCard({ label, icon: Icon, theme, href, index }: QuickActionC
 // ============================================
 // SECTION 3 - BUSINESS TRENDS + ACTIONS RAPIDES
 // ============================================
-function TrendsAndActionsSection({ chartData, hasData }: { chartData: any[], hasData: boolean }) {
+function TrendsAndActionsSection({ chartData, hasData, caJour, caMois }: { chartData: any[], hasData: boolean, caJour: number, caMois: number }) {
   const [period, setPeriod] = useState("30")
   const [chartKey, setChartKey] = useState(0)
   const [isPeriodDropdownOpen, setIsPeriodDropdownOpen] = useState(false)
 
-  // Calculate totals for header display
-  const totalCA = chartData.reduce((sum, d) => sum + d.ca, 0)
-  const avgCA = hasData ? Math.round(totalCA / chartData.length) : 0
+  // Utiliser le CA réel selon la période sélectionnée
+  const displayedCA = period === "7" || period === "15" ? caJour : caMois
 
   const quickActions: Array<{ id: string; icon: React.ElementType; label: string; href: string; theme: QuickActionTheme }> = [
     { id: "entree", icon: Plus, label: "Ajouter Entrée/Sortie", href: "/manager/stock", theme: "blue" },
@@ -610,18 +610,18 @@ function TrendsAndActionsSection({ chartData, hasData }: { chartData: any[], has
                 <h3 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-1">Chiffre d'Affaires</h3>
                 <div className="flex items-baseline gap-3">
                   <span className="text-3xl font-bold text-white tracking-tight">
-                    {hasData ? `${avgCA.toLocaleString('fr-FR')} €` : '-- €'}
+                    {hasData ? `${displayedCA.toLocaleString('fr-FR')} €` : '-- €'}
                   </span>
                   {/* Badge de variation - affiché seulement s'il y a des données */}
-                  {hasData && avgCA > 0 ? (
-                    <span className="business-trends-badge" style={{ opacity: 0.5 }}>
-                      <span className="text-slate-400 text-xs">Estimé</span>
+                  {hasData && displayedCA > 0 ? (
+                    <span className="business-trends-badge">
+                      <span className="text-emerald-400 text-xs">Réel</span>
                     </span>
                   ) : (
                     <span className="text-xs text-slate-500">Aucune donnée</span>
                   )}
                 </div>
-                <p className="text-xs text-white/40 mt-1">{hasData ? 'CA estimé sur la période' : 'Ajoutez des produits au menu'}</p>
+                <p className="text-xs text-white/40 mt-1">{hasData ? (period === "7" || period === "15" ? 'CA du jour' : 'CA du mois') : 'Ajoutez des produits au menu'}</p>
               </div>
             </div>
 
@@ -909,8 +909,62 @@ export default function ManagerDashboard() {
   const { stocks, loading: stockLoading } = useStock()
   const { menuItems, loading: menuLoading } = useMenuItems()
   const { stats: dashboardStats, loading: statsLoading } = useDashboardStats()
+  const [wasteData, setWasteData] = useState({ cost: 0, count: 0 })
+  const [wasteLoading, setWasteLoading] = useState(true)
+  const supabase = createClient()
 
-  const loading = realtimeLoading || stockLoading || menuLoading || statsLoading
+  const loading = realtimeLoading || stockLoading || menuLoading || statsLoading || wasteLoading
+
+  // Récupérer les données de gaspillage du mois
+  useEffect(() => {
+    const fetchWasteData = async () => {
+      if (!profile?.establishment_id) {
+        setWasteLoading(false)
+        return
+      }
+
+      try {
+        const startOfMonth = new Date()
+        startOfMonth.setDate(1)
+        startOfMonth.setHours(0, 0, 0, 0)
+
+        const { data: wasteLogs, error } = await supabase
+          .from('waste_logs')
+          .select('estimated_cost')
+          .eq('establishment_id', profile.establishment_id)
+          .gte('created_at', startOfMonth.toISOString())
+
+        if (error) throw error
+
+        const totalCost = (wasteLogs || []).reduce((sum, log) => sum + (Number(log.estimated_cost) || 0), 0)
+        const count = (wasteLogs || []).length
+
+        setWasteData({ cost: totalCost, count })
+      } catch (err) {
+        console.error('Erreur lors du chargement des gaspillages:', err)
+      } finally {
+        setWasteLoading(false)
+      }
+    }
+
+    fetchWasteData()
+
+    // Abonnement realtime pour les mises à jour
+    const channel = supabase
+      .channel('waste_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'waste_logs' },
+        () => {
+          fetchWasteData()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [profile?.establishment_id, supabase])
 
   // ============================================
   // CALCULS DES KPIs RÉELS
@@ -999,27 +1053,30 @@ export default function ManagerDashboard() {
 
   // Données du graphique (basées sur des estimations à partir des données réelles)
   // Si pas de données, afficher des valeurs à 0
+  // Utiliser useMemo pour recalculer quand les stats changent
   const hasRealData = menuItems.length > 0 || stocks.length > 0
-  const chartData = Array.from({ length: 30 }, (_, i) => {
-    const day = i + 1
-    if (!hasRealData) {
+  const chartData = useMemo(() => {
+    return Array.from({ length: 30 }, (_, i) => {
+      const day = i + 1
+      if (!hasRealData) {
+        return {
+          day: `J${day}`,
+          ca: 0,
+          marge: 0,
+          stock: 0,
+        }
+      }
+      const baseCA = caMois > 0 ? (caMois / 30) * (0.8 + Math.sin(day * 0.3) * 0.4) : 0
+      const baseMarge = baseCA * (marginPercent / 100)
+      const baseStock = stockValue * (0.9 + Math.sin(day * 0.15) * 0.2)
       return {
         day: `J${day}`,
-        ca: 0,
-        marge: 0,
-        stock: 0,
+        ca: Math.round(baseCA),
+        marge: Math.round(baseMarge),
+        stock: Math.round(baseStock),
       }
-    }
-    const baseCA = caMois > 0 ? (caMois / 30) * (0.8 + Math.sin(day * 0.3) * 0.4) : 0
-    const baseMarge = baseCA * (marginPercent / 100)
-    const baseStock = stockValue * (0.9 + Math.sin(day * 0.15) * 0.2)
-    return {
-      day: `J${day}`,
-      ca: Math.round(baseCA),
-      marge: Math.round(baseMarge),
-      stock: Math.round(baseStock),
-    }
-  })
+    })
+  }, [caMois, marginPercent, stockValue, hasRealData])
 
   return (
     <>
@@ -2367,8 +2424,8 @@ export default function ManagerDashboard() {
           stockValue={Math.round(stockValue)}
           marginValue={marginValue}
           marginPercent={marginPercent}
-          dormantStock={Math.round(dormantStockValue)}
-          dormantCount={dormantStocks.length}
+          wasteCost={Math.round(wasteData.cost)}
+          wasteCount={wasteData.count}
           hasData={menuItems.length > 0 || stocks.length > 0}
         />
 
@@ -2379,7 +2436,7 @@ export default function ManagerDashboard() {
         />
 
         {/* Section 3 - Business Trends + Actions Rapides */}
-        <TrendsAndActionsSection chartData={chartData} hasData={menuItems.length > 0} />
+        <TrendsAndActionsSection chartData={chartData} hasData={menuItems.length > 0} caJour={caJour} caMois={caMois} />
 
         {/* Section 4 - Top Produits */}
         <TopProductsSection

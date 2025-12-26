@@ -13,6 +13,7 @@ export interface MenuItemWithIngredients extends MenuItem {
   cost_price: number
   actual_margin_percent: number
   margin_amount: number
+  product: Product | null
 }
 
 export function useMenuItems() {
@@ -192,9 +193,14 @@ export function useMenuItems() {
           
           const costs = await calculateCosts(item, itemIngredients)
           
+          // Récupérer le produit principal (premier ingrédient)
+          const firstIngredient = itemIngredients[0]
+          const product = firstIngredient?.product || null
+          
           return {
             ...item,
             ingredients: itemIngredients,
+            product,
             ...costs
           }
         })

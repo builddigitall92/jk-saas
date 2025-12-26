@@ -36,7 +36,8 @@ export default function VentesPage() {
         try {
             const result = await enregistrerVente(selectedMenu, quantity)
             if (result.success) {
-                setSuccessMessage(`✅ Vente enregistrée : ${selectedMenuItem?.name} x${quantity} = ${totalPrice.toFixed(2)}€`)
+                const productName = selectedMenuItem?.product?.name || selectedMenuItem?.name || 'Menu'
+                setSuccessMessage(`✅ Vente enregistrée : ${productName} x${quantity} = ${totalPrice.toFixed(2)}€`)
                 setSelectedMenu(null)
                 setQuantity(1)
                 setTimeout(() => setSuccessMessage(null), 3000)
@@ -248,14 +249,9 @@ export default function VentesPage() {
                                         <div className="flex flex-col gap-2">
                                             <div className="flex items-start justify-between">
                                                 <span className="text-2xl">{item.icon || '🍽️'}</span>
-                                                {item.category && (
-                                                    <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-400">
-                                                        {item.category}
-                                                    </span>
-                                                )}
                                             </div>
                                             <div>
-                                                <p className="text-white font-medium text-sm leading-tight">{item.name}</p>
+                                                <p className="text-white font-medium text-sm leading-tight">{item.product?.name || item.name}</p>
                                                 {item.description && (
                                                     <p className="text-slate-500 text-xs mt-0.5 truncate">{item.description}</p>
                                                 )}
@@ -334,7 +330,7 @@ export default function VentesPage() {
                                             <span className="text-xl">{vente.menu_item?.icon || '🍽️'}</span>
                                             <div>
                                                 <p className="text-white text-sm font-medium">
-                                                    {vente.menu_item?.name || 'Menu inconnu'} x{vente.quantity}
+                                                    {(vente.menu_item as any)?.product?.name || vente.menu_item?.name || 'Menu inconnu'} x{vente.quantity}
                                                 </p>
                                                 <p className="text-slate-500 text-xs">{formatTime(vente.created_at)}</p>
                                             </div>
@@ -345,7 +341,8 @@ export default function VentesPage() {
                                             </span>
                                             <button
                                                 onClick={async () => {
-                                                    if (confirm(`Supprimer cette vente ?\n${vente.menu_item?.name} x${vente.quantity} = ${Number(vente.total_price).toFixed(2)}€`)) {
+                                                    const productName = (vente.menu_item as any)?.product?.name || vente.menu_item?.name || 'Menu inconnu'
+                                                    if (confirm(`Supprimer cette vente ?\n${productName} x${vente.quantity} = ${Number(vente.total_price).toFixed(2)}€`)) {
                                                         setDeletingId(vente.id)
                                                         const result = await supprimerVente(vente.id)
                                                         setDeletingId(null)
