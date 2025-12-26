@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo } from "react"
 import {
   Dialog,
   DialogContent,
@@ -14,16 +14,7 @@ import { createClient } from "@/utils/supabase/client"
 import type { Supplier } from "@/lib/database.types"
 
 export default function SuppliersPage() {
-  const { suppliers, loading, avgRating, createSupplier, deleteSupplier, fetchSuppliers } = useSuppliers()
-  
-  // Rafraîchir périodiquement pour s'assurer que les stats sont à jour
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchSuppliers()
-    }, 5000) // Rafraîchir toutes les 5 secondes
-
-    return () => clearInterval(interval)
-  }, [fetchSuppliers])
+  const { suppliers, loading, avgRating, createSupplier, deleteSupplier } = useSuppliers()
   
   // Calculer la somme totale dépensée (avec useMemo pour recalculer quand suppliers change)
   const totalDepense = useMemo(() => {
@@ -370,10 +361,16 @@ export default function SuppliersPage() {
                             background: "rgba(34, 197, 94, 0.15)",
                             border: "1px solid rgba(34, 197, 94, 0.3)",
                           }}
+                          title={`Somme dépensée : ${Number(supplier.total_depense || 0).toFixed(2)}€ (${supplier.nb_factures || 0} ${(supplier.nb_factures || 0) > 1 ? 'achats' : 'achat'})`}
                         >
                           <Euro className="h-3 w-3 text-green-400" />
                           <span className="text-xs font-medium text-green-400">
                             {Number(supplier.total_depense || 0).toFixed(0)}€
+                            {supplier.nb_factures && Number(supplier.nb_factures) > 0 && (
+                              <span className="ml-1 opacity-75">
+                                ({supplier.nb_factures})
+                              </span>
+                            )}
                           </span>
                         </div>
                       )}

@@ -44,25 +44,56 @@ export function useSuppliers() {
   useEffect(() => {
     fetchSuppliers()
 
-    // Subscription temps réel pour mettre à jour automatiquement
+    // Subscription temps réel pour mettre à jour automatiquement le state local
+    // Conforme au PRD : mise à jour directe sans polling manuel
     const suppliersChannel = supabase
-      .channel('suppliers-changes')
+      .channel('suppliers-updates')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'suppliers'
         },
-        () => {
-          // Rafraîchir les fournisseurs quand ils changent (stats mises à jour par trigger)
-          console.log('Suppliers table changed, refreshing...')
-          fetchSuppliers()
+        (payload) => {
+          // Mettre à jour directement le state local avec les nouvelles valeurs
+          // Le trigger a déjà mis à jour total_depense et nb_factures
+          const updatedSupplier = payload.new as Supplier
+          setSuppliers(prev => 
+            prev.map(s => s.id === updatedSupplier.id ? updatedSupplier : s)
+          )
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'suppliers'
+        },
+        (payload) => {
+          const newSupplier = payload.new as Supplier
+          setSuppliers(prev => [...prev, newSupplier].sort((a, b) => 
+            a.name.localeCompare(b.name)
+          ))
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'suppliers'
+        },
+        (payload) => {
+          setSuppliers(prev => prev.filter(s => s.id !== payload.old.id))
         }
       )
       .subscribe()
 
-    // Subscription pour les factures (quand une facture est ajoutée, le trigger met à jour les stats)
+    // Subscription pour les factures : quand une facture est ajoutée/modifiée/supprimée,
+    // le trigger met à jour automatiquement les stats du fournisseur
+    // On écoute les changements de factures pour déclencher une mise à jour optimiste
     const invoicesChannel = supabase
       .channel('factures-changes')
       .on(
@@ -72,13 +103,42 @@ export function useSuppliers() {
           schema: 'public',
           table: 'factures_fournisseurs'
         },
-        () => {
-          // Le trigger met à jour les stats du fournisseur, on rafraîchit les données
-          console.log('Factures table changed, refreshing suppliers...')
-          // Petit délai pour laisser le trigger s'exécuter
-          setTimeout(() => {
-            fetchSuppliers()
-          }, 500)
+        async (payload) => {
+          // Le trigger met à jour les stats du fournisseur automatiquement
+          // On attend un peu pour laisser le trigger s'exécuter, puis on récupère le fournisseur mis à jour
+          if (payload.new && (payload.new as any).fournisseur_id) {
+            const supplierId = (payload.new as any).fournisseur_id
+            setTimeout(async () => {
+              // Récupérer uniquement le fournisseur mis à jour
+              const { data: updatedSupplier } = await supabase
+                .from('suppliers')
+                .select('*')
+                .eq('id', supplierId)
+                .single()
+              
+              if (updatedSupplier) {
+                setSuppliers(prev => 
+                  prev.map(s => s.id === updatedSupplier.id ? updatedSupplier as Supplier : s)
+                )
+              }
+            }, 300) // Délai pour laisser le trigger s'exécuter
+          } else if (payload.old && (payload.old as any).fournisseur_id) {
+            // En cas de suppression de facture
+            const supplierId = (payload.old as any).fournisseur_id
+            setTimeout(async () => {
+              const { data: updatedSupplier } = await supabase
+                .from('suppliers')
+                .select('*')
+                .eq('id', supplierId)
+                .single()
+              
+              if (updatedSupplier) {
+                setSuppliers(prev => 
+                  prev.map(s => s.id === updatedSupplier.id ? updatedSupplier as Supplier : s)
+                )
+              }
+            }, 300)
+          }
         }
       )
       .subscribe()
@@ -87,7 +147,7 @@ export function useSuppliers() {
       supabase.removeChannel(suppliersChannel)
       supabase.removeChannel(invoicesChannel)
     }
-  }, [fetchSuppliers])
+  }, [supabase])
 
   // Créer un fournisseur
   const createSupplier = async (supplierData: {
