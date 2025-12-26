@@ -325,6 +325,32 @@ export interface MenuItemWithCosts extends MenuItem {
   actual_margin_percent: number
 }
 
+export interface Vente {
+  id: string
+  establishment_id: string
+  menu_item_id: string
+  quantity: number
+  unit_price: number
+  total_price: number
+  sold_by: string | null
+  created_at: string
+}
+
+export interface VenteWithMenuItem extends Vente {
+  menu_item: MenuItem | null
+}
+
+export interface DashboardStats {
+  id: string
+  establishment_id: string
+  ca_jour: number
+  ca_mois: number
+  nb_ventes_jour: number
+  nb_ventes_mois: number
+  nb_menus_actifs: number
+  last_updated: string
+}
+
 // =============================================
 // Vues
 // =============================================
@@ -409,6 +435,8 @@ export type InsertMenuItem = Omit<MenuItem, 'id' | 'created_at' | 'updated_at'>
 export type InsertMenuItemIngredient = Omit<MenuItemIngredient, 'id' | 'created_at'>
 export type UpdateMenuItem = Partial<Omit<MenuItem, 'id' | 'created_at' | 'updated_at'>>
 export type UpdateMenuItemIngredient = Partial<Omit<MenuItemIngredient, 'id' | 'created_at'>>
+export type InsertVente = Omit<Vente, 'id' | 'created_at'>
+export type InsertDashboardStats = Omit<DashboardStats, 'id' | 'last_updated'>
 
 // =============================================
 // Types pour les mises à jour
@@ -536,6 +564,16 @@ export interface Database {
         Row: DailyReport
         Insert: Omit<DailyReport, 'id' | 'gross_margin' | 'created_at'>
         Update: never
+      }
+      ventes: {
+        Row: Vente
+        Insert: InsertVente
+        Update: never
+      }
+      dashboard_stats: {
+        Row: DashboardStats
+        Insert: InsertDashboardStats
+        Update: Partial<Omit<DashboardStats, 'id' | 'last_updated'>>
       }
     }
     Views: {

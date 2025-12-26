@@ -35,6 +35,7 @@ import { useSubscription } from "@/lib/hooks/use-subscription"
 const mainNavItems = [
   { name: "Dashboard", href: "/manager", icon: LayoutDashboard, color: "blue" },
   { name: "Menu", href: "/manager/menu", icon: ChefHat, color: "emerald" },
+  { name: "Ventes", href: "/manager/ventes", icon: Receipt, color: "green" },
   { name: "Stocks", href: "/manager/stock", icon: Package, badge: 4, color: "cyan" },
   { name: "Commandes", href: "/manager/orders", icon: ShoppingCart, color: "purple" },
   { name: "Fournisseurs", href: "/manager/suppliers", icon: Truck, badge: 3, color: "green" },
@@ -178,11 +179,11 @@ export default function ManagerLayout({
   ]
 
   // Filtrer les résultats de recherche
-  const searchResults = searchQuery.trim() 
-    ? searchableItems.filter(item => 
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.keywords.some(keyword => keyword.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
+  const searchResults = searchQuery.trim()
+    ? searchableItems.filter(item =>
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.keywords.some(keyword => keyword.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
     : []
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -233,12 +234,12 @@ export default function ManagerLayout({
 
       {/* Global Tooltip */}
       {tooltip && (
-        <div 
+        <div
           className="fixed left-[88px] px-4 py-2 bg-slate-900/95 backdrop-blur-xl border border-cyan-500/30 rounded-xl text-sm font-semibold text-white shadow-xl shadow-black/30 pointer-events-none"
-          style={{ 
-            top: tooltip.top, 
+          style={{
+            top: tooltip.top,
             transform: 'translateY(-50%)',
-            zIndex: 999999 
+            zIndex: 999999
           }}
         >
           <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[6px] w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px] border-r-slate-900/95" />
@@ -247,11 +248,10 @@ export default function ManagerLayout({
       )}
 
       {/* Icon-Only Glassmorphism Sidebar */}
-      <aside className={`w-[72px] min-w-[72px] h-full flex flex-col items-center py-4 relative z-[9999] ${
-        theme === "dark" 
-          ? "glass-sidebar" 
+      <aside className={`w-[72px] min-w-[72px] h-full flex flex-col items-center py-4 relative z-[9999] ${theme === "dark"
+          ? "glass-sidebar"
           : "bg-white border-r border-gray-200"
-      }`}>
+        }`}>
         {/* Logo */}
         <div className="mb-4">
           <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/40 animate-pulse-slow">
@@ -260,18 +260,18 @@ export default function ManagerLayout({
         </div>
 
         {/* User Avatar */}
-        <div 
+        <div
           className="relative mb-6"
           onMouseEnter={(e) => showTooltip(e, `${userName} · Admin`)}
           onMouseLeave={hideTooltip}
         >
           <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-cyan-500/30 ring-2 ring-cyan-400/20 cursor-pointer transition-transform duration-200 hover:scale-105">
             {profile?.avatar_url ? (
-              <Image 
-                src={profile.avatar_url} 
-                alt="Avatar" 
-                width={40} 
-                height={40} 
+              <Image
+                src={profile.avatar_url}
+                alt="Avatar"
+                width={40}
+                height={40}
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -314,11 +314,10 @@ export default function ManagerLayout({
                 onMouseEnter={(e) => showTooltip(e, item.name)}
                 onMouseLeave={hideTooltip}
               >
-                <div className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                  isActive 
-                    ? `bg-gradient-to-br ${colors.bg} ${colors.glow} shadow-lg border ${colors.border}` 
+                <div className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${isActive
+                    ? `bg-gradient-to-br ${colors.bg} ${colors.glow} shadow-lg border ${colors.border}`
                     : "bg-slate-800/50 border border-transparent hover:bg-slate-700/50 hover:border-white/10"
-                }`}>
+                  }`}>
                   <Icon className={`w-[18px] h-[18px] transition-colors ${isActive ? colors.icon : "text-slate-400 hover:text-slate-200"}`} />
                   {item.badge && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 text-[9px] font-bold rounded-full bg-cyan-500 text-white flex items-center justify-center shadow-lg shadow-cyan-500/50">
@@ -352,7 +351,7 @@ export default function ManagerLayout({
               </Link>
             )
           })}
-          
+
           {/* Logout */}
           <button
             onClick={handleSignOut}
@@ -368,7 +367,7 @@ export default function ManagerLayout({
 
         {/* Theme Toggle */}
         <div className="mt-3 mb-2">
-          <button 
+          <button
             onClick={toggleTheme}
             className="icon-sidebar-item"
             onMouseEnter={(e) => showTooltip(e, theme === "dark" ? "Mode Clair" : "Mode Sombre")}
@@ -388,33 +387,31 @@ export default function ManagerLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header Bar */}
-        <header className={`h-16 px-6 flex items-center justify-between backdrop-blur-xl relative z-50 ${
-          theme === "dark" 
-            ? "border-b border-white/[0.06] bg-slate-900/30" 
+        <header className={`h-16 px-6 flex items-center justify-between backdrop-blur-xl relative z-50 ${theme === "dark"
+            ? "border-b border-white/[0.06] bg-slate-900/30"
             : "border-b border-gray-200 bg-white/80"
-        }`}>
+          }`}>
           {/* Page Title */}
           <h2 className={`glass-title ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
-            {pathname === "/manager" ? "Dashboard" : 
-             pathname.includes("/stock") ? "Stocks" :
-             pathname.includes("/orders") ? "Commandes" :
-             pathname.includes("/suppliers") ? "Fournisseurs" :
-             pathname.includes("/forecasts") ? "Prévisions" :
-             pathname.includes("/reports") ? "Rapports" :
-             pathname.includes("/calculator") ? "Calculateur" :
-             pathname.includes("/feedback") ? "Feedbacks" :
-             pathname.includes("/account") ? "Mon Profil" :
-             pathname.includes("/help") ? "Aide & Support" :
-             pathname.includes("/settings") ? "Paramètres" : "Dashboard"}
+            {pathname === "/manager" ? "Dashboard" :
+              pathname.includes("/stock") ? "Stocks" :
+                pathname.includes("/orders") ? "Commandes" :
+                  pathname.includes("/suppliers") ? "Fournisseurs" :
+                    pathname.includes("/forecasts") ? "Prévisions" :
+                      pathname.includes("/reports") ? "Rapports" :
+                        pathname.includes("/calculator") ? "Calculateur" :
+                          pathname.includes("/feedback") ? "Feedbacks" :
+                            pathname.includes("/account") ? "Mon Profil" :
+                              pathname.includes("/help") ? "Aide & Support" :
+                                pathname.includes("/settings") ? "Paramètres" : "Dashboard"}
           </h2>
 
           {/* Right Actions */}
           <div className="flex items-center gap-3">
             {/* Search */}
             <div className="relative search-dropdown z-[999997]">
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10 ${
-                theme === "dark" ? "text-slate-500" : "text-gray-400"
-              }`} />
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10 ${theme === "dark" ? "text-slate-500" : "text-gray-400"
+                }`} />
               <input
                 type="text"
                 placeholder="Rechercher... (Ctrl+K)"
@@ -425,13 +422,12 @@ export default function ManagerLayout({
                   setIsNotificationsOpen(false)
                   setIsProfileOpen(false)
                 }}
-                className={`search-input pl-10 pr-4 w-64 ${
-                  theme === "dark" 
-                    ? "glass-input" 
+                className={`search-input pl-10 pr-4 w-64 ${theme === "dark"
+                    ? "glass-input"
                     : "bg-white border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                }`}
+                  }`}
               />
-              
+
               {/* Search Results Dropdown */}
               {isSearchOpen && searchQuery.trim() && (
                 <div className="absolute right-0 top-full mt-2 w-96 glass-dropdown z-[999999] max-h-96 overflow-hidden flex flex-col">
@@ -484,7 +480,7 @@ export default function ManagerLayout({
 
             {/* Notifications */}
             <div className="relative notification-dropdown z-[999997]">
-              <button 
+              <button
                 onClick={() => {
                   setIsNotificationsOpen(!isNotificationsOpen)
                   setIsProfileOpen(false)
@@ -515,16 +511,14 @@ export default function ManagerLayout({
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${
-                            notification.unread ? 'bg-emerald-500/5' : ''
-                          }`}
+                          className={`px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${notification.unread ? 'bg-emerald-500/5' : ''
+                            }`}
                         >
                           <div className="flex items-start gap-3">
-                            <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
-                              notification.type === 'alert' ? 'bg-red-500' :
-                              notification.type === 'warning' ? 'bg-orange-500' :
-                              'bg-blue-500'
-                            }`} />
+                            <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${notification.type === 'alert' ? 'bg-red-500' :
+                                notification.type === 'warning' ? 'bg-orange-500' :
+                                  'bg-blue-500'
+                              }`} />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-white">{notification.title}</p>
                               <p className="text-xs text-slate-400 mt-1">{notification.message}</p>
@@ -565,11 +559,11 @@ export default function ManagerLayout({
               >
                 <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-white/10">
                   {profile?.avatar_url ? (
-                    <Image 
-                      src={profile.avatar_url} 
-                      alt="Avatar" 
-                      width={32} 
-                      height={32} 
+                    <Image
+                      src={profile.avatar_url}
+                      alt="Avatar"
+                      width={32}
+                      height={32}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -604,11 +598,11 @@ export default function ManagerLayout({
                     <div className="profile-menu-avatar-wrapper">
                       <div className="profile-menu-avatar">
                         {profile?.avatar_url ? (
-                          <Image 
-                            src={profile.avatar_url} 
-                            alt="Avatar" 
-                            width={40} 
-                            height={40} 
+                          <Image
+                            src={profile.avatar_url}
+                            alt="Avatar"
+                            width={40}
+                            height={40}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -628,7 +622,7 @@ export default function ManagerLayout({
                         {isTrialing ? (
                           <>
                             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                             </svg>
                             <span>TRIAL</span>
                           </>
@@ -640,7 +634,7 @@ export default function ManagerLayout({
                         ) : (
                           <>
                             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                             <span>{subscription.plan}</span>
                           </>
@@ -659,9 +653,9 @@ export default function ManagerLayout({
                       <Settings className="profile-menu-item-icon" />
                       <span>Paramètres</span>
                     </Link>
-                    
+
                     <div className="profile-menu-separator" />
-                    
+
                     <Link href="/manager/settings/subscription" className="profile-menu-item" onClick={() => setIsProfileOpen(false)}>
                       <CreditCard className="profile-menu-item-icon" />
                       <span>Gérer l'Abonnement</span>
@@ -670,9 +664,9 @@ export default function ManagerLayout({
                       <HelpCircle className="profile-menu-item-icon" />
                       <span>Aide & Support</span>
                     </Link>
-                    
+
                     <div className="profile-menu-separator" />
-                    
+
                     <button onClick={handleSignOut} className="profile-menu-item profile-menu-item-danger">
                       <LogOut className="profile-menu-item-icon" />
                       <span>Déconnexion</span>

@@ -41,6 +41,7 @@ import { useRealtimeProducts } from "@/lib/hooks/use-realtime"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useStock } from "@/lib/hooks/use-stock"
 import { useMenuItems } from "@/lib/hooks/use-menu-items"
+import { useDashboardStats } from "@/lib/hooks/use-dashboard-stats"
 import {
   AreaChart,
   Area,
@@ -73,7 +74,7 @@ function VariationBadge({ value, suffix = "" }: { value: number; suffix?: string
         <TrendingDown className="w-4 h-4" />
       )}
       <span>{isPositive ? '+' : ''}{value}{suffix}</span>
-      </div>
+    </div>
   )
 }
 
@@ -145,15 +146,15 @@ const businessHealthStyles: Record<BusinessHealthType, {
   },
 };
 
-function BusinessHealthSection({ 
-  caMonth, 
-  stockValue, 
-  marginValue, 
+function BusinessHealthSection({
+  caMonth,
+  stockValue,
+  marginValue,
   marginPercent,
   dormantStock,
   dormantCount,
   hasData
-}: { 
+}: {
   caMonth: number
   stockValue: number
   marginValue: number
@@ -172,46 +173,46 @@ function BusinessHealthSection({
     isWarning?: boolean;
     noData?: boolean;
   }[] = [
-    {
-      id: "ca",
-      type: "revenue",
-      label: "CA du Mois",
-      value: hasData && caMonth > 0 ? `${caMonth.toLocaleString('fr-FR')} €` : "-- €",
-      variation: null, // Pas de variation sans historique de ventes
-      variationSuffix: "%",
-      noData: !hasData || caMonth === 0,
-    },
-    {
-      id: "stock",
-      type: "stockValue",
-      label: "Valeur Totale Stock",
-      value: stockValue > 0 ? `${stockValue.toLocaleString('fr-FR')} €` : "-- €",
-      variation: null, // Pas de variation sans historique
-      variationSuffix: "%",
-      noData: stockValue === 0,
-    },
-    {
-      id: "margin",
-      type: "margin",
-      label: "Marge Globale",
-      value: hasData && marginValue > 0 ? `${marginValue.toLocaleString('fr-FR')} € (${marginPercent}%)` : "-- €",
-      variation: null, // Pas de variation sans historique
-      variationSuffix: "% pts",
-      noData: !hasData || marginValue === 0,
-    },
-    {
-      id: "dormant",
-      type: "overstock",
-      label: "Stock Dormant / Surstock",
-      value: dormantStock > 0 ? `${dormantStock.toLocaleString('fr-FR')} €` : "0 €",
-      variation: dormantCount > 0 ? dormantCount : null,
-      variationSuffix: " réf.",
-      isWarning: dormantCount > 0,
-      noData: false,
-    },
-  ]
+      {
+        id: "ca",
+        type: "revenue",
+        label: "CA du Mois",
+        value: hasData && caMonth > 0 ? `${caMonth.toLocaleString('fr-FR')} €` : "-- €",
+        variation: null, // Pas de variation sans historique de ventes
+        variationSuffix: "%",
+        noData: !hasData || caMonth === 0,
+      },
+      {
+        id: "stock",
+        type: "stockValue",
+        label: "Valeur Totale Stock",
+        value: stockValue > 0 ? `${stockValue.toLocaleString('fr-FR')} €` : "-- €",
+        variation: null, // Pas de variation sans historique
+        variationSuffix: "%",
+        noData: stockValue === 0,
+      },
+      {
+        id: "margin",
+        type: "margin",
+        label: "Marge Globale",
+        value: hasData && marginValue > 0 ? `${marginValue.toLocaleString('fr-FR')} € (${marginPercent}%)` : "-- €",
+        variation: null, // Pas de variation sans historique
+        variationSuffix: "% pts",
+        noData: !hasData || marginValue === 0,
+      },
+      {
+        id: "dormant",
+        type: "overstock",
+        label: "Stock Dormant / Surstock",
+        value: dormantStock > 0 ? `${dormantStock.toLocaleString('fr-FR')} €` : "0 €",
+        variation: dormantCount > 0 ? dormantCount : null,
+        variationSuffix: " réf.",
+        isWarning: dormantCount > 0,
+        noData: false,
+      },
+    ]
 
-    return (
+  return (
     <section className="animate-section" style={{ animationDelay: '0.1s' }}>
       <h2 className="text-lg font-semibold text-slate-200 mb-8 flex items-center gap-2">
         <Target className="w-5 h-5 text-blue-400" />
@@ -221,12 +222,12 @@ function BusinessHealthSection({
         {kpis.map((kpi, index) => {
           const IconComponent = businessHealthIcons[kpi.type];
           const styles = businessHealthStyles[kpi.type];
-          
+
           return (
             <div
               key={kpi.id}
               className="business-health-card group"
-              style={{ 
+              style={{
                 animationDelay: `${0.15 + index * 0.05}s`,
                 ['--card-bg' as string]: styles.cardBg,
                 ['--border-color' as string]: styles.borderColor,
@@ -240,15 +241,15 @@ function BusinessHealthSection({
             >
               {/* Ligne lumineuse en haut (comme attention cards) */}
               <div className="business-health-topline" />
-              
+
               {/* Badge Icon (style attention cards) */}
               <div className="business-health-icon">
                 <IconComponent className="w-5 h-5" strokeWidth={2} />
               </div>
-              
+
               {/* Glow radial en bas (comme attention cards) */}
               <div className="business-health-glow" />
-              
+
               {/* Contenu de la carte */}
               <div className="relative z-10">
                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.12em] mb-2">
@@ -262,13 +263,12 @@ function BusinessHealthSection({
                     <span className="text-xs">Aucune donnée</span>
                   </div>
                 ) : kpi.variation !== null ? (
-                  <div className={`flex items-center gap-1.5 text-sm font-medium ${
-                    kpi.isWarning 
-                      ? 'text-amber-400' 
-                      : kpi.variation >= 0 
-                        ? 'text-emerald-400' 
-                        : 'text-red-400'
-                  }`}>
+                  <div className={`flex items-center gap-1.5 text-sm font-medium ${kpi.isWarning
+                    ? 'text-amber-400'
+                    : kpi.variation >= 0
+                      ? 'text-emerald-400'
+                      : 'text-red-400'
+                    }`}>
                     {kpi.isWarning ? (
                       <AlertTriangle className="w-3.5 h-3.5" />
                     ) : kpi.variation >= 0 ? (
@@ -303,10 +303,10 @@ type AlertSeverity = 'none' | 'low' | 'medium' | 'high';
 type AlertVariant = 'ruptures' | 'orders' | 'alerts' | 'feedbacks';
 
 // Composant AttentionCard avec glassmorphism
-function AttentionCard({ 
-  title, 
-  subtitle, 
-  actionLabel, 
+function AttentionCard({
+  title,
+  subtitle,
+  actionLabel,
   severity = 'none',
   variant,
   icon: Icon,
@@ -331,7 +331,7 @@ function AttentionCard({
       default: return '';
     }
   };
-  
+
   return (
     <Link
       href={href}
@@ -340,13 +340,13 @@ function AttentionCard({
     >
       {/* Glow animé en arrière-plan */}
       <div className={`attention-glow attention-glow-${variant}`} />
-      
+
       {/* Contenu de la card */}
       <div className="relative z-10">
         <div className="flex items-start justify-between mb-3">
           <div className={`attention-icon attention-icon-${variant}`}>
-      <Icon className="w-5 h-5" />
-    </div>
+            <Icon className="w-5 h-5" />
+          </div>
         </div>
         <h3 className="text-base font-bold text-white mb-1 tracking-tight">{title}</h3>
         <p className={`text-xl font-extrabold attention-count-${variant} mb-3`}>{subtitle}</p>
@@ -359,22 +359,22 @@ function AttentionCard({
   );
 }
 
-function AttentionSection({ 
-  rupturesCount = 0, 
-  expiringCount = 0 
-}: { 
+function AttentionSection({
+  rupturesCount = 0,
+  expiringCount = 0
+}: {
   rupturesCount?: number
-  expiringCount?: number 
+  expiringCount?: number
 }) {
   // Calcul de la sévérité basé sur les données (exemple)
   const getSeverity = (
-    count: number, 
+    count: number,
     threshold: { low: number; medium: number; high: number },
     isCritical: boolean
   ): AlertSeverity => {
     // Si la carte n'est pas critique, jamais de shake
     if (!isCritical) return 'none';
-    
+
     if (count >= threshold.high) return 'high';
     if (count >= threshold.medium) return 'medium';
     if (count >= threshold.low) return 'low';
@@ -393,56 +393,56 @@ function AttentionSection({
     thresholds: { low: number; medium: number; high: number };
     isCritical: boolean; // Seules les cartes critiques peuvent shaker
   }[] = [
-    {
-      id: "ruptures",
-      icon: XCircle,
-      title: "Ruptures & Critiques",
-      count: rupturesCount > 0 ? `${rupturesCount} produit${rupturesCount > 1 ? 's' : ''}` : "Aucune rupture",
-      countValue: rupturesCount,
-      action: "Actions critiques",
-      variant: "ruptures",
-      href: "/manager/alerts?filter=ruptures",
-      thresholds: { low: 3, medium: 5, high: 8 },
-      isCritical: true, // ⚠️ CRITIQUE - peut shaker
-    },
-    {
-      id: "commandes",
-      icon: Clock,
-      title: "Commandes Fournisseurs",
-      count: "À vérifier",
-      countValue: 0,
-      action: "Voir commandes",
-      variant: "orders",
-      href: "/manager/orders",
-      thresholds: { low: 10, medium: 15, high: 20 }, // Seuils très hauts = pas de shake
-      isCritical: false, // Pas critique - ne shake jamais
-    },
-    {
-      id: "alertes",
-      icon: AlertTriangle,
-      title: "Alertes Critiques",
-      count: expiringCount > 0 ? `${expiringCount} Péremption${expiringCount > 1 ? 's' : ''}` : "Aucune alerte",
-      countValue: expiringCount,
-      action: "Actions alertes",
-      variant: "alerts",
-      href: "/manager/alerts?filter=peremption",
-      thresholds: { low: 2, medium: 4, high: 6 },
-      isCritical: true, // ⚠️ CRITIQUE - peut shaker
-    },
-    {
-      id: "feedback",
-      icon: MessageSquare,
-      title: "Incidents / Feedbacks",
-      count: "À consulter",
-      countValue: 0,
-      action: "Voir feedbacks",
-      variant: "feedbacks",
-      href: "/manager/feedback",
-      thresholds: { low: 10, medium: 15, high: 20 }, // Seuils très hauts = pas de shake
-      isCritical: false, // Pas critique - ne shake jamais
-    },
-  ]
-  
+      {
+        id: "ruptures",
+        icon: XCircle,
+        title: "Ruptures & Critiques",
+        count: rupturesCount > 0 ? `${rupturesCount} produit${rupturesCount > 1 ? 's' : ''}` : "Aucune rupture",
+        countValue: rupturesCount,
+        action: "Actions critiques",
+        variant: "ruptures",
+        href: "/manager/alerts?filter=ruptures",
+        thresholds: { low: 3, medium: 5, high: 8 },
+        isCritical: true, // ⚠️ CRITIQUE - peut shaker
+      },
+      {
+        id: "commandes",
+        icon: Clock,
+        title: "Commandes Fournisseurs",
+        count: "À vérifier",
+        countValue: 0,
+        action: "Voir commandes",
+        variant: "orders",
+        href: "/manager/orders",
+        thresholds: { low: 10, medium: 15, high: 20 }, // Seuils très hauts = pas de shake
+        isCritical: false, // Pas critique - ne shake jamais
+      },
+      {
+        id: "alertes",
+        icon: AlertTriangle,
+        title: "Alertes Critiques",
+        count: expiringCount > 0 ? `${expiringCount} Péremption${expiringCount > 1 ? 's' : ''}` : "Aucune alerte",
+        countValue: expiringCount,
+        action: "Actions alertes",
+        variant: "alerts",
+        href: "/manager/alerts?filter=peremption",
+        thresholds: { low: 2, medium: 4, high: 6 },
+        isCritical: true, // ⚠️ CRITIQUE - peut shaker
+      },
+      {
+        id: "feedback",
+        icon: MessageSquare,
+        title: "Incidents / Feedbacks",
+        count: "À consulter",
+        countValue: 0,
+        action: "Voir feedbacks",
+        variant: "feedbacks",
+        href: "/manager/feedback",
+        thresholds: { low: 10, medium: 15, high: 20 }, // Seuils très hauts = pas de shake
+        isCritical: false, // Pas critique - ne shake jamais
+      },
+    ]
+
   return (
     <section className="animate-section" style={{ animationDelay: '0.2s' }}>
       <h2 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
@@ -490,7 +490,7 @@ function QuickActionCard({ label, icon: Icon, theme, href, index }: QuickActionC
     >
       {/* Gradient background */}
       <div className="quick-action-card-bg" />
-      
+
       {/* Starfield - Étoiles décoratives */}
       <div className="quick-action-starfield">
         {/* Étoiles à 4 branches */}
@@ -514,7 +514,7 @@ function QuickActionCard({ label, icon: Icon, theme, href, index }: QuickActionC
         <div className="dot dot-5" />
         <div className="dot dot-6" />
       </div>
-      
+
       {/* Contenu */}
       <div className="quick-action-content">
         <div className="quick-action-icon-wrapper">
@@ -534,11 +534,11 @@ function TrendsAndActionsSection({ chartData, hasData }: { chartData: any[], has
   const [period, setPeriod] = useState("30")
   const [chartKey, setChartKey] = useState(0)
   const [isPeriodDropdownOpen, setIsPeriodDropdownOpen] = useState(false)
-  
+
   // Calculate totals for header display
   const totalCA = chartData.reduce((sum, d) => sum + d.ca, 0)
   const avgCA = hasData ? Math.round(totalCA / chartData.length) : 0
-  
+
   const quickActions: Array<{ id: string; icon: React.ElementType; label: string; href: string; theme: QuickActionTheme }> = [
     { id: "entree", icon: Plus, label: "Ajouter Entrée/Sortie", href: "/manager/stock", theme: "blue" },
     { id: "commande", icon: ShoppingCart, label: "Créer Commande", href: "/manager/orders", theme: "green" },
@@ -587,17 +587,17 @@ function TrendsAndActionsSection({ chartData, hasData }: { chartData: any[], has
         <div className="business-trends-card flex-1 max-w-[72%]">
           {/* Ellipse lumineuse en haut gauche */}
           <div className="business-trends-ellipse" />
-          
+
           {/* Ligne lumineuse animée */}
           <div className="business-trends-light-sweep" />
-          
+
           {/* Lignes décoratives animées */}
           <div className="business-trends-animated-lines">
             <div className="animated-line line-1" />
             <div className="animated-line line-2" />
             <div className="animated-line line-3" />
           </div>
-          
+
           {/* Header redesigné */}
           <div className="relative z-10 flex items-start justify-between mb-4">
             <div className="flex items-center gap-4">
@@ -605,7 +605,7 @@ function TrendsAndActionsSection({ chartData, hasData }: { chartData: any[], has
               <div className="business-trends-icon">
                 <BarChart3 className="w-5 h-5 text-violet-300" />
               </div>
-              
+
               <div>
                 <h3 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-1">Chiffre d'Affaires</h3>
                 <div className="flex items-baseline gap-3">
@@ -635,12 +635,12 @@ function TrendsAndActionsSection({ chartData, hasData }: { chartData: any[], has
                 {selectedPeriodLabel}
                 <ChevronDown className={`w-4 h-4 text-violet-300/70 transition-transform duration-200 ${isPeriodDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
-              
+
               {/* Menu déroulant personnalisé avec coins arrondis */}
               {isPeriodDropdownOpen && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-40" 
+                  <div
+                    className="fixed inset-0 z-40"
                     onClick={() => setIsPeriodDropdownOpen(false)}
                   />
                   <div className="business-trends-period-dropdown">
@@ -701,15 +701,15 @@ function TrendsAndActionsSection({ chartData, hasData }: { chartData: any[], has
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(139, 92, 246, 0.08)" vertical={false} />
-                <XAxis 
-                  dataKey="day" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: 'rgba(255, 255, 255, 0.35)', fontSize: 10 }} 
+                <XAxis
+                  dataKey="day"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: 'rgba(255, 255, 255, 0.35)', fontSize: 10 }}
                 />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
                   tick={{ fill: 'rgba(255, 255, 255, 0.35)', fontSize: 10 }}
                   tickFormatter={(value) => `${value / 1000}K`}
                   width={45}
@@ -774,45 +774,45 @@ function TrendsAndActionsSection({ chartData, hasData }: { chartData: any[], has
 // ============================================
 // SECTION 4 - TOP PRODUITS
 // ============================================
-function TopProductsSection({ 
-  topMargin, 
+function TopProductsSection({
+  topMargin,
   problematic,
   menuItems,
   stocks
-}: { 
+}: {
   topMargin: any[]
   problematic: any[]
   menuItems: any[]
   stocks: any[]
 }) {
   // Formater les top marges depuis les données réelles
-  const formattedTopMargin = topMargin.length > 0 
+  const formattedTopMargin = topMargin.length > 0
     ? topMargin.map(item => ({
-        name: item.name,
-        value: Number(item.selling_price) || 0,
-        percent: Math.round(item.actual_margin_percent || 0)
-      }))
+      name: item.name,
+      value: Number(item.selling_price) || 0,
+      percent: Math.round(item.actual_margin_percent || 0)
+    }))
     : [
-        { name: "Aucun plat configuré", value: 0, percent: 0 },
-      ]
+      { name: "Aucun plat configuré", value: 0, percent: 0 },
+    ]
 
   // Formater les produits problématiques
   const formattedProblematic = problematic.length > 0
     ? problematic.map((item: any) => ({
-        name: item.name || 'Produit',
-        value: item.value || (Number(item.selling_price) || 0),
-        variation: item.type === 'Surstock' ? -15 : -(100 - (item.actual_margin_percent || 50)),
-        type: item.type || 'Faible marge'
-      }))
+      name: item.name || 'Produit',
+      value: item.value || (Number(item.selling_price) || 0),
+      variation: item.type === 'Surstock' ? -15 : -(100 - (item.actual_margin_percent || 50)),
+      type: item.type || 'Faible marge'
+    }))
     : stocks
-        .filter(s => Number(s.quantity) > 20)
-        .slice(0, 5)
-        .map(stock => ({
-          name: stock.product?.name || 'Produit',
-          value: (Number(stock.quantity) || 0) * (Number(stock.unit_price) || 0),
-          variation: -10,
-          type: 'Stock élevé'
-        }))
+      .filter(s => Number(s.quantity) > 20)
+      .slice(0, 5)
+      .map(stock => ({
+        name: stock.product?.name || 'Produit',
+        value: (Number(stock.quantity) || 0) * (Number(stock.unit_price) || 0),
+        variation: -10,
+        type: 'Stock élevé'
+      }))
 
   // Si pas de données, afficher un placeholder
   const hasData = menuItems.length > 0 || stocks.length > 0
@@ -843,13 +843,12 @@ function TopProductsSection({
                   <span className="text-sm font-semibold text-emerald-400">
                     {product.value.toLocaleString('fr-FR')} €
                   </span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    product.percent >= 70 
-                      ? 'text-emerald-400/70 bg-emerald-500/10' 
-                      : product.percent >= 50 
-                        ? 'text-yellow-400/70 bg-yellow-500/10'
-                        : 'text-red-400/70 bg-red-500/10'
-                  }`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${product.percent >= 70
+                    ? 'text-emerald-400/70 bg-emerald-500/10'
+                    : product.percent >= 50
+                      ? 'text-yellow-400/70 bg-yellow-500/10'
+                      : 'text-red-400/70 bg-red-500/10'
+                    }`}>
                     ({product.percent}%)
                   </span>
                 </div>
@@ -909,8 +908,9 @@ export default function ManagerDashboard() {
   const { profile, establishment } = useAuth()
   const { stocks, loading: stockLoading } = useStock()
   const { menuItems, loading: menuLoading } = useMenuItems()
+  const { stats: dashboardStats, loading: statsLoading } = useDashboardStats()
 
-  const loading = realtimeLoading || stockLoading || menuLoading
+  const loading = realtimeLoading || stockLoading || menuLoading || statsLoading
 
   // ============================================
   // CALCULS DES KPIs RÉELS
@@ -937,8 +937,8 @@ export default function ManagerDashboard() {
   }, { totalRevenue: 0, totalCost: 0, totalMargin: 0, count: 0 })
 
   const marginValue = Math.round(menuMarginData.totalMargin * 100) // Estimation mensuelle
-  const marginPercent = menuMarginData.totalRevenue > 0 
-    ? Math.round((menuMarginData.totalMargin / menuMarginData.totalRevenue) * 100) 
+  const marginPercent = menuMarginData.totalRevenue > 0
+    ? Math.round((menuMarginData.totalMargin / menuMarginData.totalRevenue) * 100)
     : 30
 
   // Stock dormant (produits avec faible rotation - quantité > seuil et pas de mouvement récent)
@@ -952,12 +952,13 @@ export default function ManagerDashboard() {
     return sum + (qty * unitPrice)
   }, 0)
 
-  // Calcul CA estimé (basé sur les ventes potentielles du menu)
-  const estimatedCA = menuItems.reduce((sum, item) => {
-    const sellingPrice = Number(item.selling_price) || 0
-    // Estimation: chaque plat vendu 50 fois par mois en moyenne
-    return sum + (sellingPrice * 50)
-  }, 0)
+  // Calcul CA RÉEL (basé sur les ventes enregistrées, pas les estimations)
+  // L'ancien calcul estimait chaque plat vendu 50 fois - INCORRECT
+  // Maintenant on utilise les vraies stats de ventes
+  const caJour = dashboardStats.caJour
+  const caMois = dashboardStats.caMois
+  const nbVentesJour = dashboardStats.nbVentesJour
+  const nbMenusActifs = dashboardStats.nbMenusActifs || menuItems.length
 
   // Alertes réelles
   const lowStockItems = stocks.filter(stock => {
@@ -1009,7 +1010,7 @@ export default function ManagerDashboard() {
         stock: 0,
       }
     }
-    const baseCA = estimatedCA > 0 ? (estimatedCA / 30) * (0.8 + Math.sin(day * 0.3) * 0.4) : 0
+    const baseCA = caMois > 0 ? (caMois / 30) * (0.8 + Math.sin(day * 0.3) * 0.4) : 0
     const baseMarge = baseCA * (marginPercent / 100)
     const baseStock = stockValue * (0.9 + Math.sin(day * 0.15) * 0.2)
     return {
@@ -2361,8 +2362,8 @@ export default function ManagerDashboard() {
 
       <div className="p-6 space-y-8 max-w-[1600px] mx-auto">
         {/* Section 1 - Santé du Business */}
-        <BusinessHealthSection 
-          caMonth={Math.round(estimatedCA)}
+        <BusinessHealthSection
+          caMonth={Math.round(caMois)}
           stockValue={Math.round(stockValue)}
           marginValue={marginValue}
           marginPercent={marginPercent}
@@ -2372,7 +2373,7 @@ export default function ManagerDashboard() {
         />
 
         {/* Section 2 - Ce qui demande votre attention */}
-        <AttentionSection 
+        <AttentionSection
           rupturesCount={lowStockItems.length}
           expiringCount={expiringItems.length + expiredItems.length}
         />
@@ -2381,7 +2382,7 @@ export default function ManagerDashboard() {
         <TrendsAndActionsSection chartData={chartData} hasData={menuItems.length > 0} />
 
         {/* Section 4 - Top Produits */}
-        <TopProductsSection 
+        <TopProductsSection
           topMargin={topMarginProducts}
           problematic={problematicProducts}
           menuItems={menuItems}
