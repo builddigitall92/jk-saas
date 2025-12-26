@@ -151,7 +151,8 @@ function BusinessHealthSection({
   marginValue, 
   marginPercent,
   dormantStock,
-  dormantCount
+  dormantCount,
+  hasData
 }: { 
   caMonth: number
   stockValue: number
@@ -159,48 +160,54 @@ function BusinessHealthSection({
   marginPercent: number
   dormantStock: number
   dormantCount: number
+  hasData: boolean
 }) {
   const kpis: {
     id: string;
     type: BusinessHealthType;
     label: string;
     value: string;
-    variation: number;
+    variation: number | null;
     variationSuffix: string;
     isWarning?: boolean;
+    noData?: boolean;
   }[] = [
     {
       id: "ca",
       type: "revenue",
       label: "CA du Mois",
-      value: `${caMonth.toLocaleString('fr-FR')} €`,
-      variation: 12,
+      value: hasData && caMonth > 0 ? `${caMonth.toLocaleString('fr-FR')} €` : "-- €",
+      variation: null, // Pas de variation sans historique de ventes
       variationSuffix: "%",
+      noData: !hasData || caMonth === 0,
     },
     {
       id: "stock",
       type: "stockValue",
       label: "Valeur Totale Stock",
-      value: `${stockValue.toLocaleString('fr-FR')} €`,
-      variation: -2,
+      value: stockValue > 0 ? `${stockValue.toLocaleString('fr-FR')} €` : "-- €",
+      variation: null, // Pas de variation sans historique
       variationSuffix: "%",
+      noData: stockValue === 0,
     },
     {
       id: "margin",
       type: "margin",
       label: "Marge Globale",
-      value: `${marginValue.toLocaleString('fr-FR')} € (${marginPercent}%)`,
-      variation: 1.5,
+      value: hasData && marginValue > 0 ? `${marginValue.toLocaleString('fr-FR')} € (${marginPercent}%)` : "-- €",
+      variation: null, // Pas de variation sans historique
       variationSuffix: "% pts",
+      noData: !hasData || marginValue === 0,
     },
     {
       id: "dormant",
       type: "overstock",
       label: "Stock Dormant / Surstock",
-      value: `${dormantStock.toLocaleString('fr-FR')} €`,
-      variation: dormantCount,
+      value: dormantStock > 0 ? `${dormantStock.toLocaleString('fr-FR')} €` : "0 €",
+      variation: dormantCount > 0 ? dormantCount : null,
       variationSuffix: " réf.",
-      isWarning: true,
+      isWarning: dormantCount > 0,
+      noData: false,
     },
   ]
 
@@ -250,25 +257,35 @@ function BusinessHealthSection({
                 <p className="text-2xl font-bold text-white mb-2 tracking-tight leading-none">
                   {kpi.value}
                 </p>
-                <div className={`flex items-center gap-1.5 text-sm font-medium ${
-                  kpi.isWarning 
-                    ? 'text-amber-400' 
-                    : kpi.variation >= 0 
-                      ? 'text-emerald-400' 
-                      : 'text-red-400'
-                }`}>
-                  {kpi.isWarning ? (
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                  ) : kpi.variation >= 0 ? (
-                    <TrendingUp className="w-3.5 h-3.5" />
-                  ) : (
-                    <TrendingDown className="w-3.5 h-3.5" />
-                  )}
-                  <span className="text-xs font-medium">
-                    {kpi.isWarning ? '' : kpi.variation >= 0 ? '+' : ''}
-                    {kpi.variation}{kpi.variationSuffix}
-                  </span>
-                </div>
+                {kpi.noData ? (
+                  <div className="flex items-center gap-1.5 text-sm font-medium text-slate-500">
+                    <span className="text-xs">Aucune donnée</span>
+                  </div>
+                ) : kpi.variation !== null ? (
+                  <div className={`flex items-center gap-1.5 text-sm font-medium ${
+                    kpi.isWarning 
+                      ? 'text-amber-400' 
+                      : kpi.variation >= 0 
+                        ? 'text-emerald-400' 
+                        : 'text-red-400'
+                  }`}>
+                    {kpi.isWarning ? (
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                    ) : kpi.variation >= 0 ? (
+                      <TrendingUp className="w-3.5 h-3.5" />
+                    ) : (
+                      <TrendingDown className="w-3.5 h-3.5" />
+                    )}
+                    <span className="text-xs font-medium">
+                      {kpi.isWarning ? '' : kpi.variation >= 0 ? '+' : ''}
+                      {kpi.variation}{kpi.variationSuffix}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-sm font-medium text-slate-500">
+                    <span className="text-xs">--</span>
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -513,14 +530,14 @@ function QuickActionCard({ label, icon: Icon, theme, href, index }: QuickActionC
 // ============================================
 // SECTION 3 - BUSINESS TRENDS + ACTIONS RAPIDES
 // ============================================
-function TrendsAndActionsSection({ chartData }: { chartData: any[] }) {
+function TrendsAndActionsSection({ chartData, hasData }: { chartData: any[], hasData: boolean }) {
   const [period, setPeriod] = useState("30")
   const [chartKey, setChartKey] = useState(0)
   const [isPeriodDropdownOpen, setIsPeriodDropdownOpen] = useState(false)
   
   // Calculate totals for header display
   const totalCA = chartData.reduce((sum, d) => sum + d.ca, 0)
-  const avgCA = Math.round(totalCA / chartData.length)
+  const avgCA = hasData ? Math.round(totalCA / chartData.length) : 0
   
   const quickActions: Array<{ id: string; icon: React.ElementType; label: string; href: string; theme: QuickActionTheme }> = [
     { id: "entree", icon: Plus, label: "Ajouter Entrée/Sortie", href: "/manager/stock", theme: "blue" },
@@ -593,15 +610,18 @@ function TrendsAndActionsSection({ chartData }: { chartData: any[] }) {
                 <h3 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-1">Chiffre d'Affaires</h3>
                 <div className="flex items-baseline gap-3">
                   <span className="text-3xl font-bold text-white tracking-tight">
-                    {avgCA.toLocaleString('fr-FR')} €
+                    {hasData ? `${avgCA.toLocaleString('fr-FR')} €` : '-- €'}
                   </span>
-                  {/* Badge de variation */}
-                  <span className="business-trends-badge">
-                    <TrendingUp className="w-3 h-3" />
-                    +12%
-                  </span>
+                  {/* Badge de variation - affiché seulement s'il y a des données */}
+                  {hasData && avgCA > 0 ? (
+                    <span className="business-trends-badge" style={{ opacity: 0.5 }}>
+                      <span className="text-slate-400 text-xs">Estimé</span>
+                    </span>
+                  ) : (
+                    <span className="text-xs text-slate-500">Aucune donnée</span>
+                  )}
                 </div>
-                <p className="text-xs text-white/40 mt-1">CA moyen sur la période</p>
+                <p className="text-xs text-white/40 mt-1">{hasData ? 'CA estimé sur la période' : 'Ajoutez des produits au menu'}</p>
               </div>
             </div>
 
@@ -977,9 +997,19 @@ export default function ManagerDashboard() {
   ].slice(0, 5)
 
   // Données du graphique (basées sur des estimations à partir des données réelles)
+  // Si pas de données, afficher des valeurs à 0
+  const hasRealData = menuItems.length > 0 || stocks.length > 0
   const chartData = Array.from({ length: 30 }, (_, i) => {
     const day = i + 1
-    const baseCA = estimatedCA > 0 ? (estimatedCA / 30) * (0.8 + Math.sin(day * 0.3) * 0.4) : 5000
+    if (!hasRealData) {
+      return {
+        day: `J${day}`,
+        ca: 0,
+        marge: 0,
+        stock: 0,
+      }
+    }
+    const baseCA = estimatedCA > 0 ? (estimatedCA / 30) * (0.8 + Math.sin(day * 0.3) * 0.4) : 0
     const baseMarge = baseCA * (marginPercent / 100)
     const baseStock = stockValue * (0.9 + Math.sin(day * 0.15) * 0.2)
     return {
@@ -2338,6 +2368,7 @@ export default function ManagerDashboard() {
           marginPercent={marginPercent}
           dormantStock={Math.round(dormantStockValue)}
           dormantCount={dormantStocks.length}
+          hasData={menuItems.length > 0 || stocks.length > 0}
         />
 
         {/* Section 2 - Ce qui demande votre attention */}
@@ -2347,7 +2378,7 @@ export default function ManagerDashboard() {
         />
 
         {/* Section 3 - Business Trends + Actions Rapides */}
-        <TrendsAndActionsSection chartData={chartData} />
+        <TrendsAndActionsSection chartData={chartData} hasData={menuItems.length > 0} />
 
         {/* Section 4 - Top Produits */}
         <TopProductsSection 

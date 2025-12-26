@@ -22,8 +22,71 @@ export function useMenuItems() {
   const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
 
-  // Récupérer le prix unitaire d'un produit depuis le stock
-  const getProductUnitPrice = useCallback(async (productId: string): Promise<number> => {
+  /**
+   * Calcul GPAO - Conversion de quantité vers l'unité du stock
+   * 
+   * Principe : Convertir la quantité de l'ingrédient (ex: 200g) vers l'unité du stock (ex: kg)
+   * pour pouvoir multiplier par le prix unitaire du stock.
+   * 
+   * Exemple : 200g vers kg = 200 / 1000 = 0,2 kg
+   */
+  const convertQuantity = useCallback((quantity: number, fromUnit: string | null, toUnit: string): number => {
+    if (!fromUnit) return quantity
+    
+    // Normaliser les unités (insensible à la casse)
+    const from = fromUnit.toLowerCase()
+    const to = toUnit.toLowerCase()
+    
+    if (from === to) return quantity
+    
+    // === CONVERSIONS MASSE ===
+    // g → kg : diviser par 1000
+    if (from === 'g' && to === 'kg') {
+      return quantity / 1000
+    }
+    // kg → g : multiplier par 1000
+    if (from === 'kg' && to === 'g') {
+      return quantity * 1000
+    }
+    
+    // === CONVERSIONS VOLUME ===
+    // ml → L : diviser par 1000
+    if (from === 'ml' && to === 'l') {
+      return quantity / 1000
+    }
+    // L → ml : multiplier par 1000
+    if (from === 'l' && to === 'ml') {
+      return quantity * 1000
+    }
+    // cl → L : diviser par 100
+    if (from === 'cl' && to === 'l') {
+      return quantity / 100
+    }
+    // L → cl : multiplier par 100
+    if (from === 'l' && to === 'cl') {
+      return quantity * 100
+    }
+    // cl → ml : multiplier par 10
+    if (from === 'cl' && to === 'ml') {
+      return quantity * 10
+    }
+    // ml → cl : diviser par 10
+    if (from === 'ml' && to === 'cl') {
+      return quantity / 10
+    }
+    
+    // === UNITÉS IDENTIQUES OU INCOMPATIBLES ===
+    // pièces, unités : pas de conversion possible entre unités différentes
+    return quantity
+  }, [])
+
+  /**
+   * Récupérer le prix unitaire d'un produit depuis le stock
+   * 
+   * Retourne le prix dans l'unité de base du stock (€/kg, €/L, €/pièce)
+   * Le prix n'est PAS divisé - c'est le prix tel qu'enregistré dans le stock.
+   */
+  const getProductUnitPrice = useCallback(async (productId: string): Promise<{ price: number; baseUnit: string }> => {
     const { data } = await supabase
       .from('stock')
       .select('unit_price, product:products(unit)')
@@ -32,27 +95,58 @@ export function useMenuItems() {
       .limit(1)
       .single()
     
-    if (!data) return 0
-    
-    // Si le produit est en kg ou L, convertir en prix par gramme/ml
-    const unit = (data.product as { unit: string } | null)?.unit
-    if (unit === 'kg' || unit === 'L') {
-      return Number(data.unit_price) / 1000
+    if (!data) {
+      console.warn(`[GPAO] Pas de stock trouvé pour le produit ${productId}`)
+      return { price: 0, baseUnit: 'unités' }
     }
-    return Number(data.unit_price)
+    
+    const unit = (data.product as { unit: string } | null)?.unit || 'unités'
+    const unitPrice = Number(data.unit_price) || 0
+    
+    console.log(`[GPAO] Stock trouvé: ${unitPrice}€/${unit}`)
+    
+    return {
+      price: unitPrice,
+      baseUnit: unit
+    }
   }, [supabase])
 
-  // Calculer le coût d'un item de menu basé sur ses ingrédients
+  /**
+   * Calcul GPAO - Coût matière d'un item de menu
+   * 
+   * Pour chaque ingrédient :
+   * 1. Récupérer le prix unitaire du stock (€/kg, €/L, €/pièce)
+   * 2. Convertir la quantité de l'ingrédient vers l'unité du stock
+   * 3. Multiplier : Coût = Prix unitaire × Quantité convertie
+   * 
+   * Exemple : Produit à 1,79€/kg, utilisation de 200g
+   * → Prix : 1,79€/kg
+   * → Quantité : 200g = 0,2 kg (conversion g → kg)
+   * → Coût : 1,79 × 0,2 = 0,358€
+   */
   const calculateCosts = useCallback(async (
     menuItem: MenuItem, 
     ingredients: MenuItemIngredientWithProduct[]
   ): Promise<{ cost_price: number; actual_margin_percent: number; margin_amount: number }> => {
     let totalCost = 0
     
+    console.log(`[GPAO] === Calcul coût pour "${menuItem.name}" ===`)
+    
     for (const ing of ingredients) {
       if (ing.product) {
-        const unitPrice = await getProductUnitPrice(ing.product_id)
-        totalCost += unitPrice * Number(ing.quantity)
+        const { price: basePrice, baseUnit } = await getProductUnitPrice(ing.product_id)
+        const ingredientUnit = ing.unit || baseUnit
+        const ingredientQuantity = Number(ing.quantity) || 0
+        
+        // Convertir la quantité de l'ingrédient dans l'unité de base du produit
+        const convertedQuantity = convertQuantity(ingredientQuantity, ingredientUnit, baseUnit)
+        
+        // Calculer le coût
+        const ingredientCost = basePrice * convertedQuantity
+        
+        console.log(`[GPAO] ${ing.product.name}: ${ingredientQuantity}${ingredientUnit} → ${convertedQuantity.toFixed(4)}${baseUnit} × ${basePrice}€/${baseUnit} = ${ingredientCost.toFixed(4)}€`)
+        
+        totalCost += ingredientCost
       }
     }
     
@@ -60,12 +154,14 @@ export function useMenuItems() {
     const marginAmount = sellingPrice - totalCost
     const marginPercent = sellingPrice > 0 ? (marginAmount / sellingPrice) * 100 : 0
     
+    console.log(`[GPAO] Total: ${totalCost.toFixed(2)}€ | Prix vente: ${sellingPrice}€ | Marge: ${marginAmount.toFixed(2)}€ (${marginPercent.toFixed(1)}%)`)
+    
     return {
       cost_price: Math.round(totalCost * 100) / 100,
       actual_margin_percent: Math.round(marginPercent * 10) / 10,
       margin_amount: Math.round(marginAmount * 100) / 100
     }
-  }, [getProductUnitPrice])
+  }, [getProductUnitPrice, convertQuantity])
 
   const fetchMenuItems = useCallback(async () => {
     try {

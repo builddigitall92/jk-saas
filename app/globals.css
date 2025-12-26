@@ -6712,3 +6712,223 @@ html:not(.dark) .landing-pricing-card-featured {
   color: #a78bfa;
 }
 
+/* ============================================
+   COMPTA MODULE - Glassy Amber/Orange Theme
+   ============================================ */
+
+.compta-stat-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  padding: 20px 24px;
+  background: linear-gradient(145deg, 
+    rgba(139, 69, 19, 0.12) 0%,
+    rgba(10, 10, 15, 0.95) 100%
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(210, 105, 30, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.compta-stat-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(210, 105, 30, 0.3);
+  box-shadow: 0 15px 40px rgba(139, 69, 19, 0.15);
+}
+
+.compta-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.compta-stat-icon-amber {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
+}
+
+.compta-stat-icon-orange {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(234, 88, 12, 0.1) 100%);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  color: #f97316;
+}
+
+.compta-stat-icon-brown {
+  background: linear-gradient(135deg, rgba(139, 69, 19, 0.25) 0%, rgba(160, 82, 45, 0.15) 100%);
+  border: 1px solid rgba(139, 69, 19, 0.35);
+  color: #d2691e;
+}
+
+.compta-progress-bar {
+  height: 8px;
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.compta-progress-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.compta-progress-fill-green {
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+
+.compta-progress-fill-amber {
+  background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+}
+
+.compta-progress-fill-red {
+  background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+
+.compta-badge-niveau {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.compta-badge-vert {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+.compta-badge-jaune {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+.compta-badge-rouge {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+/* Animation confiance shimmer */
+@keyframes compta-confidence-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+.compta-confidence-badge {
+  animation: compta-confidence-pulse 2s ease-in-out infinite;
+}
+
+/* Checklist animations */
+@keyframes compta-check-pop {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.compta-check-animated {
+  animation: compta-check-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Export button glow effect */
+.compta-export-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.compta-export-glow::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(90deg, 
+    transparent 0%,
+    rgba(210, 105, 30, 0.4) 50%,
+    transparent 100%
+  );
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.compta-export-glow:hover::before {
+  opacity: 1;
+  animation: compta-glow-sweep 1.5s ease-in-out infinite;
+}
+
+@keyframes compta-glow-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* CFE Slider custom styling */
+input[type="range"].compta-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 8px;
+  background: linear-gradient(90deg, 
+    rgba(139, 92, 246, 0.3) 0%, 
+    rgba(139, 69, 19, 0.3) 100%
+  );
+  border-radius: 10px;
+  outline: none;
+}
+
+input[type="range"].compta-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(139, 69, 19, 0.4);
+  transition: all 0.2s ease;
+}
+
+input[type="range"].compta-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 15px rgba(139, 69, 19, 0.6);
+}
+
+/* Mobile responsive */
+@media (max-width: 1024px) {
+  .compta-grid-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  .compta-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .compta-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

@@ -3,6 +3,26 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 
+// ============================================
+// MODE OWNER - Accès Premium automatique pour le propriétaire du SaaS
+// ============================================
+// Mettre à true pour avoir accès Premium automatique (développement/owner)
+const FORCE_PREMIUM_ACCESS = true
+
+// Emails avec accès Premium automatique (backup)
+const OWNER_EMAILS = [
+  'admin@stockguard.fr',
+  'owner@stockguard.fr',
+]
+
+// Vérifier si c'est un owner (accès Premium gratuit)
+const isOwnerEmail = (email: string | undefined): boolean => {
+  if (!email) return false
+  return OWNER_EMAILS.some(ownerEmail => 
+    email.toLowerCase() === ownerEmail.toLowerCase()
+  )
+}
+
 // Plans définis localement pour éviter l'import côté serveur
 const PLANS = {
   FREE: {
@@ -78,6 +98,7 @@ export function useSubscription() {
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isOwner, setIsOwner] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -86,12 +107,47 @@ export function useSubscription() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
 
+        // ============================================
+        // OWNER CHECK - Premium automatique pour le propriétaire
+        // ============================================
+        const ownerStatus = FORCE_PREMIUM_ACCESS || isOwnerEmail(user.email)
+        setIsOwner(ownerStatus)
+        
+        // Si mode owner activé ou email owner, donner directement le plan PREMIUM
+        if (ownerStatus) {
+          setSubscription({
+            plan: 'PREMIUM',
+            status: 'active',
+            periodEnd: null,
+            trialEndsAt: null,
+            stripeCustomerId: null,
+            stripeSubscriptionId: null,
+          })
+          setLoading(false)
+          return
+        }
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: profile } = await (supabase as any)
           .from('profiles')
-          .select('establishment_id')
+          .select('establishment_id, role')
           .eq('id', user.id)
           .single()
+
+        // Si c'est un admin, donner aussi le plan PREMIUM
+        if (profile?.role === 'admin') {
+          setIsOwner(true)
+          setSubscription({
+            plan: 'PREMIUM',
+            status: 'active',
+            periodEnd: null,
+            trialEndsAt: null,
+            stripeCustomerId: null,
+            stripeSubscriptionId: null,
+          })
+          setLoading(false)
+          return
+        }
 
         if (!profile?.establishment_id) return
 
@@ -173,6 +229,7 @@ export function useSubscription() {
     isPaid,
     isPastDue,
     isCanceled,
+    isOwner, // 🔑 True si propriétaire du SaaS (Premium gratuit)
     currentPlan,
     canAccessFeature,
     openBillingPortal,

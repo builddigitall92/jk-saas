@@ -22,14 +22,16 @@ import {
   Shield,
   HelpCircle,
   History,
+  ChefHat,
 } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useAlerts } from "@/lib/hooks/use-alerts"
 
 const mainNavItems = [
   { name: "Dashboard", href: "/employee", icon: LayoutDashboard, color: "blue" },
+  { name: "Stock", href: "/employee/stock", icon: Package, color: "cyan" },
+  { name: "Menu", href: "/employee/menu", icon: ChefHat, color: "emerald" },
   { name: "Gaspillage", href: "/employee/waste", icon: Trash2, color: "orange" },
-  { name: "Stock", href: "/employee/stock-update", icon: Package, color: "cyan" },
   { name: "Check-in", href: "/employee/service-check", icon: ClipboardCheck, color: "green" },
   { name: "Alertes", href: "/employee/alerts", icon: AlertTriangle, color: "pink", hasBadge: true },
   { name: "Historique", href: "/employee/history", icon: History, color: "purple" },
@@ -229,8 +231,9 @@ export default function EmployeeLayout({
   // Index de recherche pour la navigation
   const searchableItems = [
     { name: "Dashboard", href: "/employee", keywords: ["dashboard", "accueil", "vue d'ensemble"] },
+    { name: "Stock", href: "/employee/stock", keywords: ["stock", "inventaire", "produits", "gestion"] },
+    { name: "Menu", href: "/employee/menu", keywords: ["menu", "plats", "recettes", "tarifs", "cuisine"] },
     { name: "Gaspillage", href: "/employee/waste", keywords: ["gaspillage", "perte", "déchet", "waste"] },
-    { name: "Stock", href: "/employee/stock-update", keywords: ["stock", "inventaire", "mise à jour"] },
     { name: "Check-in", href: "/employee/service-check", keywords: ["check", "service", "contrôle", "validation"] },
     { name: "Alertes", href: "/employee/alerts", keywords: ["alerte", "notification", "warning"] },
     { name: "Historique", href: "/employee/history", keywords: ["historique", "history", "passé", "logs"] },
@@ -368,6 +371,7 @@ export default function EmployeeLayout({
               cyan: { icon: "text-cyan-400", bg: "from-cyan-500/20 to-cyan-600/10", glow: "shadow-cyan-500/30", border: "border-cyan-500/30" },
               purple: { icon: "text-purple-400", bg: "from-purple-500/20 to-purple-600/10", glow: "shadow-purple-500/30", border: "border-purple-500/30" },
               green: { icon: "text-emerald-400", bg: "from-emerald-500/20 to-emerald-600/10", glow: "shadow-emerald-500/30", border: "border-emerald-500/30" },
+              emerald: { icon: "text-emerald-400", bg: "from-emerald-500/20 to-emerald-600/10", glow: "shadow-emerald-500/30", border: "border-emerald-500/30" },
               orange: { icon: "text-orange-400", bg: "from-orange-500/20 to-orange-600/10", glow: "shadow-orange-500/30", border: "border-orange-500/30" },
               pink: { icon: "text-pink-400", bg: "from-pink-500/20 to-pink-600/10", glow: "shadow-pink-500/30", border: "border-pink-500/30" },
             }
@@ -464,8 +468,9 @@ export default function EmployeeLayout({
           {/* Page Title */}
           <h2 className={`glass-title ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
             {pathname === "/employee" ? "Dashboard" : 
+             pathname.includes("/stock") ? "Stock" :
+             pathname.includes("/menu") ? "Menu" :
              pathname.includes("/waste") ? "Gaspillage" :
-             pathname.includes("/stock-update") ? "Stock" :
              pathname.includes("/service-check") ? "Check-in" :
              pathname.includes("/alerts") ? "Alertes" :
              pathname.includes("/history") ? "Historique" :

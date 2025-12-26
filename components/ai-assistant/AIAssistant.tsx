@@ -25,7 +25,7 @@ import type { ProductCategory, StockUnit } from "@/lib/database.types"
 // TYPES
 // ============================================
 
-type AssistantMode = 'stock' | 'menu' | 'margin'
+type AssistantMode = 'stock' | 'menu' | 'margin' | 'team'
 type ProductType = 'fresh' | 'frozen' | 'dry' | 'drink' | 'other'
 
 interface Message {
@@ -143,6 +143,12 @@ type ConversationPhase =
   | 'margin_menu_item_detail'
   | 'margin_menu_optimize_item'
   | 'margin_menu_summary'
+  // Team phases
+  | 'team_init'
+  | 'team_action'
+  | 'team_invite'
+  | 'team_manage'
+  | 'team_schedule'
   // Done
   | 'done'
 
@@ -194,10 +200,14 @@ const getBaseUnit = (unit: StockUnit): string => {
   }
 }
 
-const getConversionFactor = (unit: StockUnit): number => {
+const getConversionFactor = (unit: StockUnit | string): number => {
   switch (unit) {
     case 'kg': return 1000 // 1 kg = 1000 g
     case 'L': return 1000  // 1 L = 1000 ml
+    case 'g': return 1     // déjà en grammes
+    case 'ml': return 1    // déjà en millilitres
+    case 'pièces': return 1
+    case 'unités': return 1
     default: return 1
   }
 }
@@ -236,15 +246,25 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   
   // Hooks
-  const { addProductAndStock, products, fetchStocks } = useStock()
+  const { addProductAndStock, products, stocks, fetchStocks } = useStock()
   const { createMenuItem, addIngredient, updateMenuItem, products: menuProducts, fetchMenuItems, menuItems } = useMenuItems()
+
+  // Helper pour récupérer le prix d'un produit depuis le stock
+  const getStockPriceForProduct = (productId: string): { unitPrice: number; unit: string } | null => {
+    const stock = stocks.find(s => s.product_id === productId)
+    if (!stock) return null
+    return {
+      unitPrice: Number(stock.unit_price) || 0,
+      unit: stock.product?.unit || 'unités'
+    }
+  }
 
   // State
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [phase, setPhase] = useState<ConversationPhase>(
-    mode === 'stock' ? 'stock_init' : mode === 'menu' ? 'menu_init' : 'margin_init'
+    mode === 'stock' ? 'stock_init' : mode === 'menu' ? 'menu_init' : mode === 'team' ? 'team_init' : 'margin_init'
   )
   
   // Context
@@ -316,6 +336,18 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           "Salut ! 👋 Je vais t'aider à créer une recette complète pour ton menu.\n\n**Quel plat ou boisson veux-tu créer ?**\n\n_Ex: \"Burger Classique\", \"Pizza Margherita\", \"Mojito\"..._"
         )
         setPhase('menu_dish_name')
+      } else if (mode === 'team') {
+        ask(
+          "Salut ! 👥 Je suis ton assistant pour **gérer ton équipe**.\n\n" +
+          "Je peux t'aider à :\n" +
+          "• 📧 Inviter un nouveau membre\n" +
+          "• 👤 Gérer les rôles et permissions\n" +
+          "• 📅 Organiser les plannings\n" +
+          "• 📊 Voir les statistiques de l'équipe\n\n" +
+          "**Que veux-tu faire ?**",
+          ['📧 Inviter un membre', '👤 Gérer les rôles', '📅 Plannings', '📊 Statistiques']
+        )
+        setPhase('team_action')
       } else if (mode === 'margin') {
         ask(
           "Salut ! 📊 Je suis ton assistant pour **analyser et optimiser tes marges**.\n\n" +
@@ -1070,22 +1102,34 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
             : existing.unit === 'pièces' ? 'unité(s)'
             : baseUnit
 
-          // Calculate cost per base unit
-          // Note: existing.unit_price should be per purchase unit (kg, L, etc.)
-          // We need to convert to base unit (g, ml) for recipe calculations
+          // Récupérer le prix depuis le stock
+          const stockPrice = getStockPriceForProduct(existing.id)
+          let costPerUnit = 0
+          let priceInfo = ''
+          
+          if (stockPrice && stockPrice.unitPrice > 0) {
+            // Calculer le coût par unité de base (g, ml, pièce)
+            // Ex: 1.79€/kg → 0.00179€/g
+            const conversionFactor = getConversionFactor(stockPrice.unit)
+            costPerUnit = stockPrice.unitPrice / conversionFactor
+            priceInfo = `\n📊 Prix en stock : **${formatCurrency(stockPrice.unitPrice)}/${stockPrice.unit}**`
+          } else {
+            priceInfo = `\n⚠️ _Prix non défini dans le stock - ajoute du stock avec un prix pour calculer le coût_`
+          }
           
           setCurrentIngredient({
             stockItemId: existing.id,
             name: existing.name,
             unit: baseUnit,
-            costPerUnit: 0, // Will be calculated based on stock data
+            costPerUnit: costPerUnit,
             stockContext: {
               purchaseUnit: existing.unit,
+              unitCost: stockPrice?.unitPrice || 0,
             },
           })
 
           ask(
-            `✅ **"${existing.name}"** trouvé dans ton stock !\n\n` +
+            `✅ **"${existing.name}"** trouvé dans ton stock !${priceInfo}\n\n` +
             `**Quelle quantité utilises-tu pour UNE portion de "${recipeCtx.menuItemName}" ?**\n\n` +
             `_En ${unitLabel} (ex: 150, 30, 2, 0.5...)_`
           )
@@ -1555,6 +1599,165 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         }
         break
       }
+    }
+  }
+
+  // ============================================
+  // TEAM FLOW - INTELLIGENT LOGIC
+  // ============================================
+
+  const processTeamFlow = async (input: string) => {
+    const trimmed = input.trim()
+    const lowerInput = trimmed.toLowerCase()
+
+    switch (phase) {
+      case 'team_action': {
+        const wantsInvite = lowerInput.includes('inviter') || lowerInput.includes('📧') || lowerInput.includes('membre')
+        const wantsRoles = lowerInput.includes('rôle') || lowerInput.includes('👤') || lowerInput.includes('permission')
+        const wantsSchedule = lowerInput.includes('planning') || lowerInput.includes('📅')
+        const wantsStats = lowerInput.includes('statistique') || lowerInput.includes('📊') || lowerInput.includes('stat')
+
+        if (wantsInvite) {
+          ask(
+            "Super ! 📧 Pour **inviter un nouveau membre**, j'ai besoin de quelques infos.\n\n" +
+            "**Quelle est l'adresse email du nouveau membre ?**\n\n" +
+            "_Ex: jean.dupont@email.com_"
+          )
+          setPhase('team_invite')
+        } else if (wantsRoles) {
+          ask(
+            "👤 **Gestion des rôles**\n\n" +
+            "Je peux t'aider à :\n" +
+            "• Promouvoir un employé en manager\n" +
+            "• Rétrograder un manager en employé\n" +
+            "• Voir les permissions de chaque rôle\n\n" +
+            "**Que veux-tu faire ?**",
+            ['Promouvoir', 'Rétrograder', 'Voir les permissions']
+          )
+          setPhase('team_manage')
+        } else if (wantsSchedule) {
+          ask(
+            "📅 **Gestion des plannings**\n\n" +
+            "Cette fonctionnalité arrive bientôt ! 🚀\n\n" +
+            "Tu pourras :\n" +
+            "• Créer des plannings hebdomadaires\n" +
+            "• Assigner des shifts aux employés\n" +
+            "• Gérer les demandes de congés\n\n" +
+            "**Autre chose que je peux faire pour toi ?**",
+            ['📧 Inviter un membre', '👤 Gérer les rôles', '✅ Terminer']
+          )
+          setPhase('team_action')
+        } else if (wantsStats) {
+          ask(
+            "📊 **Statistiques de l'équipe**\n\n" +
+            "Cette fonctionnalité arrive bientôt ! 🚀\n\n" +
+            "Tu pourras voir :\n" +
+            "• Le temps de présence de chaque membre\n" +
+            "• Les performances individuelles\n" +
+            "• Les rapports d'activité\n\n" +
+            "**Autre chose que je peux faire pour toi ?**",
+            ['📧 Inviter un membre', '👤 Gérer les rôles', '✅ Terminer']
+          )
+          setPhase('team_action')
+        } else {
+          ask(
+            "Je n'ai pas bien compris. Choisis une option :\n\n",
+            ['📧 Inviter un membre', '👤 Gérer les rôles', '📅 Plannings', '📊 Statistiques']
+          )
+        }
+        break
+      }
+
+      case 'team_invite': {
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(trimmed)) {
+          ask(
+            "❌ Cette adresse email ne semble pas valide.\n\n" +
+            "**Donne-moi une adresse email correcte :**\n\n" +
+            "_Ex: jean.dupont@email.com_"
+          )
+          return
+        }
+
+        ask(
+          `✅ Email : **${trimmed}**\n\n` +
+          `**Quel rôle pour ce nouveau membre ?**\n\n` +
+          `• **Employé** : Accès limité (voir le menu, pointer)\n` +
+          `• **Manager** : Accès complet (gérer stock, équipe, etc.)`,
+          ['Employé', 'Manager']
+        )
+        // Store email for later use
+        setStockCtx({ ...stockCtx, supplier: trimmed })
+        setPhase('team_manage')
+        break
+      }
+
+      case 'team_manage': {
+        const isEmployee = lowerInput.includes('employé') || lowerInput.includes('employee')
+        const isManager = lowerInput.includes('manager') || lowerInput.includes('promouvoir')
+        const isRoleInfo = lowerInput.includes('permission') || lowerInput.includes('voir')
+
+        if (isRoleInfo) {
+          ask(
+            "📋 **Permissions par rôle :**\n\n" +
+            "**👤 Employé :**\n" +
+            "• Voir le menu et les prix\n" +
+            "• Pointer (entrée/sortie)\n" +
+            "• Voir son planning\n\n" +
+            "**👔 Manager :**\n" +
+            "• Tout ce que fait l'employé\n" +
+            "• Gérer le stock\n" +
+            "• Gérer l'équipe\n" +
+            "• Voir les statistiques\n" +
+            "• Modifier le menu\n\n" +
+            "**Autre chose ?**",
+            ['📧 Inviter un membre', '✅ Terminer']
+          )
+          setPhase('team_action')
+        } else if (isEmployee || isManager) {
+          const role = isManager ? 'manager' : 'employee'
+          const email = stockCtx.supplier
+
+          if (email) {
+            ask(
+              `🎉 **Invitation prête !**\n\n` +
+              `• Email : **${email}**\n` +
+              `• Rôle : **${isManager ? 'Manager' : 'Employé'}**\n\n` +
+              `_Pour envoyer l'invitation, va dans l'onglet Équipe et utilise le bouton "Inviter"._\n\n` +
+              `**Autre chose que je peux faire ?**`,
+              ['📧 Inviter un autre membre', '✅ Terminer']
+            )
+            setPhase('team_action')
+          } else {
+            ask(
+              `Pour modifier le rôle d'un membre existant, va directement dans la liste de l'équipe et clique sur le membre.\n\n` +
+              `**Autre chose que je peux faire ?**`,
+              ['📧 Inviter un membre', '✅ Terminer']
+            )
+            setPhase('team_action')
+          }
+        } else if (lowerInput.includes('terminer') || lowerInput.includes('✅')) {
+          ask(
+            `Parfait ! 🎉 N'hésite pas à revenir si tu as besoin d'aide avec ton équipe.\n\n` +
+            `_Clique sur ↻ pour recommencer._`
+          )
+          setPhase('done')
+        } else {
+          ask(
+            "Je n'ai pas compris. Que veux-tu faire ?",
+            ['Employé', 'Manager', 'Voir les permissions', '✅ Terminer']
+          )
+        }
+        break
+      }
+
+      default:
+        ask(
+          "Je suis là pour t'aider ! 👥\n\n**Que veux-tu faire ?**",
+          ['📧 Inviter un membre', '👤 Gérer les rôles', '📅 Plannings', '📊 Statistiques']
+        )
+        setPhase('team_action')
     }
   }
 
@@ -2310,6 +2513,8 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         await processStockFlow(userInput)
       } else if (mode === 'menu') {
         await processMenuFlow(userInput)
+      } else if (mode === 'team') {
+        await processTeamFlow(userInput)
       } else if (mode === 'margin') {
         await processMarginFlow(userInput)
       }
@@ -2332,7 +2537,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
   const handleReset = () => {
     setMessages([])
-    setPhase(mode === 'stock' ? 'stock_init' : mode === 'menu' ? 'menu_init' : 'margin_init')
+    setPhase(mode === 'stock' ? 'stock_init' : mode === 'menu' ? 'menu_init' : mode === 'team' ? 'team_init' : 'margin_init')
     setStockCtx({
       name: null, productType: null, purchaseUnit: null, isPackaged: false,
       unitsPerPack: null, numberOfPacks: null, totalQuantity: null,
@@ -2363,6 +2568,18 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           "Salut ! 👋 Je vais t'aider à créer une recette complète pour ton menu.\n\n**Quel plat ou boisson veux-tu créer ?**\n\n_Ex: \"Burger Classique\", \"Pizza Margherita\", \"Mojito\"..._"
         )
         setPhase('menu_dish_name')
+      } else if (mode === 'team') {
+        ask(
+          "Salut ! 👥 Je suis ton assistant pour **gérer ton équipe**.\n\n" +
+          "Je peux t'aider à :\n" +
+          "• 📧 Inviter un nouveau membre\n" +
+          "• 👤 Gérer les rôles et permissions\n" +
+          "• 📅 Organiser les plannings\n" +
+          "• 📊 Voir les statistiques de l'équipe\n\n" +
+          "**Que veux-tu faire ?**",
+          ['📧 Inviter un membre', '👤 Gérer les rôles', '📅 Plannings', '📊 Statistiques']
+        )
+        setPhase('team_action')
       } else if (mode === 'margin') {
         ask(
           "Salut ! 📊 Je suis ton assistant pour **analyser et optimiser tes marges**.\n\n" +
@@ -2392,7 +2609,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
             <div>
               <h3>Assistant IA</h3>
               <span>
-                {mode === 'stock' ? 'Stock & Menu' : mode === 'menu' ? 'Création de recette' : 'Marges & Bénéfices'}
+                {mode === 'stock' ? 'Stock & Menu' : mode === 'menu' ? 'Création de recette' : mode === 'team' ? 'Gestion d\'équipe' : 'Marges & Bénéfices'}
               </span>
             </div>
           </div>

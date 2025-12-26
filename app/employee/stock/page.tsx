@@ -17,7 +17,7 @@ import { AIAssistant } from "@/components/ai-assistant/AIAssistant"
 
 const ALL_UNITS: StockUnit[] = ['kg', 'g', 'L', 'unités', 'pièces']
 
-export default function ManagerStockPage() {
+export default function EmployeeStockPage() {
   const { 
     stocks, 
     products,

@@ -27,6 +27,7 @@ import {
   HelpCircle,
   CreditCard,
   ChefHat,
+  Receipt,
 } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useSubscription } from "@/lib/hooks/use-subscription"
@@ -294,7 +295,9 @@ export default function ManagerLayout({
               cyan: { icon: "text-cyan-400", bg: "from-cyan-500/20 to-cyan-600/10", glow: "shadow-cyan-500/30", border: "border-cyan-500/30" },
               purple: { icon: "text-purple-400", bg: "from-purple-500/20 to-purple-600/10", glow: "shadow-purple-500/30", border: "border-purple-500/30" },
               green: { icon: "text-emerald-400", bg: "from-emerald-500/20 to-emerald-600/10", glow: "shadow-emerald-500/30", border: "border-emerald-500/30" },
+              emerald: { icon: "text-emerald-400", bg: "from-emerald-500/20 to-emerald-600/10", glow: "shadow-emerald-500/30", border: "border-emerald-500/30" },
               orange: { icon: "text-orange-400", bg: "from-orange-500/20 to-orange-600/10", glow: "shadow-orange-500/30", border: "border-orange-500/30" },
+              amber: { icon: "text-amber-400", bg: "from-amber-500/20 to-amber-600/10", glow: "shadow-amber-500/30", border: "border-amber-500/30" },
               pink: { icon: "text-pink-400", bg: "from-pink-500/20 to-pink-600/10", glow: "shadow-pink-500/30", border: "border-pink-500/30" },
               yellow: { icon: "text-amber-400", bg: "from-amber-500/20 to-amber-600/10", glow: "shadow-amber-500/30", border: "border-amber-500/30" },
               indigo: { icon: "text-indigo-400", bg: "from-indigo-500/20 to-indigo-600/10", glow: "shadow-indigo-500/30", border: "border-indigo-500/30" },

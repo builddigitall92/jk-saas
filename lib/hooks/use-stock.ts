@@ -316,6 +316,221 @@ export function useStock() {
   const getLowStockAlerts = () =>
     stocks.filter(s => s.product && Number(s.quantity) <= Number(s.product.min_stock_threshold))
 
+  // Trouver un produit existant par nom (insensible à la casse)
+  const findProductByName = (name: string) => {
+    const normalizedName = name.toLowerCase().trim()
+    return products.find(p => p.name.toLowerCase().trim() === normalizedName)
+  }
+
+  // Trouver le stock existant pour un produit
+  const findStockByProductId = (productId: string) => {
+    return stocks.find(s => s.product_id === productId)
+  }
+
+  // Ajouter ou mettre à jour un stock existant
+  const addOrUpdateStock = async (
+    productData: {
+      name: string
+      category: ProductCategory
+      unit: StockUnit
+      icon?: string
+      min_stock_threshold?: number
+    },
+    stockData: {
+      quantity: number
+      unit_price: number
+      package_price?: number | null
+      package_quantity?: number | null
+      expiry_date?: string | null
+    }
+  ) => {
+    try {
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData.user) throw new Error('Non authentifié')
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('establishment_id')
+        .eq('id', userData.user.id)
+        .single()
+
+      if (!profile?.establishment_id) throw new Error('Pas d\'établissement associé')
+
+      // Chercher si le produit existe déjà
+      const existingProduct = findProductByName(productData.name)
+
+      if (existingProduct) {
+        // Produit existant → chercher le stock
+        const existingStock = findStockByProductId(existingProduct.id)
+        
+        if (existingStock) {
+          // Mettre à jour le stock existant (ajouter la quantité)
+          const newQuantity = Number(existingStock.quantity) + stockData.quantity
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error: updateError } = await (supabase as any)
+            .from('stock')
+            .update({ 
+              quantity: newQuantity,
+              unit_price: stockData.unit_price,
+              package_price: stockData.package_price,
+              package_quantity: stockData.package_quantity,
+              expiry_date: stockData.expiry_date || existingStock.expiry_date,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingStock.id)
+
+          if (updateError) throw updateError
+
+          await fetchStocks()
+          return { success: true, product: existingProduct, updated: true, previousQuantity: existingStock.quantity, newQuantity }
+        } else {
+          // Pas de stock pour ce produit → créer un nouveau stock
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error: stockError } = await (supabase as any)
+            .from('stock')
+            .insert({
+              establishment_id: profile.establishment_id,
+              product_id: existingProduct.id,
+              quantity: stockData.quantity,
+              unit_price: stockData.unit_price,
+              package_price: stockData.package_price,
+              package_quantity: stockData.package_quantity,
+              initial_quantity: stockData.quantity,
+              expiry_date: stockData.expiry_date || null,
+              added_by: userData.user.id
+            })
+
+          if (stockError) throw stockError
+          await fetchStocks()
+          return { success: true, product: existingProduct, updated: false }
+        }
+      } else {
+        // Nouveau produit → créer produit + stock
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: newProduct, error: productError } = await (supabase as any)
+          .from('products')
+          .insert({
+            establishment_id: profile.establishment_id,
+            name: productData.name,
+            category: productData.category,
+            unit: productData.unit,
+            icon: productData.icon || '📦',
+            min_stock_threshold: productData.min_stock_threshold || 10,
+            is_active: true
+          })
+          .select()
+          .single()
+
+        if (productError) throw productError
+        setProducts(prev => [...prev, newProduct as Product])
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: stockError } = await (supabase as any)
+          .from('stock')
+          .insert({
+            establishment_id: profile.establishment_id,
+            product_id: newProduct.id,
+            quantity: stockData.quantity,
+            unit_price: stockData.unit_price,
+            package_price: stockData.package_price,
+            package_quantity: stockData.package_quantity,
+            initial_quantity: stockData.quantity,
+            expiry_date: stockData.expiry_date || null,
+            added_by: userData.user.id
+          })
+
+        if (stockError) throw stockError
+        await fetchStocks()
+        return { success: true, product: newProduct, updated: false }
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erreur lors de l\'ajout'
+      setError(message)
+      return { success: false, error: message }
+    }
+  }
+
+  // Supprimer un produit (le désactiver)
+  const deleteProduct = async (productId: string) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('products')
+        .update({ is_active: false })
+        .eq('id', productId)
+
+      if (error) throw error
+      setProducts(prev => prev.filter(p => p.id !== productId))
+      // Aussi supprimer les stocks associés de la vue
+      setStocks(prev => prev.filter(s => s.product_id !== productId))
+      return { success: true }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erreur lors de la suppression'
+      setError(message)
+      return { success: false, error: message }
+    }
+  }
+
+  // Créer un nouveau produit (sans stock)
+  const createProduct = async (productData: {
+    name: string
+    category: ProductCategory
+    unit: StockUnit
+    icon?: string
+    min_stock_threshold?: number
+  }) => {
+    try {
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData.user) throw new Error('Non authentifié')
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('establishment_id')
+        .eq('id', userData.user.id)
+        .single()
+
+      if (!profile?.establishment_id) throw new Error('Pas d\'établissement associé')
+
+      // Vérifier si le produit existe déjà
+      const existing = findProductByName(productData.name)
+      if (existing) {
+        return { success: false, error: 'Un produit avec ce nom existe déjà' }
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: newProduct, error: productError } = await (supabase as any)
+        .from('products')
+        .insert({
+          establishment_id: profile.establishment_id,
+          name: productData.name,
+          category: productData.category,
+          unit: productData.unit,
+          icon: productData.icon || '📦',
+          min_stock_threshold: productData.min_stock_threshold || 10,
+          is_active: true
+        })
+        .select()
+        .single()
+
+      if (productError) throw productError
+      setProducts(prev => [...prev, newProduct as Product])
+      return { success: true, product: newProduct }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erreur lors de la création'
+      setError(message)
+      return { success: false, error: message }
+    }
+  }
+
+  // Historique des mouvements de stock (les derniers ajouts)
+  const getStockHistory = () => {
+    return stocks
+      .sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime())
+      .slice(0, 10)
+  }
+
   return {
     stocks,
     products,
@@ -326,12 +541,18 @@ export function useStock() {
     updateQuantity,
     addStock,
     addProductAndStock,
+    addOrUpdateStock,
     deleteStock,
+    deleteProduct,
+    createProduct,
+    findProductByName,
+    findStockByProductId,
     getByCategory,
     getCategoryTotal,
     getProductsByCategory,
     getTotalValue,
     getTotalItems,
-    getLowStockAlerts
+    getLowStockAlerts,
+    getStockHistory
   }
 }

@@ -19,8 +19,10 @@ import {
   MoreVertical,
   UserMinus,
   RefreshCw,
+  Sparkles,
 } from "lucide-react"
 import { createClient } from "@/utils/supabase/client"
+import { AIAssistant } from "@/components/ai-assistant/AIAssistant"
 
 interface TeamMember {
   id: string
@@ -48,6 +50,9 @@ export default function ManagerTeamPage() {
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null)
   const [isRemoving, setIsRemoving] = useState(false)
   const [removeError, setRemoveError] = useState<string | null>(null)
+  
+  // Assistant IA
+  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false)
 
   // Fonction pour charger les membres avec leur statut de présence
   const fetchMembers = async () => {
@@ -219,13 +224,22 @@ export default function ManagerTeamPage() {
             {establishment?.name || 'Mon établissement'}
           </p>
         </div>
-        <button
-          onClick={handleRefresh}
-          className="p-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-slate-400 hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-500/10 transition-all"
-          title="Rafraîchir la liste"
-        >
-          <RefreshCw className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            className="ai-trigger-btn"
+            onClick={() => setIsAIAssistantOpen(true)}
+          >
+            <Sparkles className="h-4 w-4" />
+            Assistant IA
+          </button>
+          <button
+            onClick={handleRefresh}
+            className="p-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-slate-400 hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-500/10 transition-all"
+            title="Rafraîchir la liste"
+          >
+            <RefreshCw className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -469,6 +483,13 @@ export default function ManagerTeamPage() {
           </div>
         )}
       </div>
+
+      {/* AI Assistant */}
+      <AIAssistant
+        isOpen={isAIAssistantOpen}
+        onClose={() => setIsAIAssistantOpen(false)}
+        mode="team"
+      />
 
       {/* Modal de confirmation de suppression */}
       {memberToRemove && (

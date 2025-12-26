@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, Suspense } from "react"
+import { useState, Suspense, type FormEvent } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { SlideButton } from "@/components/ui/slide-button"
+import { Button } from "@/components/ui/button"
 import { 
   Loader2, 
   Shield,
@@ -84,9 +84,11 @@ function LoginForm() {
     return true
   }
 
-  const handleSlideComplete = async (): Promise<boolean> => {
+  const handleSubmit = async (e?: FormEvent) => {
+    e?.preventDefault()
+    
     if (!validateForm()) {
-      return false
+      return
     }
 
     setIsLoading(true)
@@ -110,21 +112,19 @@ function LoginForm() {
         if (result?.error) {
           setError(result.error)
           setIsLoading(false)
-          return false
+          return
         }
       } else {
         const result = await login(form)
         if (result?.error) {
           setError(result.error)
           setIsLoading(false)
-          return false
+          return
         }
       }
-      return true
     } catch {
       setError("Une erreur est survenue. Veuillez réessayer.")
       setIsLoading(false)
-      return false
     }
   }
 
@@ -387,14 +387,25 @@ function LoginForm() {
               )}
             </div>
 
-            {/* Slide Button */}
+            {/* Submit Button */}
             <div className="mt-8">
-              <SlideButton
-                text={isSignup ? "Glissez pour créer votre compte" : "Glissez pour vous connecter"}
-                successText={isSignup ? "Compte créé !" : "Bienvenue !"}
-                onSlideComplete={handleSlideComplete}
-                isLoading={isLoading}
-              />
+              <Button
+                onClick={handleSubmit}
+                disabled={isLoading}
+                className="w-full h-14 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-base rounded-xl shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    {isSignup ? "Création en cours..." : "Connexion en cours..."}
+                  </>
+                ) : (
+                  <>
+                    {isSignup ? "Créer un compte" : "Se connecter"}
+                    <ChevronRight className="w-5 h-5" />
+                  </>
+                )}
+              </Button>
             </div>
 
             {/* Toggle sign up / sign in */}

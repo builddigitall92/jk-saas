@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import Link from "next/link"
 import {
   Search,
   Plus,
@@ -122,74 +121,29 @@ interface CreateMenuItemWizardProps {
 // UTILITAIRES CALCUL GPAO (Gestion de Production Assistée par Ordinateur)
 // ============================================
 
-/**
- * Calcul GPAO - Coût matière d'un ingrédient
- * 
- * Principe :
- * 1. Récupérer le prix unitaire du stock (€/kg, €/L, €/pièce)
- * 2. Convertir la quantité utilisée dans l'unité du stock
- * 3. Multiplier : Coût = Prix unitaire × Quantité convertie
- * 
- * Exemple : Produit à 1,79€/kg, utilisation de 200g
- * → Prix : 1,79€/kg
- * → Quantité : 200g = 0,2 kg
- * → Coût : 1,79 × 0,2 = 0,358€
- */
 function calculateIngredientCostGPAO(
-  ingredientQuantity: number,  // Quantité utilisée dans la recette
-  ingredientUnit: string,      // Unité de la recette (g, ml, pièces, etc.)
-  stockUnitPrice: number,      // Prix unitaire du stock (€/kg, €/L, €/pièce)
-  stockUnit: string            // Unité du stock (kg, L, pièces, etc.)
+  ingredientQuantity: number,
+  ingredientUnit: string,
+  stockUnitPrice: number,
+  stockUnit: string
 ): number {
   if (!stockUnitPrice || stockUnitPrice <= 0) return 0
   if (!ingredientQuantity || ingredientQuantity <= 0) return 0
-
-  // Convertir la quantité de l'ingrédient dans l'unité du stock
   const convertedQuantity = convertToStockUnit(ingredientQuantity, ingredientUnit, stockUnit)
-  
-  // Calcul GPAO : Prix × Quantité
   const cost = stockUnitPrice * convertedQuantity
-  
-  return Math.round(cost * 1000) / 1000 // Arrondi à 3 décimales
+  return Math.round(cost * 1000) / 1000
 }
 
-/**
- * Convertir une quantité vers l'unité du stock
- */
 function convertToStockUnit(quantity: number, fromUnit: string, toUnit: string): number {
-  // Si mêmes unités, pas de conversion
   if (fromUnit === toUnit) return quantity
-  
-  // Normaliser les unités
   const from = fromUnit.toLowerCase()
   const to = toUnit.toLowerCase()
-  
-  // === CONVERSIONS MASSE ===
-  // g → kg : diviser par 1000
-  if (from === 'g' && to === 'kg') {
-    return quantity / 1000
-  }
-  // kg → g : multiplier par 1000
-  if (from === 'kg' && to === 'g') {
-    return quantity * 1000
-  }
-  
-  // === CONVERSIONS VOLUME ===
-  // ml → L : diviser par 1000
-  if ((from === 'ml' || from === 'cl') && to === 'l') {
-    return from === 'ml' ? quantity / 1000 : quantity / 100
-  }
-  // L → ml : multiplier par 1000
-  if (from === 'l' && (to === 'ml' || to === 'cl')) {
-    return to === 'ml' ? quantity * 1000 : quantity * 100
-  }
-  
-  // cl → ml et inverse
+  if (from === 'g' && to === 'kg') return quantity / 1000
+  if (from === 'kg' && to === 'g') return quantity * 1000
+  if ((from === 'ml' || from === 'cl') && to === 'l') return from === 'ml' ? quantity / 1000 : quantity / 100
+  if (from === 'l' && (to === 'ml' || to === 'cl')) return to === 'ml' ? quantity * 1000 : quantity * 100
   if (from === 'cl' && to === 'ml') return quantity * 10
   if (from === 'ml' && to === 'cl') return quantity / 10
-  
-  // === UNITÉS IDENTIQUES OU INCOMPATIBLES ===
-  // pièces, unités : pas de conversion possible
   return quantity
 }
 
@@ -212,7 +166,7 @@ function CreateMenuItemWizard({ isOpen, onClose, products, stocks, onCreateItem,
   const [sellingPrice, setSellingPrice] = useState('')
   const [targetMargin, setTargetMargin] = useState(70)
 
-  // Récupérer le stock d'un produit (le plus récent)
+  // Récupérer le stock d'un produit
   const getProductStock = (productId: string): StockWithProduct | undefined => {
     return stocks.find(s => s.product_id === productId)
   }
@@ -221,24 +175,10 @@ function CreateMenuItemWizard({ isOpen, onClose, products, stocks, onCreateItem,
   const ingredientsCost = useMemo(() => {
     return ingredients.reduce((sum, ing) => {
       const stock = getProductStock(ing.product_id)
-      
-      if (!stock) {
-        console.warn(`[GPAO] Pas de stock pour le produit ${ing.product_id}`)
-        return sum
-      }
-      
+      if (!stock) return sum
       const stockUnitPrice = Number(stock.unit_price) || 0
       const stockUnit = stock.product?.unit || 'unités'
-      
-      const ingredientCost = calculateIngredientCostGPAO(
-        ing.quantity,
-        ing.unit,
-        stockUnitPrice,
-        stockUnit
-      )
-      
-      console.log(`[GPAO] ${ing.product?.name}: ${ing.quantity}${ing.unit} × ${stockUnitPrice}€/${stockUnit} = ${ingredientCost.toFixed(3)}€`)
-      
+      const ingredientCost = calculateIngredientCostGPAO(ing.quantity, ing.unit, stockUnitPrice, stockUnit)
       return sum + ingredientCost
     }, 0)
   }, [ingredients, stocks])
@@ -329,7 +269,6 @@ function CreateMenuItemWizard({ isOpen, onClose, products, stocks, onCreateItem,
         return
       }
 
-      // Ajouter les ingrédients
       const menuItemId = (result.data as { id: string })?.id
       if (menuItemId) {
         for (const ing of ingredients) {
@@ -342,7 +281,6 @@ function CreateMenuItemWizard({ isOpen, onClose, products, stocks, onCreateItem,
         }
       }
 
-      // Reset & fermer
       resetForm()
       onClose()
     } catch (err) {
@@ -739,7 +677,6 @@ function MenuItemCard({ item, viewMode, onView, onEdit, onDelete }: MenuItemCard
   const marginStatus = item.actual_margin_percent >= 70 ? 'high' : item.actual_margin_percent >= 50 ? 'medium' : 'low'
   const marginStatusColor = marginStatus === 'high' ? 'emerald' : marginStatus === 'medium' ? 'amber' : 'red'
 
-  // Déterminer le statut popularité (simulé pour le moment)
   const popularityScore = Math.random() > 0.7 ? 'top' : Math.random() > 0.3 ? 'normal' : 'low'
 
   if (viewMode === 'list') {
@@ -1120,7 +1057,7 @@ function MenuItemDetail({ item, isOpen, onClose, onUpdatePrice, getSuggestedPric
 // MAIN PAGE COMPONENT
 // ============================================
 
-export default function ManagerMenuPage() {
+export default function EmployeeMenuPage() {
   const { 
     menuItems, 
     products, 
@@ -1198,7 +1135,6 @@ export default function ManagerMenuPage() {
 
   const handleEditItem = (item: MenuItemWithIngredients) => {
     setSelectedItem(item)
-    // TODO: Ouvrir le wizard en mode édition
   }
 
   const handleDeleteItem = async (id: string) => {
@@ -1251,10 +1187,6 @@ export default function ManagerMenuPage() {
             <Sparkles className="w-4 h-4" />
             Créer avec l'IA
           </button>
-          <Link href="/manager/menu/grille-tarifaire" className="menu-header-link">
-            <BarChart3 className="w-4 h-4" />
-            Grille tarifaire
-          </Link>
           <Button onClick={() => setIsCreateWizardOpen(true)} className="menu-create-btn">
             <Plus className="w-4 h-4" />
             Créer un item

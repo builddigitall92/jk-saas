@@ -19,12 +19,8 @@ import {
   Package,
   Plus,
   Trash2,
-  Snowflake,
-  Leaf,
-  Wheat,
   Loader2,
   X,
-  Sparkles,
   ClipboardCheck,
   GripVertical,
   ThermometerSun,
@@ -39,8 +35,6 @@ import { createClient } from "@/utils/supabase/client"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useSubscription } from "@/lib/hooks/use-subscription"
 import Link from "next/link"
-import { detectCategory, suggestIcon, suggestUnit, SUGGESTED_UNITS } from "@/lib/utils/auto-category"
-import type { Product, ProductCategory, StockUnit } from "@/lib/database.types"
 
 interface Establishment {
   id: string
@@ -76,8 +70,6 @@ const DEFAULT_CHECK_ITEMS = [
   { item_code: "materiel", item_label: "Matériel fonctionnel", icon: "Utensils" },
 ]
 
-const ALL_UNITS: StockUnit[] = ['kg', 'g', 'L', 'unités', 'pièces']
-
 export default function SettingsPage() {
   const { profile } = useAuth()
   const { subscription, currentPlan, isTrialing, isPastDue, openBillingPortal, loading: subLoading } = useSubscription()
@@ -88,19 +80,6 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [editedEstablishment, setEditedEstablishment] = useState<Partial<Establishment>>({})
-
-  // Gestion des produits/ingrédients
-  const [products, setProducts] = useState<Product[]>([])
-  const [showAddProduct, setShowAddProduct] = useState(false)
-  const [newProduct, setNewProduct] = useState({
-    name: "",
-    category: "frais" as ProductCategory,
-    unit: "kg" as StockUnit,
-    icon: "📦",
-    min_stock_threshold: 10
-  })
-  const [savingProduct, setSavingProduct] = useState(false)
-  const [deletingProduct, setDeletingProduct] = useState<string | null>(null)
 
   // Gestion des items de check-in
   const [checkItems, setCheckItems] = useState<CheckItemTemplate[]>([])
@@ -116,22 +95,6 @@ export default function SettingsPage() {
   useEffect(() => {
     loadData()
   }, [profile])
-
-  // Auto-détection de la catégorie quand le nom change
-  useEffect(() => {
-    if (newProduct.name.length >= 3) {
-      const detectedCategory = detectCategory(newProduct.name)
-      const suggestedIconValue = suggestIcon(newProduct.name)
-      const suggestedUnitValue = suggestUnit(newProduct.name, detectedCategory) as StockUnit
-      
-      setNewProduct(prev => ({
-        ...prev,
-        category: detectedCategory,
-        icon: suggestedIconValue,
-        unit: suggestedUnitValue
-      }))
-    }
-  }, [newProduct.name])
 
   async function loadData() {
     if (!profile?.establishment_id) return
@@ -158,19 +121,6 @@ export default function SettingsPage() {
 
     if (teamData) {
       setTeamMembers(teamData)
-    }
-
-    // Charger les produits
-    const { data: productsData } = await supabase
-      .from("products")
-      .select("*")
-      .eq("establishment_id", profile.establishment_id)
-      .eq("is_active", true)
-      .order("category", { ascending: true })
-      .order("name", { ascending: true })
-
-    if (productsData) {
-      setProducts(productsData)
     }
 
     // Charger les items de check-in
@@ -292,76 +242,6 @@ export default function SettingsPage() {
       console.error("Erreur lors de la suppression:", err)
     } finally {
       setIsRemovingMember(false)
-    }
-  }
-
-  async function addProduct() {
-    if (!profile?.establishment_id || !newProduct.name.trim()) return
-
-    setSavingProduct(true)
-    const supabase = createClient()
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
-      .from("products")
-      .insert({
-        establishment_id: profile.establishment_id,
-        name: newProduct.name.trim(),
-        category: newProduct.category,
-        unit: newProduct.unit,
-        icon: newProduct.icon,
-        min_stock_threshold: newProduct.min_stock_threshold,
-        is_active: true
-      })
-      .select()
-      .single()
-
-    if (!error && data) {
-      setProducts([...products, data as Product])
-      setNewProduct({
-        name: "",
-        category: "frais",
-        unit: "kg",
-        icon: "📦",
-        min_stock_threshold: 10
-      })
-      setShowAddProduct(false)
-    }
-
-    setSavingProduct(false)
-  }
-
-  async function deleteProduct(productId: string) {
-    setDeletingProduct(productId)
-    const supabase = createClient()
-
-    // Désactiver plutôt que supprimer pour préserver l'historique
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from("products")
-      .update({ is_active: false })
-      .eq("id", productId)
-
-    if (!error) {
-      setProducts(products.filter(p => p.id !== productId))
-    }
-
-    setDeletingProduct(null)
-  }
-
-  function getCategoryIcon(category: ProductCategory) {
-    switch (category) {
-      case 'surgele': return <Snowflake className="h-4 w-4 text-blue-400" />
-      case 'frais': return <Leaf className="h-4 w-4 text-green-500" />
-      case 'sec': return <Wheat className="h-4 w-4 text-amber-500" />
-    }
-  }
-
-  function getCategoryLabel(category: ProductCategory) {
-    switch (category) {
-      case 'surgele': return 'Surgelé'
-      case 'frais': return 'Frais'
-      case 'sec': return 'Sec'
     }
   }
 
@@ -663,200 +543,6 @@ export default function SettingsPage() {
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Gestion des Ingrédients */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-orange-500" />
-                  Gestion des Ingrédients
-                </CardTitle>
-                <CardDescription>
-                  Définissez vos propres ingrédients avec catégorisation automatique
-                </CardDescription>
-              </div>
-              <Button onClick={() => setShowAddProduct(true)} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Nouvel ingrédient
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {/* Formulaire d'ajout */}
-            {showAddProduct && (
-              <div className="mb-6 p-4 rounded-xl bg-orange-500/5 border border-orange-500/20">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-medium text-foreground flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-orange-500" />
-                    Ajouter un ingrédient
-                  </h4>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => setShowAddProduct(false)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  <div className="lg:col-span-2">
-                    <Label htmlFor="productName">Nom de l'ingrédient</Label>
-                    <Input
-                      id="productName"
-                      value={newProduct.name}
-                      onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                      placeholder="Ex: Cannettes Coca-Cola, Salade Iceberg..."
-                      className="mt-1"
-                    />
-                    {newProduct.name.length >= 3 && (
-                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                        <Sparkles className="h-3 w-3 text-orange-500" />
-                        Catégorie détectée: <span className="font-medium text-orange-500">{getCategoryLabel(newProduct.category)}</span>
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <Label>Catégorie</Label>
-                    <div className="flex gap-1 mt-1">
-                      {(['surgele', 'frais', 'sec'] as ProductCategory[]).map((cat) => (
-                        <button
-                          key={cat}
-                          onClick={() => setNewProduct({ ...newProduct, category: cat })}
-                          className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium transition-all ${
-                            newProduct.category === cat 
-                              ? 'bg-primary text-white' 
-                              : 'bg-secondary text-muted-foreground hover:text-foreground'
-                          }`}
-                        >
-                          {getCategoryIcon(cat)}
-                          {getCategoryLabel(cat)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="productUnit">Unité</Label>
-                    <select
-                      id="productUnit"
-                      value={newProduct.unit}
-                      onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value as StockUnit })}
-                      className="w-full h-10 mt-1 rounded-lg border border-border bg-background px-3"
-                    >
-                      {ALL_UNITS.map((unit) => (
-                        <option key={unit} value={unit}>{unit}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                
-                <div className="grid gap-4 md:grid-cols-3 mt-4">
-                  <div>
-                    <Label>Icône</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-2xl bg-secondary rounded-lg p-2">{newProduct.icon}</span>
-                      <Input
-                        value={newProduct.icon}
-                        onChange={(e) => setNewProduct({ ...newProduct, icon: e.target.value })}
-                        className="w-20 text-center text-xl"
-                        maxLength={2}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="minThreshold">Seuil d'alerte minimum</Label>
-                    <Input
-                      id="minThreshold"
-                      type="number"
-                      value={newProduct.min_stock_threshold}
-                      onChange={(e) => setNewProduct({ ...newProduct, min_stock_threshold: parseInt(e.target.value) || 0 })}
-                      className="mt-1"
-                    />
-                  </div>
-                  
-                  <div className="flex items-end">
-                    <Button 
-                      onClick={addProduct} 
-                      disabled={!newProduct.name.trim() || savingProduct}
-                      className="w-full"
-                    >
-                      {savingProduct ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <Check className="h-4 w-4 mr-2" />
-                      )}
-                      Ajouter
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Liste des produits par catégorie */}
-            {products.length > 0 ? (
-              <div className="space-y-6">
-                {(['surgele', 'frais', 'sec'] as ProductCategory[]).map((category) => {
-                  const categoryProducts = products.filter(p => p.category === category)
-                  if (categoryProducts.length === 0) return null
-                  
-                  return (
-                    <div key={category}>
-                      <h4 className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-3">
-                        {getCategoryIcon(category)}
-                        {getCategoryLabel(category)} ({categoryProducts.length})
-                      </h4>
-                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        {categoryProducts.map((product) => (
-                          <div 
-                            key={product.id}
-                            className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors group"
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className="text-xl">{product.icon}</span>
-                              <div>
-                                <p className="font-medium text-sm">{product.name}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {product.unit} • Seuil: {Number(product.min_stock_threshold)}
-                                </p>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
-                              onClick={() => deleteProduct(product.id)}
-                              disabled={deletingProduct === product.id}
-                            >
-                              {deletingProduct === product.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <Package className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-4" />
-                <p className="text-muted-foreground mb-4">Aucun ingrédient défini</p>
-                <Button onClick={() => setShowAddProduct(true)} variant="outline">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Créer votre premier ingrédient
-                </Button>
               </div>
             )}
           </CardContent>
