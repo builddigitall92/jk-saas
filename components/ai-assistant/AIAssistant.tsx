@@ -95,7 +95,7 @@ interface MarginContext {
   breakEvenQuantity: number       // Seuil de rentabilité
 }
 
-type ConversationPhase = 
+type ConversationPhase =
   // Stock phases
   | 'stock_init'
   | 'stock_name'
@@ -183,7 +183,7 @@ const STOCK_CATEGORIES: { id: ProductCategory; label: string }[] = [
 
 const generateId = () => Math.random().toString(36).substring(2, 9)
 
-const formatCurrency = (value: number) => 
+const formatCurrency = (value: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value)
 
 const formatNumber = (value: number, decimals: number = 2) =>
@@ -202,59 +202,59 @@ const mapTypeToCategory = (type: ProductType): ProductCategory => {
 // Détecte si l'utilisateur a mentionné une catégorie dans sa réponse
 const extractUserCategory = (userInput: string): string | null => {
   const inputLower = userInput.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  
+
   // Patterns pour détecter les mentions de catégorie
   // Chercher "c'est un plat" ou "c'est une plat" ou juste "plat" après "c'est"
-  if (inputLower.match(/c'?est\s+(un|une)\s+plat/i) || 
-      inputLower.match(/c'?est\s+plat/i) ||
-      inputLower.match(/cat[ée]gorie\s+plat/i) ||
-      (inputLower.includes('c\'est') && inputLower.includes('plat') && !inputLower.includes('boisson'))) {
+  if (inputLower.match(/c'?est\s+(un|une)\s+plat/i) ||
+    inputLower.match(/c'?est\s+plat/i) ||
+    inputLower.match(/cat[ée]gorie\s+plat/i) ||
+    (inputLower.includes('c\'est') && inputLower.includes('plat') && !inputLower.includes('boisson'))) {
     return 'plat'
   }
-  
+
   // Chercher "c'est une boisson" ou "c'est un boisson" ou juste "boisson" après "c'est"
   if (inputLower.match(/c'?est\s+(un|une)\s+boisson/i) ||
-      inputLower.match(/c'?est\s+boisson/i) ||
-      inputLower.match(/cat[ée]gorie\s+boisson/i) ||
-      (inputLower.includes('c\'est') && inputLower.includes('boisson'))) {
+    inputLower.match(/c'?est\s+boisson/i) ||
+    inputLower.match(/cat[ée]gorie\s+boisson/i) ||
+    (inputLower.includes('c\'est') && inputLower.includes('boisson'))) {
     return 'boisson'
   }
-  
+
   // Chercher "c'est un dessert" ou "c'est une dessert"
   if (inputLower.match(/c'?est\s+(un|une)\s+dessert/i) ||
-      inputLower.match(/c'?est\s+dessert/i) ||
-      inputLower.match(/cat[ée]gorie\s+dessert/i)) {
+    inputLower.match(/c'?est\s+dessert/i) ||
+    inputLower.match(/cat[ée]gorie\s+dessert/i)) {
     return 'dessert'
   }
-  
+
   // Chercher "c'est une entrée" ou "c'est un entrée"
   if (inputLower.match(/c'?est\s+(un|une)\s+entr[ée]e/i) ||
-      inputLower.match(/c'?est\s+entr[ée]e/i) ||
-      inputLower.match(/cat[ée]gorie\s+entr[ée]e/i)) {
+    inputLower.match(/c'?est\s+entr[ée]e/i) ||
+    inputLower.match(/cat[ée]gorie\s+entr[ée]e/i)) {
     return 'entree'
   }
-  
+
   // Chercher "c'est une pizza" ou "c'est un pizza"
   if (inputLower.match(/c'?est\s+(un|une)\s+pizza/i) ||
-      inputLower.match(/c'?est\s+pizza/i) ||
-      inputLower.match(/cat[ée]gorie\s+pizza/i)) {
+    inputLower.match(/c'?est\s+pizza/i) ||
+    inputLower.match(/cat[ée]gorie\s+pizza/i)) {
     return 'pizza'
   }
-  
+
   // Chercher "c'est un burger" ou "c'est une burger"
   if (inputLower.match(/c'?est\s+(un|une)\s+burger/i) ||
-      inputLower.match(/c'?est\s+burger/i) ||
-      inputLower.match(/cat[ée]gorie\s+burger/i)) {
+    inputLower.match(/c'?est\s+burger/i) ||
+    inputLower.match(/cat[ée]gorie\s+burger/i)) {
     return 'burger'
   }
-  
+
   return null
 }
 
 // Détecte automatiquement la catégorie d'un menu item basée sur son nom
 const detectMenuCategory = (menuItemName: string): string => {
   const nameLower = menuItemName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  
+
   // Mots-clés pour les boissons
   const boissonKeywords = [
     'cola', 'coca', 'pepsi', 'fanta', 'sprite', 'orangina',
@@ -267,62 +267,62 @@ const detectMenuCategory = (menuItemName: string): string => {
     'cocktail', 'mojito', 'margarita', 'daiquiri',
     'dada cola', 'dada', 'cola', 'lemonade'
   ]
-  
+
   // Mots-clés pour les desserts
   const dessertKeywords = [
     'dessert', 'glace', 'ice cream', 'sorbet',
     'gâteau', 'cake', 'tarte', 'pie', 'mousse',
     'tiramisu', 'crème brûlée', 'flan', 'pudding'
   ]
-  
+
   // Mots-clés pour les entrées
   const entreeKeywords = [
     'entrée', 'entree', 'starter', 'appetizer',
     'salade', 'salad', 'soupe', 'soup', 'velouté',
     'terrine', 'rillettes', 'foie gras'
   ]
-  
+
   // Mots-clés pour les pizzas
   const pizzaKeywords = [
     'pizza', 'pizz'
   ]
-  
+
   // Mots-clés pour les burgers
   const burgerKeywords = [
     'burger', 'hamburger', 'cheeseburger'
   ]
-  
+
   // Vérifier les catégories dans l'ordre de spécificité
   for (const keyword of boissonKeywords) {
     if (nameLower.includes(keyword)) {
       return 'boisson'
     }
   }
-  
+
   for (const keyword of dessertKeywords) {
     if (nameLower.includes(keyword)) {
       return 'dessert'
     }
   }
-  
+
   for (const keyword of entreeKeywords) {
     if (nameLower.includes(keyword)) {
       return 'entree'
     }
   }
-  
+
   for (const keyword of pizzaKeywords) {
     if (nameLower.includes(keyword)) {
       return 'pizza'
     }
   }
-  
+
   for (const keyword of burgerKeywords) {
     if (nameLower.includes(keyword)) {
       return 'burger'
     }
   }
-  
+
   // Par défaut: plat
   return 'plat'
 }
@@ -379,7 +379,7 @@ interface AIAssistantProps {
 export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  
+
   // Hooks
   const { addProductAndStock, products, stocks, fetchStocks } = useStock()
   const { createMenuItem, addIngredient, updateMenuItem, products: menuProducts, fetchMenuItems, menuItems } = useMenuItems()
@@ -402,7 +402,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
   const [phase, setPhase] = useState<ConversationPhase>(
     mode === 'stock' ? 'stock_init' : mode === 'menu' ? 'menu_init' : mode === 'team' ? 'team_init' : 'margin_init'
   )
-  
+
   // Context
   const [stockCtx, setStockCtx] = useState<StockContext>({
     name: null,
@@ -419,7 +419,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
     category: null,
     existingProductId: null,
   })
-  
+
   const [recipeCtx, setRecipeCtx] = useState<RecipeContext>({
     menuItemName: null,
     menuItemId: null,
@@ -431,7 +431,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
   })
 
   const [currentIngredient, setCurrentIngredient] = useState<Partial<RecipeIngredient & { stockContext?: Partial<StockContext> }>>({})
-  
+
   const [marginCtx, setMarginCtx] = useState<MarginContext>({
     productName: null,
     productId: null,
@@ -448,7 +448,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
     potentialProfit: 0,
     breakEvenQuantity: 0,
   })
-  
+
   // Menu analysis state
   const [menuAnalysisIndex, setMenuAnalysisIndex] = useState(0)
 
@@ -535,7 +535,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
     switch (phase) {
       case 'stock_name': {
         // Check for existing product
-        const existing = products.find(p => 
+        const existing = products.find(p =>
           p.name.toLowerCase() === lowerInput ||
           p.name.toLowerCase().includes(lowerInput) ||
           lowerInput.includes(p.name.toLowerCase())
@@ -565,20 +565,20 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           const existing = products.find(p => p.id === stockCtx.existingProductId)
           if (existing) {
             const productType = existing.category === 'frais' ? 'fresh' : existing.category === 'surgele' ? 'frozen' : 'dry'
-            
+
             setStockCtx({
               ...stockCtx,
               productType,
               purchaseUnit: existing.unit,
               category: existing.category,
             })
-            
+
             // Intelligent question based on product type
-            const unitLabel = existing.unit === 'kg' ? 'kilos' 
-              : existing.unit === 'L' ? 'litres' 
-              : existing.unit === 'g' ? 'grammes' 
-              : 'unités'
-            
+            const unitLabel = existing.unit === 'kg' ? 'kilos'
+              : existing.unit === 'L' ? 'litres'
+                : existing.unit === 'g' ? 'grammes'
+                  : 'unités'
+
             ask(
               `Parfait ! On réapprovisionne **"${existing.name}"** 📦\n\n` +
               `La dernière fois, tu l'achetais en ${unitLabel}.\n\n` +
@@ -597,18 +597,18 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         }
         break
       }
-      
+
       case 'stock_restock_quantity': {
         // Smart parsing: detect if it's "quantity at price" or "packs of units at price"
         const numbers = extractNumbers(input)
         const hasPackKeyword = detectPackaging(input)
-        
+
         if (hasPackKeyword && numbers.length >= 3) {
           // Format: "3 packs de 24 à 45€"
           const [packs, unitsPerPack, price] = numbers
           const totalUnits = packs * unitsPerPack
           const unitCost = price / totalUnits
-          
+
           setStockCtx({
             ...stockCtx,
             isPackaged: true,
@@ -619,7 +619,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
             unitCost,
             purchaseUnit: 'pièces',
           })
-          
+
           ask(
             `Compris ! 📊\n\n` +
             `• ${packs} packs × ${unitsPerPack} = **${totalUnits} unités**\n` +
@@ -633,7 +633,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           const [qty, price] = numbers
           const unit = stockCtx.purchaseUnit || 'pièces'
           const unitCost = price / qty
-          
+
           setStockCtx({
             ...stockCtx,
             isPackaged: false,
@@ -641,7 +641,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
             totalPrice: price,
             unitCost,
           })
-          
+
           ask(
             `Parfait ! 📊\n\n` +
             `• Quantité : **${formatNumber(qty, 0)} ${unit}**\n` +
@@ -654,7 +654,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           // Only quantity, need price
           const qty = numbers[0]
           setStockCtx({ ...stockCtx, totalQuantity: qty })
-          
+
           ask(
             `OK, ${formatNumber(qty, 0)} ${stockCtx.purchaseUnit || 'unités'}.\n\n` +
             `**Tu as payé combien au total ?**\n\n` +
@@ -671,7 +671,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
       }
 
       case 'stock_type': {
-        const type = PRODUCT_TYPES.find(t => 
+        const type = PRODUCT_TYPES.find(t =>
           lowerInput.includes(t.label.toLowerCase()) ||
           lowerInput.includes(t.id) ||
           (t.id === 'fresh' && lowerInput.includes('frais')) ||
@@ -735,7 +735,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
       case 'stock_unit': {
         let unit: StockUnit | null = null
         let isPackaged = false
-        
+
         if (lowerInput.includes('kilo') || lowerInput.includes('kg')) unit = 'kg'
         else if (lowerInput.includes('gramme') || lowerInput.includes(' g')) unit = 'g'
         else if (lowerInput.includes('litre') || lowerInput.includes(' l')) unit = 'L'
@@ -765,15 +765,15 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         }
 
         // Smart question about quantity based on unit
-        const unitLabel = unit === 'kg' ? 'kilos' 
-          : unit === 'g' ? 'grammes' 
-          : unit === 'L' ? 'litres' 
-          : 'pièces'
-        
-        const examples = unit === 'kg' ? '10, 25, 5.5' 
-          : unit === 'g' ? '500, 1000, 250' 
-          : unit === 'L' ? '5, 10, 20'
-          : '50, 100, 24'
+        const unitLabel = unit === 'kg' ? 'kilos'
+          : unit === 'g' ? 'grammes'
+            : unit === 'L' ? 'litres'
+              : 'pièces'
+
+        const examples = unit === 'kg' ? '10, 25, 5.5'
+          : unit === 'g' ? '500, 1000, 250'
+            : unit === 'L' ? '5, 10, 20'
+              : '50, 100, 24'
 
         ask(
           `**Combien de ${unitLabel} as-tu acheté ?**\n\n_Juste le nombre (ex: ${examples})_`
@@ -819,11 +819,11 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
       case 'stock_pack_details': {
         // Parse "3 packs de 24" or "2 cartons de 6"
         const numbers = extractNumbers(input)
-        
+
         if (numbers.length >= 2) {
           const [packs, unitsPerPack] = numbers
           const totalUnits = packs * unitsPerPack
-          
+
           setStockCtx({
             ...stockCtx,
             numberOfPacks: packs,
@@ -851,7 +851,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
       case 'stock_quantity': {
         const quantity = parseNumber(input)
-        
+
         if (!quantity || quantity <= 0) {
           ask(`Je n'ai pas compris la quantité. Donne-moi juste un nombre.\n\n_Ex: 10, 25, 100..._`)
           return
@@ -869,7 +869,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
       case 'stock_price': {
         const price = parseNumber(input)
-        
+
         if (!price || price <= 0) {
           ask(`Je n'ai pas compris le prix. Donne-moi juste un nombre en euros.\n\n_Ex: 45, 89.90, 125_`)
           return
@@ -878,13 +878,13 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         // Calculate unit cost intelligently
         const totalQty = stockCtx.totalQuantity || 1
         const unitCost = price / totalQty
-        
+
         setStockCtx({ ...stockCtx, totalPrice: price, unitCost })
 
         // Build smart summary
         const unit = stockCtx.purchaseUnit || 'unités'
         let summary = `Prix total : **${formatCurrency(price)}** ✓\n\n`
-        
+
         if (stockCtx.isPackaged && stockCtx.numberOfPacks && stockCtx.unitsPerPack) {
           const costPerPack = price / stockCtx.numberOfPacks
           summary += `📊 **Calculs automatiques :**\n`
@@ -904,7 +904,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
       case 'stock_supplier': {
         const skipWords = ['aucun', 'non', 'pas', 'skip', 'passer', 'rien', 'je sais pas']
         const hasSupplier = !skipWords.some(w => lowerInput.includes(w))
-        
+
         if (!hasSupplier || trimmed.length <= 1) {
           // Pas de fournisseur, passer à la catégorie
           const suggestedCategory = STOCK_CATEGORIES.find(c => c.id === stockCtx.category)
@@ -923,7 +923,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
         // Chercher les fournisseurs correspondants
         const supplierName = trimmed.toLowerCase()
-        const matchingSuppliers = suppliers.filter(s => 
+        const matchingSuppliers = suppliers.filter(s =>
           s.name.toLowerCase().includes(supplierName) ||
           supplierName.includes(s.name.toLowerCase())
         )
@@ -1013,7 +1013,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         }
 
         // Chercher le fournisseur sélectionné
-        const selectedSupplier = suppliers.find(s => 
+        const selectedSupplier = suppliers.find(s =>
           s.name.toLowerCase() === trimmed.toLowerCase() ||
           trimmed.toLowerCase().includes(s.name.toLowerCase())
         )
@@ -1037,11 +1037,11 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
       }
 
       case 'stock_category': {
-        const category = STOCK_CATEGORIES.find(c => 
+        const category = STOCK_CATEGORIES.find(c =>
           lowerInput.includes(c.label.toLowerCase()) ||
           lowerInput.includes(c.id)
         )
-        
+
         const finalCategory = category?.id || stockCtx.category || 'sec'
         setStockCtx({ ...stockCtx, category: finalCategory })
 
@@ -1057,16 +1057,16 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         summary += `• **Produit :** ${stockCtx.name}\n`
         summary += `• **Type :** ${type?.emoji} ${type?.label}\n`
         summary += `• **Catégorie :** ${cat?.label}\n`
-        
+
         if (stockCtx.isPackaged && stockCtx.numberOfPacks && stockCtx.unitsPerPack) {
           summary += `• **Quantité :** ${stockCtx.numberOfPacks} packs × ${stockCtx.unitsPerPack} = **${qty} unités**\n`
         } else {
           summary += `• **Quantité :** ${formatNumber(qty, 0)} ${unit}\n`
         }
-        
+
         summary += `• **Prix payé :** ${formatCurrency(price)}\n`
         summary += `• **Coût unitaire :** ${formatCurrency(unitCost)}/${unit === 'pièces' ? 'unité' : unit}\n`
-        
+
         if (stockCtx.supplier) {
           summary += `• **Fournisseur :** ${stockCtx.supplier}\n`
         }
@@ -1087,7 +1087,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
         if (lowerInput.includes('confirmer') || lowerInput.includes('oui') || lowerInput.includes('✅')) {
           setIsProcessing(true)
-          
+
           try {
             const result = await addProductAndStock(
               {
@@ -1099,13 +1099,13 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
               {
                 quantity: stockCtx.totalQuantity!,
                 unit_price: stockCtx.unitCost!,
-                supplier_name: stockCtx.supplier || undefined,
+                supplier_id: stockCtx.supplier_id || null,
               }
             )
 
             if (result.success) {
               await fetchStocks()
-              
+
               ask(
                 `✅ **"${stockCtx.name}" ajouté au stock avec succès !**\n\n` +
                 `Tu utilises ce produit dans un plat de ton menu ?\n\n` +
@@ -1160,7 +1160,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
       case 'stock_menu_category': {
         let selectedCategory = 'plat' // Par défaut
-        
+
         if (lowerInput.includes('boisson') || lowerInput.includes('drink')) {
           selectedCategory = 'boisson'
         } else if (lowerInput.includes('dessert')) {
@@ -1174,7 +1174,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         } else if (lowerInput.includes('plat')) {
           selectedCategory = 'plat'
         }
-        
+
         setRecipeCtx({
           ...recipeCtx,
           category: selectedCategory,
@@ -1194,7 +1194,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
       case 'stock_menu_quantity': {
         const quantity = parseNumber(input)
-        
+
         if (!quantity || quantity <= 0) {
           ask(`Donne-moi juste un nombre.\n\n_Ex: 150, 30, 200..._`)
           return
@@ -1232,7 +1232,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
       case 'stock_menu_price': {
         const price = parseNumber(input)
-        
+
         if (!price || price <= 0) {
           ask(`Donne-moi un prix en euros.\n\n_Ex: 12.90, 15, 8.50_`)
           return
@@ -1245,7 +1245,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         setRecipeCtx({ ...recipeCtx, sellingPrice: price })
 
         const marginEmoji = marginPercent >= 70 ? '🟢' : marginPercent >= 50 ? '🟡' : '🔴'
-        
+
         let msg = `📊 **Analyse de "${recipeCtx.menuItemName}" :**\n\n`
         msg += `• Coût matière : ${formatCurrency(foodCost)}\n`
         msg += `• Prix de vente : ${formatCurrency(price)}\n`
@@ -1275,7 +1275,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           const foodCost = recipeCtx.totalFoodCost
           const price70 = foodCost / 0.3
           const price65 = foodCost / 0.35
-          
+
           ask(
             `💡 **Prix suggérés pour maximiser ta marge :**\n\n` +
             `• Pour **70% de marge** → ${formatCurrency(price70)}\n` +
@@ -1294,13 +1294,13 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
         if (lowerInput.includes('créer') || lowerInput.includes('✅') || lowerInput.includes('garder') || priceMatch) {
           setIsProcessing(true)
-          
+
           try {
             const finalPrice = priceMatch || recipeCtx.sellingPrice!
-            
+
             // Utiliser la catégorie spécifiée par l'utilisateur, sinon détecter automatiquement
             const finalCategory = recipeCtx.category || detectMenuCategory(recipeCtx.menuItemName!)
-            
+
             const result = await createMenuItem({
               name: recipeCtx.menuItemName!,
               category: finalCategory,
@@ -1310,7 +1310,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
             if (result.success && result.data) {
               const menuItemId = (result.data as { id: string }).id
-              
+
               const product = products.find(p => p.name === stockCtx.name)
               if (product && recipeCtx.ingredients[0]) {
                 await addIngredient({
@@ -1322,9 +1322,9 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
               }
 
               await fetchMenuItems()
-              
+
               const margin = ((finalPrice - recipeCtx.totalFoodCost) / finalPrice) * 100
-              
+
               ask(
                 `✅ **"${recipeCtx.menuItemName}" créé dans le Menu !**\n\n` +
                 `• Prix : ${formatCurrency(finalPrice)}\n` +
@@ -1339,7 +1339,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           } finally {
             setIsProcessing(false)
           }
-          
+
           setPhase('done')
         }
         break
@@ -1376,7 +1376,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
       case 'menu_category': {
         let selectedCategory = 'plat' // Par défaut
-        
+
         if (lowerInput.includes('boisson') || lowerInput.includes('drink')) {
           selectedCategory = 'boisson'
         } else if (lowerInput.includes('dessert')) {
@@ -1390,7 +1390,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         } else if (lowerInput.includes('plat')) {
           selectedCategory = 'plat'
         }
-        
+
         setRecipeCtx({
           ...recipeCtx,
           category: selectedCategory,
@@ -1408,7 +1408,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
       case 'menu_ingredient_name': {
         // Smart search: check for exact match, partial match, or similar names
         const exactMatch = products.find(p => p.name.toLowerCase() === lowerInput)
-        const partialMatch = products.find(p => 
+        const partialMatch = products.find(p =>
           p.name.toLowerCase().includes(lowerInput) ||
           lowerInput.includes(p.name.toLowerCase())
         )
@@ -1417,16 +1417,16 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         if (existing) {
           // Get the unit cost from the stock if available
           const baseUnit = getBaseUnit(existing.unit)
-          const unitLabel = baseUnit === 'g' ? 'grammes' 
-            : baseUnit === 'ml' ? 'millilitres' 
-            : existing.unit === 'pièces' ? 'unité(s)'
-            : baseUnit
+          const unitLabel = baseUnit === 'g' ? 'grammes'
+            : baseUnit === 'ml' ? 'millilitres'
+              : existing.unit === 'pièces' ? 'unité(s)'
+                : baseUnit
 
           // Récupérer le prix depuis le stock
           const stockPrice = getStockPriceForProduct(existing.id)
           let costPerUnit = 0
           let priceInfo = ''
-          
+
           if (stockPrice && stockPrice.unitPrice > 0) {
             // Calculer le coût par unité de base (g, ml, pièce)
             // Ex: 1.79€/kg → 0.00179€/g
@@ -1436,7 +1436,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           } else {
             priceInfo = `\n⚠️ _Prix non défini dans le stock - ajoute du stock avec un prix pour calculer le coût_`
           }
-          
+
           setCurrentIngredient({
             stockItemId: existing.id,
             name: existing.name,
@@ -1456,7 +1456,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           setPhase('menu_recipe_quantity')
         } else {
           setCurrentIngredient({ name: trimmed, stockContext: {} })
-          
+
           ask(
             `🆕 **"${trimmed}"** n'est pas dans ton stock.\n\n` +
             `On va l'ajouter en même temps que la recette !\n\n` +
@@ -1469,7 +1469,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
       }
 
       case 'menu_ingredient_type': {
-        const type = PRODUCT_TYPES.find(t => 
+        const type = PRODUCT_TYPES.find(t =>
           lowerInput.includes(t.label.toLowerCase())
         )
 
@@ -1501,7 +1501,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
       case 'menu_ingredient_unit': {
         let unit: StockUnit | null = null
-        
+
         if (lowerInput.includes('kilo') || lowerInput.includes('kg')) unit = 'kg'
         else if (lowerInput.includes('gramme') || lowerInput.includes(' g')) unit = 'g'
         else if (lowerInput.includes('litre') || lowerInput.includes(' l')) unit = 'L'
@@ -1565,7 +1565,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
       case 'menu_ingredient_pack_details': {
         const numbers = extractNumbers(input)
-        
+
         if (numbers.length >= 3) {
           const [packs, unitsPerPack, price] = numbers
           const totalUnits = packs * unitsPerPack
@@ -1605,7 +1605,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
       case 'menu_ingredient_quantity': {
         const numbers = extractNumbers(input)
-        
+
         if (numbers.length >= 2) {
           const [qty, price] = numbers
           const purchaseUnit = currentIngredient.stockContext?.purchaseUnit || 'pièces'
@@ -1640,7 +1640,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
       case 'menu_recipe_quantity': {
         const quantity = parseNumber(input)
-        
+
         if (!quantity || quantity < 0) {
           ask(`Je n'ai pas compris. Donne-moi juste un nombre.\n\n_Ex: 150, 30, 2, 0.5_`)
           return
@@ -1648,23 +1648,23 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
         // Calculate cost per base unit
         let costPerUnit = currentIngredient.costPerUnit || 0
-        
+
         // If we have stock context from creating a new product, use that
         if (currentIngredient.stockContext?.unitCost && currentIngredient.stockContext?.purchaseUnit) {
-          costPerUnit = currentIngredient.stockContext.unitCost / 
-                        getConversionFactor(currentIngredient.stockContext.purchaseUnit)
+          costPerUnit = currentIngredient.stockContext.unitCost /
+            getConversionFactor(currentIngredient.stockContext.purchaseUnit)
         }
-        
+
         // If cost is still 0 and we have an existing product, we need to estimate
         // For now, we'll set a placeholder and let the user know
         const hasCost = costPerUnit > 0
-        
+
         const costInRecipe = quantity * costPerUnit
         const unit = currentIngredient.unit || 'g'
-        const unitLabel = unit === 'g' ? 'grammes' 
-          : unit === 'ml' ? 'ml' 
-          : unit === 'pièces' ? 'unité(s)' 
-          : unit
+        const unitLabel = unit === 'g' ? 'grammes'
+          : unit === 'ml' ? 'ml'
+            : unit === 'pièces' ? 'unité(s)'
+              : unit
 
         const newIngredient: RecipeIngredient = {
           stockItemId: currentIngredient.stockItemId || null,
@@ -1715,14 +1715,14 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         // Build response
         let response = `✅ **"${newIngredient.name}"** ajouté !\n\n`
         response += `• Quantité : **${quantity} ${unitLabel}** par portion\n`
-        
+
         if (hasCost) {
           response += `• Coût : **${formatCurrency(costInRecipe)}**\n\n`
           response += `📊 **Coût matière cumulé : ${formatCurrency(newTotalCost)}**\n\n`
         } else {
           response += `• _(Coût à calculer - prix non disponible)_\n\n`
         }
-        
+
         response += `**Ajouter un autre ingrédient ?**`
 
         ask(response, ['➕ Oui, ajouter', '✓ Non, passer au prix'])
@@ -1731,12 +1731,12 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
       }
 
       case 'menu_more_ingredients': {
-        const wantsMore = lowerInput.includes('ajouter') || 
-                          lowerInput.includes('oui') || 
-                          lowerInput.includes('➕') ||
-                          lowerInput.includes('autre') ||
-                          lowerInput.includes('suivant')
-        
+        const wantsMore = lowerInput.includes('ajouter') ||
+          lowerInput.includes('oui') ||
+          lowerInput.includes('➕') ||
+          lowerInput.includes('autre') ||
+          lowerInput.includes('suivant')
+
         if (wantsMore) {
           ask(
             `**Quel est l'ingrédient suivant ?**\n\n` +
@@ -1746,7 +1746,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         } else {
           const ingredientCount = recipeCtx.ingredients.length
           const totalCost = recipeCtx.totalFoodCost
-          
+
           ask(
             `Parfait ! **${ingredientCount} ingrédient${ingredientCount > 1 ? 's' : ''}** pour "${recipeCtx.menuItemName}"\n\n` +
             `📊 Coût matière estimé : **${formatCurrency(totalCost)}**\n\n` +
@@ -1760,7 +1760,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
       case 'menu_selling_price': {
         const price = parseNumber(input)
-        
+
         if (!price || price <= 0) {
           ask(`Je n'ai pas compris le prix. Donne-moi un nombre en euros.\n\n_Ex: 12.90, 15, 8.50_`)
           return
@@ -1774,25 +1774,25 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         setRecipeCtx({ ...recipeCtx, sellingPrice: price })
 
         // Detailed margin analysis
-        const marginEmoji = marginPercent >= 70 ? '🟢 Excellente' 
-          : marginPercent >= 60 ? '🟡 Correcte' 
-          : marginPercent >= 50 ? '🟠 Moyenne'
-          : '🔴 Faible'
+        const marginEmoji = marginPercent >= 70 ? '🟢 Excellente'
+          : marginPercent >= 60 ? '🟡 Correcte'
+            : marginPercent >= 50 ? '🟠 Moyenne'
+              : '🔴 Faible'
 
         // Build detailed summary
         let summary = `📋 **Récapitulatif : "${recipeCtx.menuItemName}"**\n\n`
-        
+
         if (recipeCtx.ingredients.length > 0) {
           summary += `**📝 Ingrédients (${recipeCtx.ingredients.length}) :**\n`
           recipeCtx.ingredients.forEach(ing => {
-            const costDisplay = ing.costInRecipe > 0 
-              ? formatCurrency(ing.costInRecipe) 
+            const costDisplay = ing.costInRecipe > 0
+              ? formatCurrency(ing.costInRecipe)
               : '_à calculer_'
             summary += `  • ${ing.name}: ${ing.quantityUsed} ${ing.unit} → ${costDisplay}\n`
           })
           summary += `\n`
         }
-        
+
         summary += `**💰 Analyse financière :**\n`
         summary += `  • Coût matière : ${formatCurrency(foodCost)} (${foodCostPercent.toFixed(0)}% du prix)\n`
         summary += `  • Prix de vente : ${formatCurrency(price)}\n`
@@ -1831,7 +1831,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           const price75 = foodCost / 0.25
           const price70 = foodCost / 0.3
           const price65 = foodCost / 0.35
-          
+
           ask(
             `💡 **Prix suggérés selon la marge souhaitée :**\n\n` +
             `• Pour **75% de marge** → ${formatCurrency(price75)}\n` +
@@ -1850,22 +1850,22 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           setRecipeCtx({ ...recipeCtx, sellingPrice: priceMatch })
         }
 
-        const shouldCreate = lowerInput.includes('créer') || 
-                            lowerInput.includes('✅') || 
-                            lowerInput.includes('garder') ||
-                            lowerInput.includes('oui') ||
-                            priceMatch
+        const shouldCreate = lowerInput.includes('créer') ||
+          lowerInput.includes('✅') ||
+          lowerInput.includes('garder') ||
+          lowerInput.includes('oui') ||
+          priceMatch
 
         if (shouldCreate) {
           setIsProcessing(true)
-          
+
           try {
             const finalPrice = priceMatch || recipeCtx.sellingPrice!
-            
+
             // Create the menu item
             // Utiliser la catégorie spécifiée par l'utilisateur, sinon détecter automatiquement
             const finalCategory = recipeCtx.category || detectMenuCategory(recipeCtx.menuItemName!)
-            
+
             const result = await createMenuItem({
               name: recipeCtx.menuItemName!,
               category: finalCategory,
@@ -1875,11 +1875,11 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
             if (result.success && result.data) {
               const menuItemId = (result.data as { id: string }).id
-              
+
               // Add all ingredients to the recipe
               let addedIngredients = 0
               for (const ing of recipeCtx.ingredients) {
-                const product = products.find(p => 
+                const product = products.find(p =>
                   p.name.toLowerCase() === ing.name.toLowerCase() ||
                   p.id === ing.stockItemId
                 )
@@ -1895,13 +1895,13 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
               }
 
               await fetchMenuItems()
-              
-              const margin = recipeCtx.totalFoodCost > 0 
-                ? ((finalPrice - recipeCtx.totalFoodCost) / finalPrice) * 100 
+
+              const margin = recipeCtx.totalFoodCost > 0
+                ? ((finalPrice - recipeCtx.totalFoodCost) / finalPrice) * 100
                 : 100
-              
+
               const marginEmoji = margin >= 70 ? '🟢' : margin >= 60 ? '🟡' : '🔴'
-              
+
               ask(
                 `🎉 **"${recipeCtx.menuItemName}" créé avec succès !**\n\n` +
                 `📊 **Résumé :**\n` +
@@ -1918,7 +1918,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           } finally {
             setIsProcessing(false)
           }
-          
+
           setPhase('done')
         }
         break
@@ -2097,7 +2097,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
       case 'margin_select_product': {
         const wantsMenu = lowerInput.includes('menu') || lowerInput.includes('🍽️')
         const wantsProduct = lowerInput.includes('produit') || lowerInput.includes('📦')
-        
+
         if (wantsMenu) {
           // Analyser tout le menu
           setIsProcessing(true)
@@ -2110,7 +2110,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           // The actual analysis will happen in the next phase handler
           return
         }
-        
+
         if (wantsProduct) {
           if (products.length === 0) {
             ask(
@@ -2141,7 +2141,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
       case 'margin_has_product': {
         // Check if product exists in stock
-        const existing = products.find(p => 
+        const existing = products.find(p =>
           p.name.toLowerCase().includes(lowerInput) ||
           lowerInput.includes(p.name.toLowerCase())
         )
@@ -2152,7 +2152,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
             productName: existing.name,
             productId: existing.id,
           })
-          
+
           ask(
             `✅ Produit trouvé : **"${existing.name}"**\n\n` +
             `**Quel est ton prix d'achat unitaire (coût) ?**\n\n` +
@@ -2165,7 +2165,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
             productName: trimmed,
             productId: null,
           })
-          
+
           ask(
             `OK, on analyse **"${trimmed}"** 📊\n\n` +
             `**Quel est ton coût d'achat (prix fournisseur) par unité ?**\n\n` +
@@ -2178,7 +2178,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
       case 'margin_cost_price': {
         const cost = parseNumber(input)
-        
+
         if (!cost || cost <= 0) {
           ask("Je n'ai pas compris. Donne-moi le coût en euros.\n\n_Ex: 2.50, 1.80, 0.45_")
           return
@@ -2197,7 +2197,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
       case 'margin_selling_price': {
         const price = parseNumber(input)
-        
+
         if (!price || price <= 0) {
           ask("Je n'ai pas compris. Donne-moi le prix de vente en euros.\n\n_Ex: 7.50, 12.90_")
           return
@@ -2231,7 +2231,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
       case 'margin_quantity_sold': {
         const qty = parseNumber(input)
-        
+
         if (!qty || qty < 0) {
           ask("Donne-moi une estimation du nombre de ventes par semaine.\n\n_Ex: 50, 100, 200_")
           return
@@ -2241,7 +2241,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         const price = marginCtx.currentSellingPrice || 0
         const marginAmount = marginCtx.currentMarginAmount
         const marginPercent = marginCtx.currentMarginPercent
-        
+
         const weeklyRevenue = price * qty
         const weeklyCost = cost * qty
         const weeklyProfit = marginAmount * qty
@@ -2264,12 +2264,12 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         analysis += `• Coût : ${formatCurrency(cost)}\n`
         analysis += `• Prix : ${formatCurrency(price)}\n`
         analysis += `• Marge : ${formatCurrency(marginAmount)} (${marginPercent.toFixed(1)}%) ${marginEmoji}\n\n`
-        
+
         analysis += `**📊 Par semaine (${qty} ventes) :**\n`
         analysis += `• Chiffre d'affaires : ${formatCurrency(weeklyRevenue)}\n`
         analysis += `• Coût total : ${formatCurrency(weeklyCost)}\n`
         analysis += `• **Bénéfice : ${formatCurrency(weeklyProfit)}**\n\n`
-        
+
         analysis += `**📅 Projection mensuelle :**\n`
         analysis += `• **Bénéfice estimé : ${formatCurrency(monthlyProfit)}**/mois\n\n`
 
@@ -2277,7 +2277,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           const targetPrice70 = cost / 0.3
           const targetPrice65 = cost / 0.35
           const additionalProfit70 = (targetPrice70 - price) * qty * 4.33
-          
+
           analysis += `💡 **Optimisation suggérée :**\n`
           analysis += `• Prix à ${formatCurrency(targetPrice70)} = 70% de marge (+${formatCurrency(additionalProfit70)}/mois)\n`
           analysis += `• Prix à ${formatCurrency(targetPrice65)} = 65% de marge\n\n`
@@ -2306,7 +2306,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           const price70 = cost / 0.3
           const price65 = cost / 0.35
           const qty = marginCtx.quantitySold || 0
-          
+
           const profit75 = (price75 - cost) * qty * 4.33
           const profit70 = (price70 - cost) * qty * 4.33
           const profit65 = (price65 - cost) * qty * 4.33
@@ -2346,7 +2346,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
       case 'margin_target_margin': {
         const target = parseNumber(input)
-        
+
         if (!target || target <= 0 || target >= 100) {
           ask("Donne-moi un pourcentage entre 1 et 99.\n\n_Ex: 70, 65, 75_")
           return
@@ -2356,7 +2356,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         const targetPrice = cost / (1 - target / 100)
         const currentPrice = marginCtx.currentSellingPrice || 0
         const qty = marginCtx.quantitySold || 0
-        
+
         const currentProfit = (currentPrice - cost) * qty * 4.33
         const newProfit = (targetPrice - cost) * qty * 4.33
         const profitDiff = newProfit - currentProfit
@@ -2390,12 +2390,12 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
       case 'margin_optimize': {
         const newPrice = parseNumber(input)
-        
+
         if (lowerInput.includes('personnalisé') || lowerInput.includes('custom')) {
           ask("**Entre ton prix personnalisé en euros :**")
           return
         }
-        
+
         if (!newPrice || newPrice <= 0) {
           ask("Donne-moi un prix en euros.\n\n_Ex: 8.50, 12.90_")
           return
@@ -2404,7 +2404,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         const cost = marginCtx.costPrice || 0
         const currentPrice = marginCtx.currentSellingPrice || 0
         const qty = marginCtx.quantitySold || 0
-        
+
         const newMarginAmount = newPrice - cost
         const newMarginPercent = (newMarginAmount / newPrice) * 100
         const newProfit = newMarginAmount * qty * 4.33
@@ -2489,10 +2489,10 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
               const result = await updateMenuItem(marginCtx.productId, {
                 selling_price: newPrice
               })
-              
+
               if (result.success) {
                 await fetchMenuItems() // Refresh the data
-                
+
                 ask(
                   `✅ **Prix mis à jour avec succès !**\n\n` +
                   `**"${marginCtx.productName}"**\n` +
@@ -2543,7 +2543,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
       case 'margin_menu_analysis': {
         // This phase is triggered after fetching menu items
         // Display actual menu analysis with real data
-        
+
         if (menuItems.length === 0) {
           ask(
             "🍽️ Tu n'as pas encore de plats dans ton menu.\n\n" +
@@ -2561,10 +2561,10 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         const lowMarginItems = menuItems.filter(item => item.actual_margin_percent < 60)
         const highMarginItems = menuItems.filter(item => item.actual_margin_percent >= 70)
         const noIngredientItems = menuItems.filter(item => item.ingredients.length === 0)
-        
+
         // Build summary
         let summary = `🍽️ **Analyse de ton menu (${totalItems} plats)**\n\n`
-        
+
         // Global stats
         const avgMarginEmoji = avgMargin >= 70 ? '🟢' : avgMargin >= 60 ? '🟡' : '🔴'
         summary += `📊 **Statistiques globales :**\n`
@@ -2617,7 +2617,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         }
 
         // Find the selected menu item
-        const selectedItem = menuItems.find(item => 
+        const selectedItem = menuItems.find(item =>
           item.name.toLowerCase() === lowerInput ||
           item.name.toLowerCase().includes(lowerInput) ||
           lowerInput.includes(item.name.toLowerCase())
@@ -2647,10 +2647,10 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         })
 
         // Build detailed analysis
-        const marginEmoji = selectedItem.actual_margin_percent >= 70 ? '🟢 Excellente' 
-          : selectedItem.actual_margin_percent >= 60 ? '🟡 Correcte' 
-          : selectedItem.actual_margin_percent >= 50 ? '🟠 Moyenne'
-          : '🔴 Faible'
+        const marginEmoji = selectedItem.actual_margin_percent >= 70 ? '🟢 Excellente'
+          : selectedItem.actual_margin_percent >= 60 ? '🟡 Correcte'
+            : selectedItem.actual_margin_percent >= 50 ? '🟠 Moyenne'
+              : '🔴 Faible'
 
         let detail = `🔍 **Analyse détaillée : "${selectedItem.name}"**\n\n`
 
@@ -2679,7 +2679,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           const price70 = selectedItem.cost_price / 0.3
           const price65 = selectedItem.cost_price / 0.35
           const priceDiff = price70 - Number(selectedItem.selling_price)
-          
+
           detail += `💡 **Optimisation suggérée :**\n`
           detail += `• Pour 70% de marge → **${formatCurrency(price70)}** (+${formatCurrency(priceDiff)})\n`
           detail += `• Pour 65% de marge → **${formatCurrency(price65)}**\n\n`
@@ -2721,7 +2721,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           // Show optimization options
           const cost = marginCtx.costPrice || 0
           const currentPrice = marginCtx.currentSellingPrice || 0
-          
+
           const price75 = cost / 0.25
           const price70 = cost / 0.3
           const price65 = cost / 0.35
@@ -2879,7 +2879,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
     })
     setCurrentIngredient({})
     setMenuAnalysisIndex(0)
-    
+
     // Re-initialize after a tick
     setTimeout(() => {
       if (mode === 'stock') {
@@ -2959,9 +2959,9 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
                 )}
               </div>
               <div className="ai-message-content">
-                <div 
+                <div
                   className="ai-message-text"
-                  dangerouslySetInnerHTML={{ 
+                  dangerouslySetInnerHTML={{
                     __html: message.content
                       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                       .replace(/_(.*?)_/g, '<em>$1</em>')
@@ -2985,7 +2985,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
               </div>
             </div>
           ))}
-          
+
           {isProcessing && (
             <div className="ai-message ai-message-assistant">
               <div className="ai-message-avatar">
@@ -3000,7 +3000,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
               </div>
             </div>
           )}
-          
+
           <div ref={messagesEndRef} />
         </div>
 

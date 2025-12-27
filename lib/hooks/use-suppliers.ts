@@ -59,7 +59,7 @@ export function useSuppliers() {
           // Mettre à jour directement le state local avec les nouvelles valeurs
           // Le trigger a déjà mis à jour total_depense et nb_factures
           const updatedSupplier = payload.new as Supplier
-          setSuppliers(prev => 
+          setSuppliers(prev =>
             prev.map(s => s.id === updatedSupplier.id ? updatedSupplier : s)
           )
         }
@@ -73,7 +73,7 @@ export function useSuppliers() {
         },
         (payload) => {
           const newSupplier = payload.new as Supplier
-          setSuppliers(prev => [...prev, newSupplier].sort((a, b) => 
+          setSuppliers(prev => [...prev, newSupplier].sort((a, b) =>
             a.name.localeCompare(b.name)
           ))
         }
@@ -115,9 +115,9 @@ export function useSuppliers() {
                 .select('*')
                 .eq('id', supplierId)
                 .single()
-              
+
               if (updatedSupplier) {
-                setSuppliers(prev => 
+                setSuppliers(prev =>
                   prev.map(s => s.id === updatedSupplier.id ? updatedSupplier as Supplier : s)
                 )
               }
@@ -131,9 +131,9 @@ export function useSuppliers() {
                 .select('*')
                 .eq('id', supplierId)
                 .single()
-              
+
               if (updatedSupplier) {
-                setSuppliers(prev => 
+                setSuppliers(prev =>
                   prev.map(s => s.id === updatedSupplier.id ? updatedSupplier as Supplier : s)
                 )
               }
@@ -143,9 +143,45 @@ export function useSuppliers() {
       )
       .subscribe()
 
+    // Subscription pour les stocks : quand un stock est ajouté avec un fournisseur,
+    // le trigger SQL met à jour total_depense du fournisseur
+    // On écoute les changements pour rafraîchir l'affichage en temps réel
+    const stockChannel = supabase
+      .channel('stock-supplier-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'stock'
+        },
+        async (payload) => {
+          const newStock = payload.new as any
+          if (newStock.supplier_id) {
+            // Le trigger a mis à jour les stats du fournisseur
+            // On attend un peu puis on récupère le fournisseur mis à jour
+            setTimeout(async () => {
+              const { data: updatedSupplier } = await supabase
+                .from('suppliers')
+                .select('*')
+                .eq('id', newStock.supplier_id)
+                .single()
+
+              if (updatedSupplier) {
+                setSuppliers(prev =>
+                  prev.map(s => s.id === updatedSupplier.id ? updatedSupplier as Supplier : s)
+                )
+              }
+            }, 500) // Délai légèrement plus long pour s'assurer que le trigger a terminé
+          }
+        }
+      )
+      .subscribe()
+
     return () => {
       supabase.removeChannel(suppliersChannel)
       supabase.removeChannel(invoicesChannel)
+      supabase.removeChannel(stockChannel)
     }
   }, [supabase])
 
@@ -219,9 +255,9 @@ export function useSuppliers() {
       }
 
       if (orders && orders.length > 0) {
-        return { 
-          success: false, 
-          error: 'Impossible de supprimer ce fournisseur car il a des commandes associées. Supprimez d\'abord les commandes.' 
+        return {
+          success: false,
+          error: 'Impossible de supprimer ce fournisseur car il a des commandes associées. Supprimez d\'abord les commandes.'
         }
       }
 
@@ -238,9 +274,9 @@ export function useSuppliers() {
       }
 
       if (stocks && stocks.length > 0) {
-        return { 
-          success: false, 
-          error: 'Impossible de supprimer ce fournisseur car il a des stocks associés. Supprimez ou modifiez d\'abord les stocks liés à ce fournisseur.' 
+        return {
+          success: false,
+          error: 'Impossible de supprimer ce fournisseur car il a des stocks associés. Supprimez ou modifiez d\'abord les stocks liés à ce fournisseur.'
         }
       }
 
@@ -254,22 +290,22 @@ export function useSuppliers() {
 
       if (error) {
         console.error('Erreur suppression fournisseur:', error)
-        
+
         // Messages d'erreur plus explicites
         if (error.code === '23503') {
-          return { 
-            success: false, 
-            error: 'Impossible de supprimer ce fournisseur car il est référencé dans d\'autres données (commandes, factures, ou stocks). Supprimez d\'abord ces données associées.' 
+          return {
+            success: false,
+            error: 'Impossible de supprimer ce fournisseur car il est référencé dans d\'autres données (commandes, factures, ou stocks). Supprimez d\'abord ces données associées.'
           }
         }
-        
+
         if (error.message) {
           return { success: false, error: error.message }
         }
-        
+
         throw error
       }
-      
+
       await fetchSuppliers()
       return { success: true }
     } catch (err) {

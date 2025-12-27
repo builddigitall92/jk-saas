@@ -56,9 +56,9 @@ export function useStock() {
         .eq('id', stockId)
 
       if (error) throw error
-      
+
       // Mettre à jour localement pour une réponse rapide
-      setStocks(prev => 
+      setStocks(prev =>
         prev.map(s => s.id === stockId ? { ...s, quantity: newQuantity } : s)
       )
     } catch (err) {
@@ -112,7 +112,7 @@ export function useStock() {
       // Si un fournisseur est associé, créer automatiquement une facture
       if (finalSupplierId && newStock) {
         const totalAmount = Number(data.quantity) * Number(data.unit_price)
-        
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: invoiceError } = await (supabase as any)
           .from('factures_fournisseurs')
@@ -130,11 +130,11 @@ export function useStock() {
         }
         // Le trigger update_supplier_stats mettra à jour automatiquement les stats
       }
-      
+
       // Les subscriptions temps réel mettront à jour automatiquement
       // mais on peut aussi forcer un refresh
       await fetchStocks()
-      
+
       return { success: true }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erreur lors de l\'ajout'
@@ -232,7 +232,7 @@ export function useStock() {
       // 4. Si un fournisseur est associé, créer automatiquement une facture
       if (finalSupplierId && newStock) {
         const totalAmount = Number(stockData.quantity) * Number(stockData.unit_price)
-        
+
         // Récupérer le nom du fournisseur
         let supplierName = 'Fournisseur inconnu'
         if (finalSupplierId) {
@@ -300,7 +300,7 @@ export function useStock() {
         },
         async (payload) => {
           console.log('Stock change detected:', payload.eventType)
-          
+
           if (payload.eventType === 'INSERT') {
             // Récupérer le stock avec le produit associé
             const { data } = await supabase
@@ -308,15 +308,15 @@ export function useStock() {
               .select('*, product:products(*)')
               .eq('id', payload.new.id)
               .single()
-            
+
             if (data && isMounted) {
               setStocks(prev => [data as StockWithProduct, ...prev])
             }
           } else if (payload.eventType === 'UPDATE') {
             if (isMounted) {
-              setStocks(prev => 
-                prev.map(s => s.id === payload.new.id 
-                  ? { ...s, ...payload.new } 
+              setStocks(prev =>
+                prev.map(s => s.id === payload.new.id
+                  ? { ...s, ...payload.new }
                   : s
                 )
               )
@@ -342,7 +342,7 @@ export function useStock() {
         },
         async (payload) => {
           console.log('Product change detected:', payload.eventType)
-          
+
           if (payload.eventType === 'INSERT') {
             if (isMounted) {
               setProducts(prev => [...prev, payload.new as Product])
@@ -353,7 +353,7 @@ export function useStock() {
               if (payload.new.is_active === false) {
                 setProducts(prev => prev.filter(p => p.id !== payload.new.id))
               } else {
-                setProducts(prev => 
+                setProducts(prev =>
                   prev.map(p => p.id === payload.new.id ? payload.new as Product : p)
                 )
               }
@@ -375,7 +375,7 @@ export function useStock() {
   }, [fetchStocks, fetchProducts, supabase])
 
   // Filtrer par catégorie
-  const getByCategory = (category: ProductCategory) => 
+  const getByCategory = (category: ProductCategory) =>
     stocks.filter(s => s.product?.category === category)
 
   const getCategoryTotal = (category: ProductCategory) =>
@@ -418,6 +418,7 @@ export function useStock() {
       package_price?: number | null
       package_quantity?: number | null
       expiry_date?: string | null
+      supplier_id?: string | null
     }
   ) => {
     try {
@@ -439,14 +440,14 @@ export function useStock() {
       if (existingProduct) {
         // Produit existant → chercher le stock
         const existingStock = findStockByProductId(existingProduct.id)
-        
+
         if (existingStock) {
           // Mettre à jour le stock existant (ajouter la quantité)
           const newQuantity = Number(existingStock.quantity) + stockData.quantity
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { error: updateError } = await (supabase as any)
             .from('stock')
-            .update({ 
+            .update({
               quantity: newQuantity,
               unit_price: stockData.unit_price,
               package_price: stockData.package_price,
@@ -474,6 +475,7 @@ export function useStock() {
               package_quantity: stockData.package_quantity,
               initial_quantity: stockData.quantity,
               expiry_date: stockData.expiry_date || null,
+              supplier_id: stockData.supplier_id || null,
               added_by: userData.user.id
             })
 
@@ -513,6 +515,7 @@ export function useStock() {
             package_quantity: stockData.package_quantity,
             initial_quantity: stockData.quantity,
             expiry_date: stockData.expiry_date || null,
+            supplier_id: stockData.supplier_id || null,
             added_by: userData.user.id
           })
 
