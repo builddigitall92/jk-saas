@@ -437,6 +437,25 @@ export function useStock() {
       // Chercher si le produit existe déjà
       const existingProduct = findProductByName(productData.name)
 
+      // Helper pour créer une facture fournisseur
+      const createSupplierInvoice = async (supplierId: string, amount: number) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: invoiceError } = await (supabase as any)
+          .from('factures_fournisseurs')
+          .insert({
+            establishment_id: profile.establishment_id,
+            fournisseur_id: supplierId,
+            montant_ttc: amount,
+            date_facture: new Date().toISOString().split('T')[0],
+            created_by: userData.user.id
+          })
+
+        if (invoiceError) {
+          console.error('Erreur création facture automatique:', invoiceError)
+          // Ne pas faire échouer l'ajout de stock si la facture échoue
+        }
+      }
+
       if (existingProduct) {
         // Produit existant → chercher le stock
         const existingStock = findStockByProductId(existingProduct.id)
@@ -459,6 +478,12 @@ export function useStock() {
 
           if (updateError) throw updateError
 
+          // Créer une facture si un fournisseur est associé
+          if (stockData.supplier_id) {
+            const totalAmount = stockData.quantity * stockData.unit_price
+            await createSupplierInvoice(stockData.supplier_id, totalAmount)
+          }
+
           await fetchStocks()
           return { success: true, product: existingProduct, updated: true, previousQuantity: existingStock.quantity, newQuantity }
         } else {
@@ -480,6 +505,13 @@ export function useStock() {
             })
 
           if (stockError) throw stockError
+
+          // Créer une facture si un fournisseur est associé
+          if (stockData.supplier_id) {
+            const totalAmount = stockData.quantity * stockData.unit_price
+            await createSupplierInvoice(stockData.supplier_id, totalAmount)
+          }
+
           await fetchStocks()
           return { success: true, product: existingProduct, updated: false }
         }
@@ -520,6 +552,13 @@ export function useStock() {
           })
 
         if (stockError) throw stockError
+
+        // Créer une facture si un fournisseur est associé
+        if (stockData.supplier_id) {
+          const totalAmount = stockData.quantity * stockData.unit_price
+          await createSupplierInvoice(stockData.supplier_id, totalAmount)
+        }
+
         await fetchStocks()
         return { success: true, product: newProduct, updated: false }
       }

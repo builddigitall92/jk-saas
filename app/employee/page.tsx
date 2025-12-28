@@ -17,6 +17,7 @@ import {
   Calendar,
   Target,
   Zap,
+  ShoppingBag,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -225,6 +226,15 @@ function K({ children, c }: { children: React.ReactNode; c: string }) {
 
 const modules = [
   {
+    id: "ventes",
+    title: "Ventes",
+    description: <>Enregistrer les <K c="g">ventes</K> et suivre le <K c="o">chiffre d'affaires</K>.</>,
+    icon: ShoppingBag,
+    iconColor: "green",
+    titleColor: "green",
+    href: "/employee/ventes",
+  },
+  {
     id: "waste",
     title: "Gaspillage",
     description: <>Déclarer les <K c="r">pertes</K> et réduire le <K c="o">gâchis</K> quotidien.</>,
@@ -240,7 +250,7 @@ const modules = [
     icon: Boxes,
     iconColor: "cyan",
     titleColor: "cyan",
-    href: "/employee/stock-update",
+    href: "/employee/stock",
   },
   {
     id: "alerts",

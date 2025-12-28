@@ -8,9 +8,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Package, AlertCircle, Plus, Minus, Trash2, Snowflake, Leaf, Wheat, Calendar, Loader2, Check, Sparkles, History, Settings, X, ChevronDown, ChevronUp } from "lucide-react"
+import { Package, AlertCircle, Plus, Minus, Trash2, Snowflake, Leaf, Wheat, Calendar, Loader2, Check, Sparkles, History, Settings, X, ChevronDown, ChevronUp, Truck } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useStock, type StockWithProduct } from "@/lib/hooks/use-stock"
+import { useSuppliers } from "@/lib/hooks/use-suppliers"
 import type { ProductCategory, StockUnit, Product } from "@/lib/database.types"
 import { detectCategory, suggestIcon, suggestUnit } from "@/lib/utils/auto-category"
 import { AIAssistant } from "@/components/ai-assistant/AIAssistant"
@@ -18,33 +19,35 @@ import { AIAssistant } from "@/components/ai-assistant/AIAssistant"
 const ALL_UNITS: StockUnit[] = ['kg', 'g', 'L', 'unités', 'pièces']
 
 export default function EmployeeStockPage() {
-  const { 
-    stocks, 
+  const {
+    stocks,
     products,
-    loading, 
-    updateQuantity, 
-    deleteStock, 
+    loading,
+    updateQuantity,
+    deleteStock,
     deleteProduct,
     createProduct,
     addOrUpdateStock,
-    getByCategory, 
-    getCategoryTotal, 
+    getByCategory,
+    getCategoryTotal,
     getStockHistory,
     findProductByName
   } = useStock()
-  
+
+  const { suppliers } = useSuppliers()
+
   const [activeTab, setActiveTab] = useState<ProductCategory>("surgele")
   const [activeSection, setActiveSection] = useState<'stock' | 'ingredients' | 'history'>('stock')
-  
+
   // Dialog ajout stock
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false)
-  
+
   // Dialog ajout ingrédient
   const [isAddIngredientOpen, setIsAddIngredientOpen] = useState(false)
   const [isSubmittingIngredient, setIsSubmittingIngredient] = useState(false)
-  
+
   // Formulaire stock
   const [productName, setProductName] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory>("surgele")
@@ -52,9 +55,11 @@ export default function EmployeeStockPage() {
   const [packageQuantity, setPackageQuantity] = useState("")
   const [packagePrice, setPackagePrice] = useState("")
   const [expiryDate, setExpiryDate] = useState("")
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null)
   const [stockError, setStockError] = useState<string | null>(null)
   const [stockSuccess, setStockSuccess] = useState<string | null>(null)
-  
+
+
   // Formulaire ingrédient
   const [newIngredient, setNewIngredient] = useState({
     name: "",
@@ -74,7 +79,7 @@ export default function EmployeeStockPage() {
     if (productName.trim().length >= 3) {
       const existing = findProductByName(productName)
       setDetectedProduct(existing || null)
-      
+
       if (!existing) {
         // Auto-détecter la catégorie pour un nouveau produit
         const detected = detectCategory(productName)
@@ -95,7 +100,7 @@ export default function EmployeeStockPage() {
       const detected = detectCategory(newIngredient.name)
       const icon = suggestIcon(newIngredient.name)
       const unit = suggestUnit(newIngredient.name, detected) as StockUnit
-      
+
       setNewIngredient(prev => ({
         ...prev,
         category: detected,
@@ -134,12 +139,12 @@ export default function EmployeeStockPage() {
   }
 
   const isPackageUnit = (unit: string) => ['pièces', 'unités'].includes(unit)
-  
+
   const calculateUnitPrice = () => {
     const qty = parseFloat(packageQuantity) || 0
     const price = parseFloat(packagePrice) || 0
     if (qty <= 0 || price <= 0) return 0
-    
+
     if (isPackageUnit(selectedUnit)) {
       return price / qty
     } else {
@@ -150,7 +155,7 @@ export default function EmployeeStockPage() {
   const getTotalValue = () => {
     const qty = parseFloat(packageQuantity) || 0
     const price = parseFloat(packagePrice) || 0
-    
+
     if (isPackageUnit(selectedUnit)) {
       return price
     } else {
@@ -185,7 +190,8 @@ export default function EmployeeStockPage() {
           unit_price: unitPrice,
           package_price: isPackageUnit(selectedUnit) ? parseFloat(packagePrice) : null,
           package_quantity: isPackageUnit(selectedUnit) ? parseFloat(packageQuantity) : null,
-          expiry_date: expiryDate || null
+          expiry_date: expiryDate || null,
+          supplier_id: selectedSupplierId
         }
       )
 
@@ -195,13 +201,14 @@ export default function EmployeeStockPage() {
         } else {
           setStockSuccess("Stock ajouté avec succès !")
         }
-        
+
         // Reset après un délai
         setTimeout(() => {
           setProductName("")
           setPackageQuantity("")
           setPackagePrice("")
           setExpiryDate("")
+          setSelectedSupplierId(null)
           setStockSuccess(null)
           setIsAddDialogOpen(false)
         }, 1500)
@@ -228,7 +235,7 @@ export default function EmployeeStockPage() {
 
     try {
       const result = await createProduct(newIngredient)
-      
+
       if (result.success) {
         setNewIngredient({
           name: "",
@@ -269,7 +276,7 @@ export default function EmployeeStockPage() {
   const existingProductNames = products.map(p => p.name).filter(Boolean)
   const categoryStocks = getByCategory(activeTab)
   const stockHistory = getStockHistory()
-  
+
   const tabs = [
     { id: "surgele" as ProductCategory, name: "Surgelé", icon: Snowflake, color: "cyan" },
     { id: "frais" as ProductCategory, name: "Frais", icon: Leaf, color: "green" },
@@ -304,7 +311,7 @@ export default function EmployeeStockPage() {
           <p className="text-sm text-slate-400">Gestion des produits et ingrédients</p>
         </div>
         <div className="flex items-center gap-3">
-          <button 
+          <button
             className="ai-trigger-btn"
             onClick={() => setIsAIAssistantOpen(true)}
           >
@@ -312,7 +319,7 @@ export default function EmployeeStockPage() {
             Assistant IA
           </button>
           {activeSection === 'stock' && (
-            <button 
+            <button
               className="glass-btn-primary"
               onClick={() => setIsAddDialogOpen(true)}
             >
@@ -321,7 +328,7 @@ export default function EmployeeStockPage() {
             </button>
           )}
           {activeSection === 'ingredients' && (
-            <button 
+            <button
               className="glass-btn-primary"
               onClick={() => setIsAddIngredientOpen(true)}
             >
@@ -359,7 +366,7 @@ export default function EmployeeStockPage() {
 
       {/* Dialog ajout stock */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent 
+        <DialogContent
           className="sm:max-w-[500px] border-0"
           style={{
             background: "linear-gradient(145deg, rgba(20, 27, 45, 0.98) 0%, rgba(15, 20, 35, 0.99) 100%)",
@@ -388,10 +395,10 @@ export default function EmployeeStockPage() {
                   <option key={i} value={name || ''} />
                 ))}
               </datalist>
-              
+
               {/* Indicateur produit existant */}
               {detectedProduct && (
-                <div 
+                <div
                   className="mt-2 p-3 rounded-xl text-sm flex items-center gap-2"
                   style={{
                     background: "rgba(34, 197, 94, 0.1)",
@@ -476,7 +483,7 @@ export default function EmployeeStockPage() {
 
             {/* Aperçu du calcul */}
             {packageQuantity && packagePrice && (
-              <div 
+              <div
                 className="p-4 rounded-xl"
                 style={{
                   background: "rgba(59, 130, 246, 0.1)",
@@ -507,9 +514,29 @@ export default function EmployeeStockPage() {
               />
             </div>
 
+            {/* Sélection du fournisseur */}
+            <div>
+              <label className="text-sm text-slate-400 mb-2 block flex items-center gap-2">
+                <Truck className="h-4 w-4" />
+                Fournisseur (optionnel)
+              </label>
+              <select
+                value={selectedSupplierId || ""}
+                onChange={(e) => setSelectedSupplierId(e.target.value || null)}
+                className="glass-search-input"
+              >
+                <option value="">-- Aucun fournisseur --</option>
+                {suppliers.map((supplier) => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Message de succès */}
             {stockSuccess && (
-              <div 
+              <div
                 className="p-3 rounded-xl text-sm flex items-center gap-2"
                 style={{
                   background: "rgba(34, 197, 94, 0.1)",
@@ -524,7 +551,7 @@ export default function EmployeeStockPage() {
 
             {/* Message d'erreur */}
             {stockError && (
-              <div 
+              <div
                 className="p-3 rounded-xl text-sm"
                 style={{
                   background: "rgba(239, 68, 68, 0.1)",
@@ -537,7 +564,7 @@ export default function EmployeeStockPage() {
             )}
 
             {/* Bouton valider */}
-            <button 
+            <button
               className="glass-btn-primary w-full justify-center py-3"
               onClick={handleAddStock}
               disabled={!productName.trim() || !packageQuantity || !packagePrice || isSubmitting}
@@ -557,7 +584,7 @@ export default function EmployeeStockPage() {
 
       {/* Dialog ajout ingrédient */}
       <Dialog open={isAddIngredientOpen} onOpenChange={setIsAddIngredientOpen}>
-        <DialogContent 
+        <DialogContent
           className="sm:max-w-[500px] border-0"
           style={{
             background: "linear-gradient(145deg, rgba(20, 27, 45, 0.98) 0%, rgba(15, 20, 35, 0.99) 100%)",
@@ -654,7 +681,7 @@ export default function EmployeeStockPage() {
 
             {/* Message d'erreur */}
             {ingredientError && (
-              <div 
+              <div
                 className="p-3 rounded-xl text-sm"
                 style={{
                   background: "rgba(239, 68, 68, 0.1)",
@@ -667,7 +694,7 @@ export default function EmployeeStockPage() {
             )}
 
             {/* Bouton */}
-            <button 
+            <button
               className="glass-btn-primary w-full justify-center py-3"
               onClick={handleAddIngredient}
               disabled={!newIngredient.name.trim() || isSubmittingIngredient}
@@ -695,8 +722,8 @@ export default function EmployeeStockPage() {
               const count = getByCategory(tab.id).length
               const total = getCategoryTotal(tab.id)
               return (
-                <div 
-                  key={tab.id} 
+                <div
+                  key={tab.id}
                   className={`glass-stat-card glass-animate-fade-up glass-stagger-${index + 1}`}
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -735,13 +762,12 @@ export default function EmployeeStockPage() {
             {categoryStocks.map((stock, index) => (
               <div
                 key={stock.id}
-                className={`glass-stat-card glass-animate-scale-in ${
-                  isExpired(stock.expiry_date)
-                    ? "!border-red-500/40"
-                    : isExpiringSoon(stock.expiry_date)
-                      ? "!border-orange-500/40"
-                      : ""
-                }`}
+                className={`glass-stat-card glass-animate-scale-in ${isExpired(stock.expiry_date)
+                  ? "!border-red-500/40"
+                  : isExpiringSoon(stock.expiry_date)
+                    ? "!border-orange-500/40"
+                    : ""
+                  }`}
                 style={{ animationDelay: `${0.1 * (index % 4)}s` }}
               >
                 <div className="flex items-start justify-between mb-4">
@@ -775,16 +801,15 @@ export default function EmployeeStockPage() {
                       <Calendar className="h-3 w-3" />
                       Expiration
                     </span>
-                    <span className={`font-medium ${
-                      isExpired(stock.expiry_date) ? "text-red-400" :
+                    <span className={`font-medium ${isExpired(stock.expiry_date) ? "text-red-400" :
                       isExpiringSoon(stock.expiry_date) ? "text-orange-400" : "text-slate-300"
-                    }`}>
+                      }`}>
                       {stock.expiry_date ? new Date(stock.expiry_date).toLocaleDateString("fr-FR") : "-"}
                     </span>
                   </div>
 
                   {(isExpiringSoon(stock.expiry_date) || isExpired(stock.expiry_date)) && (
-                    <div 
+                    <div
                       className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
                       style={{
                         background: isExpired(stock.expiry_date) ? "rgba(239, 68, 68, 0.1)" : "rgba(251, 146, 60, 0.1)",
@@ -838,7 +863,7 @@ export default function EmployeeStockPage() {
       {activeSection === 'ingredients' && (
         <div className="space-y-6">
           {/* Info banner */}
-          <div 
+          <div
             className="p-4 rounded-xl flex items-start gap-3"
             style={{
               background: "rgba(251, 146, 60, 0.1)",
@@ -849,7 +874,7 @@ export default function EmployeeStockPage() {
             <div>
               <p className="text-sm text-orange-300 font-medium">Gestion des ingrédients</p>
               <p className="text-xs text-slate-400 mt-1">
-                Définissez vos ingrédients ici. Quand vous ajouterez du stock avec un nom existant, 
+                Définissez vos ingrédients ici. Quand vous ajouterez du stock avec un nom existant,
                 le stock sera automatiquement mis à jour au lieu de créer un doublon.
               </p>
             </div>
@@ -861,7 +886,7 @@ export default function EmployeeStockPage() {
               {(['surgele', 'frais', 'sec'] as ProductCategory[]).map((category) => {
                 const categoryProducts = products.filter(p => p.category === category)
                 if (categoryProducts.length === 0) return null
-                
+
                 return (
                   <div key={category}>
                     <h4 className="flex items-center gap-2 text-sm font-medium text-slate-400 mb-3">
@@ -870,7 +895,7 @@ export default function EmployeeStockPage() {
                     </h4>
                     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                       {categoryProducts.map((product) => (
-                        <div 
+                        <div
                           key={product.id}
                           className="glass-stat-card group"
                         >
@@ -921,7 +946,7 @@ export default function EmployeeStockPage() {
         <div className="space-y-4">
           {/* Panel historique */}
           <div className="glass-stat-card">
-            <div 
+            <div
               className="flex items-center justify-between cursor-pointer"
               onClick={() => setShowHistoryPanel(!showHistoryPanel)}
             >
@@ -940,7 +965,7 @@ export default function EmployeeStockPage() {
               <div className="mt-4 space-y-2">
                 {stockHistory.length > 0 ? (
                   stockHistory.map((stock) => (
-                    <div 
+                    <div
                       key={stock.id}
                       className="flex items-center justify-between p-3 rounded-xl"
                       style={{

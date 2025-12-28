@@ -93,7 +93,7 @@ export default function ManagerReportsPage() {
           allEntries.push(...transactionEntries)
         }
 
-        // 2. Récupérer les ventes réelles (BÉNÉFICES/RECETTES)
+        // 2. Récupérer les ventes réelles avec leurs ingrédients complets
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: ventes } = await (supabase as any)
           .from('ventes')
@@ -102,7 +102,8 @@ export default function ManagerReportsPage() {
             menu_item:menu_items(
               name,
               ingredients:menu_item_ingredients(
-                product:products(name)
+                *,
+                product:products(*)
               )
             )
           `)
@@ -110,45 +111,105 @@ export default function ManagerReportsPage() {
           .order('created_at', { ascending: false })
 
         if (ventes && ventes.length > 0) {
-          const venteEntries: FinancialEntry[] = ventes.map((v: any) => {
+          // Fonction pour calculer le coût réel d'un menu item
+          const calculateMenuItemCost = async (menuItem: any): Promise<number> => {
+            if (!menuItem || !menuItem.ingredients || menuItem.ingredients.length === 0) {
+              return 0
+            }
+
+            let totalCost = 0
+
+            for (const ingredient of menuItem.ingredients) {
+              if (!ingredient.product_id) continue
+
+              // Récupérer le prix unitaire du stock (le plus récent)
+              const { data: stockData } = await supabase
+                .from('stock')
+                .select('unit_price, product:products(unit)')
+                .eq('product_id', ingredient.product_id)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single()
+
+              if (!stockData) continue
+
+              const unitPrice = Number(stockData.unit_price) || 0
+              const stockUnit = (stockData.product as { unit: string } | null)?.unit || 'unités'
+              const ingredientUnit = ingredient.unit || stockUnit
+              const ingredientQuantity = Number(ingredient.quantity) || 0
+
+              // Convertir la quantité vers l'unité du stock
+              let convertedQuantity = ingredientQuantity
+              if (stockUnit === 'kg' && ingredientUnit === 'g') {
+                convertedQuantity = ingredientQuantity / 1000
+              } else if (stockUnit === 'g' && ingredientUnit === 'kg') {
+                convertedQuantity = ingredientQuantity * 1000
+              } else if (stockUnit === 'L' && ingredientUnit === 'ml') {
+                convertedQuantity = ingredientQuantity / 1000
+              } else if (stockUnit === 'ml' && ingredientUnit === 'L') {
+                convertedQuantity = ingredientQuantity * 1000
+              } else if (stockUnit === 'L' && ingredientUnit === 'cl') {
+                convertedQuantity = ingredientQuantity / 100
+              } else if (stockUnit === 'cl' && ingredientUnit === 'L') {
+                convertedQuantity = ingredientQuantity * 100
+              } else if (stockUnit === 'cl' && ingredientUnit === 'ml') {
+                convertedQuantity = ingredientQuantity / 10
+              } else if (stockUnit === 'ml' && ingredientUnit === 'cl') {
+                convertedQuantity = ingredientQuantity * 10
+              }
+
+              // Calculer le coût de cet ingrédient
+              const ingredientCost = unitPrice * convertedQuantity
+              totalCost += ingredientCost
+            }
+
+            return Math.round(totalCost * 100) / 100
+          }
+
+          // Calculer les coûts réels pour toutes les ventes
+          const ventesWithCosts = await Promise.all(
+            ventes.map(async (v: any) => {
+              const costPrice = v.menu_item 
+                ? await calculateMenuItemCost(v.menu_item)
+                : 0
+              return { vente: v, costPrice }
+            })
+          )
+
+          // Créer les entrées financières
+          const venteEntries: FinancialEntry[] = []
+          const costEntries: FinancialEntry[] = []
+
+          ventesWithCosts.forEach(({ vente: v, costPrice }) => {
             const menuName = v.menu_item?.name || 'Menu inconnu'
-            const productName = v.menu_item?.ingredients?.[0]?.product?.name || menuName
-            return {
+            const sellingPrice = Number(v.unit_price) || 0
+            const quantity = v.quantity || 1
+            const totalCost = costPrice * quantity
+
+            // Entrée de recette
+            venteEntries.push({
               id: `vente_${v.id}`,
               date: v.created_at.split('T')[0],
-              libelle: `Vente: ${productName} x${v.quantity}`,
+              libelle: `Vente: ${menuName} x${quantity}`,
               category: 'revenue' as const,
               amount: Number(v.total_price),
               type: 'income' as const
+            })
+
+            // Entrée de coût réel (coût des ingrédients utilisés)
+            if (totalCost > 0) {
+              costEntries.push({
+                id: `cost_${v.id}`,
+                date: v.created_at.split('T')[0],
+                libelle: `Coût réel: ${menuName} x${quantity}`,
+                category: 'cost' as const,
+                amount: totalCost,
+                type: 'expense' as const
+              })
             }
           })
-          allEntries.push(...venteEntries)
-        }
 
-        // 3. Récupérer les entrées de stock (DÉPENSES)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: stockEntries } = await (supabase as any)
-          .from('stock')
-          .select(`
-            *,
-            product:products(name)
-          `)
-          .eq('establishment_id', profile.establishment_id)
-          .order('created_at', { ascending: false })
-
-        if (stockEntries && stockEntries.length > 0) {
-          const stockFinancialEntries: FinancialEntry[] = stockEntries.map((s: any) => {
-            const totalCost = Number(s.quantity) * Number(s.unit_price)
-            return {
-              id: `stock_${s.id}`,
-              date: s.created_at.split('T')[0],
-              libelle: `Achat stock: ${s.product?.name || 'Produit'} (${Number(s.quantity)} ${s.product?.unit || 'unités'})`,
-              category: 'cost' as const,
-              amount: totalCost,
-              type: 'expense' as const
-            }
-          })
-          allEntries.push(...stockFinancialEntries)
+          allEntries.push(...venteEntries, ...costEntries)
         }
 
         // 4. Récupérer les gaspillages (PERTES)
@@ -239,26 +300,37 @@ export default function ManagerReportsPage() {
   }
 
   // Calculs basés sur les données réelles
+  // Recettes = somme des prix de vente
   const totalRevenue = useMemo(() => {
     return entries.filter(e => e.category === 'revenue').reduce((sum, e) => sum + e.amount, 0)
   }, [entries])
   
+  // Coûts d'achats = coût réel des ingrédients utilisés dans les ventes (pas les achats de stock)
   const totalCosts = useMemo(() => {
     return entries.filter(e => e.category === 'cost').reduce((sum, e) => sum + e.amount, 0)
   }, [entries])
   
+  // Pertes/Gaspillage
   const totalWaste = useMemo(() => {
     return entries.filter(e => e.category === 'waste').reduce((sum, e) => sum + e.amount, 0)
   }, [entries])
   
+  // Autres dépenses (transactions manuelles)
   const totalOther = useMemo(() => {
     return entries.filter(e => e.category === 'other' && e.type === 'expense').reduce((sum, e) => sum + e.amount, 0)
   }, [entries])
   
+  // Marge brute = Recettes - Coût réel des ingrédients vendus
   const grossMargin = useMemo(() => {
-    return totalRevenue - totalCosts - totalWaste - totalOther
-  }, [totalRevenue, totalCosts, totalWaste, totalOther])
+    return totalRevenue - totalCosts
+  }, [totalRevenue, totalCosts])
   
+  // Bénéfice net = Marge brute - Pertes - Autres dépenses
+  const netProfit = useMemo(() => {
+    return grossMargin - totalWaste - totalOther
+  }, [grossMargin, totalWaste, totalOther])
+  
+  // Pourcentage de marge brute
   const marginPercent = useMemo(() => {
     return totalRevenue > 0 ? ((grossMargin / totalRevenue) * 100).toFixed(1) : '0'
   }, [totalRevenue, grossMargin])
@@ -377,9 +449,11 @@ export default function ManagerReportsPage() {
     rows.push([])
     rows.push(['RÉSUMÉ', '', '', '', ''])
     rows.push(['Total Recettes', '', '', '', totalRevenue.toFixed(2)])
-    rows.push(['Total Coûts', '', '', '', totalCosts.toFixed(2)])
-    rows.push(['Total Pertes', '', '', '', totalWaste.toFixed(2)])
+    rows.push(['Coûts d\'achats (réels)', '', '', '', totalCosts.toFixed(2)])
     rows.push(['Marge Brute', '', '', '', grossMargin.toFixed(2)])
+    rows.push(['Total Pertes/Gaspillage', '', '', '', totalWaste.toFixed(2)])
+    rows.push(['Autres Dépenses', '', '', '', totalOther.toFixed(2)])
+    rows.push(['Bénéfice Net', '', '', '', netProfit.toFixed(2)])
     
     const csvContent = [
       headers.join(';'),
@@ -410,9 +484,11 @@ export default function ManagerReportsPage() {
       '',
       'RÉSUMÉ',
       `Total Recettes\t${totalRevenue.toFixed(2)}`,
-      `Total Coûts\t${totalCosts.toFixed(2)}`,
-      `Total Pertes\t${totalWaste.toFixed(2)}`,
-      `Marge Brute\t${grossMargin.toFixed(2)}`
+      `Coûts d'achats (réels)\t${totalCosts.toFixed(2)}`,
+      `Marge Brute\t${grossMargin.toFixed(2)}`,
+      `Total Pertes/Gaspillage\t${totalWaste.toFixed(2)}`,
+      `Autres Dépenses\t${totalOther.toFixed(2)}`,
+      `Bénéfice Net\t${netProfit.toFixed(2)}`
     ].join('\n')
     
     const BOM = '\uFEFF'
@@ -593,7 +669,7 @@ export default function ManagerReportsPage() {
       {activeTab === 'overview' && (
         <div className="space-y-6">
           {/* KPIs */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-5 gap-4">
             <div className="glass-stat-card glass-animate-fade-up glass-stagger-1">
               <div className="glass-stat-icon glass-stat-icon-blue">
                 <DollarSign className="h-5 w-5" />
@@ -606,16 +682,10 @@ export default function ManagerReportsPage() {
                 <Package className="h-5 w-5" />
               </div>
               <p className="glass-stat-value glass-stat-value-purple">{totalCosts.toLocaleString('fr-FR')}€</p>
-              <p className="glass-stat-label">Coûts achats</p>
+              <p className="glass-stat-label">Coûts achats (réels)</p>
+              <p className="text-xs text-slate-500 mt-1">Ingrédients vendus</p>
             </div>
-            <div className="glass-stat-card glass-animate-fade-up glass-stagger-3">
-              <div className="glass-stat-icon glass-stat-icon-orange">
-                <Trash2 className="h-5 w-5" />
-              </div>
-              <p className="text-2xl font-bold text-red-400">{totalWaste.toLocaleString('fr-FR')}€</p>
-              <p className="glass-stat-label">Pertes/Gaspillage</p>
-            </div>
-            <div className="glass-stat-card glass-animate-fade-up glass-stagger-4" style={{ borderColor: grossMargin >= 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)' }}>
+            <div className="glass-stat-card glass-animate-fade-up glass-stagger-3" style={{ borderColor: grossMargin >= 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)' }}>
               <div className="glass-stat-icon glass-stat-icon-green">
                 <TrendingUp className="h-5 w-5" />
               </div>
@@ -623,6 +693,22 @@ export default function ManagerReportsPage() {
                 {grossMargin.toLocaleString('fr-FR')}€
               </p>
               <p className="glass-stat-label">Marge brute ({marginPercent}%)</p>
+            </div>
+            <div className="glass-stat-card glass-animate-fade-up glass-stagger-4">
+              <div className="glass-stat-icon glass-stat-icon-orange">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <p className="text-2xl font-bold text-red-400">{totalWaste.toLocaleString('fr-FR')}€</p>
+              <p className="glass-stat-label">Pertes/Gaspillage</p>
+            </div>
+            <div className="glass-stat-card glass-animate-fade-up glass-stagger-5" style={{ borderColor: netProfit >= 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)' }}>
+              <div className="glass-stat-icon" style={{ background: netProfit >= 0 ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)', borderColor: netProfit >= 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)' }}>
+                <Euro className="h-5 w-5" style={{ color: netProfit >= 0 ? '#22c55e' : '#ef4444' }} />
+              </div>
+              <p className={`text-2xl font-bold ${netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {netProfit >= 0 ? '+' : ''}{netProfit.toLocaleString('fr-FR')}€
+              </p>
+              <p className="glass-stat-label">Bénéfice Net</p>
             </div>
           </div>
 
@@ -673,11 +759,14 @@ export default function ManagerReportsPage() {
             <div className="glass-stat-card glass-animate-fade-up glass-stagger-2" style={{ borderLeft: '3px solid #ef4444' }}>
               <p className="glass-stat-label mb-1">Total Dépenses</p>
               <p className="text-2xl font-bold text-red-400">-{(totalCosts + totalWaste + totalOther).toLocaleString('fr-FR')}€</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Coûts: {totalCosts.toLocaleString('fr-FR')}€ | Pertes: {totalWaste.toLocaleString('fr-FR')}€ | Autres: {totalOther.toLocaleString('fr-FR')}€
+              </p>
             </div>
-            <div className="glass-stat-card glass-animate-fade-up glass-stagger-3" style={{ borderLeft: `3px solid ${grossMargin >= 0 ? '#22c55e' : '#ef4444'}` }}>
+            <div className="glass-stat-card glass-animate-fade-up glass-stagger-3" style={{ borderLeft: `3px solid ${netProfit >= 0 ? '#22c55e' : '#ef4444'}` }}>
               <p className="glass-stat-label mb-1">Bénéfice Net</p>
-              <p className={`glass-stat-value ${grossMargin >= 0 ? 'glass-stat-value-green' : 'text-red-400'}`}>
-                {grossMargin >= 0 ? '+' : ''}{grossMargin.toLocaleString('fr-FR')}€
+              <p className={`glass-stat-value ${netProfit >= 0 ? 'glass-stat-value-green' : 'text-red-400'}`}>
+                {netProfit >= 0 ? '+' : ''}{netProfit.toLocaleString('fr-FR')}€
               </p>
             </div>
           </div>

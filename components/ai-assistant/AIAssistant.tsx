@@ -80,12 +80,20 @@ interface RecipeIngredient {
 interface MarginContext {
   productName: string | null
   productId: string | null
-  costPrice: number | null        // Prix d'achat unitaire
+  costPrice: number | null        // Prix d'achat unitaire (coût de la portion)
   currentSellingPrice: number | null  // Prix de vente actuel
   newSellingPrice: number | null   // Nouveau prix de vente proposé
   targetMarginPercent: number | null  // Marge cible en %
   quantitySold: number | null     // Quantité vendue par période
   period: 'day' | 'week' | 'month'  // Période de référence
+  // Pour le calcul du coût unitaire
+  purchaseQuantity: number | null  // Quantité achetée (ex: 10 kg)
+  purchaseUnit: string | null      // Unité d'achat (kg, L, pièces)
+  purchasePrice: number | null     // Prix total d'achat
+  costPerPurchaseUnit: number | null // Coût par unité d'achat (€/kg, €/L)
+  portionSize: number | null       // Taille de la portion servie
+  portionUnit: string | null       // Unité de la portion (g, cl, pièces)
+  productType: 'food' | 'drink' | 'other' | null // Type de produit
   // Calculated values
   currentMarginPercent: number
   currentMarginAmount: number
@@ -139,6 +147,8 @@ type ConversationPhase =
   | 'margin_select_product'
   | 'margin_has_product'
   | 'margin_cost_price'
+  | 'margin_calculate_unit_price'
+  | 'margin_portion_size'
   | 'margin_selling_price'
   | 'margin_target_margin'
   | 'margin_quantity_sold'
@@ -441,6 +451,13 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
     targetMarginPercent: null,
     quantitySold: null,
     period: 'week',
+    purchaseQuantity: null,
+    purchaseUnit: null,
+    purchasePrice: null,
+    costPerPurchaseUnit: null,
+    portionSize: null,
+    portionUnit: null,
+    productType: null,
     currentMarginPercent: 0,
     currentMarginAmount: 0,
     currentProfit: 0,
@@ -2106,8 +2123,67 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           } finally {
             setIsProcessing(false)
           }
-          setPhase('margin_menu_analysis')
-          // The actual analysis will happen in the next phase handler
+          
+          // Traiter immédiatement l'analyse du menu
+          if (menuItems.length === 0) {
+            ask(
+              "🍽️ Tu n'as pas encore de plats dans ton menu.\n\n" +
+              "**Va d'abord créer des plats** dans l'onglet Menu, puis reviens ici pour analyser tes marges !\n\n" +
+              "_Tu veux faire un calcul rapide à la place ?_",
+              ['🧮 Calcul rapide', '❌ Fermer']
+            )
+            setPhase('margin_select_product')
+            return
+          }
+
+          // Calculate global stats
+          const totalItems = menuItems.length
+          const avgMargin = menuItems.reduce((sum, item) => sum + item.actual_margin_percent, 0) / totalItems
+          const lowMarginItems = menuItems.filter(item => item.actual_margin_percent < 60)
+          const highMarginItems = menuItems.filter(item => item.actual_margin_percent >= 70)
+          const noIngredientItems = menuItems.filter(item => item.ingredients.length === 0)
+
+          // Build summary
+          let summary = `🍽️ **Analyse de ton menu (${totalItems} plats)**\n\n`
+
+          // Global stats
+          const avgMarginEmoji = avgMargin >= 70 ? '🟢' : avgMargin >= 60 ? '🟡' : '🔴'
+          summary += `📊 **Statistiques globales :**\n`
+          summary += `• Marge moyenne : **${avgMargin.toFixed(1)}%** ${avgMarginEmoji}\n`
+          summary += `• Plats à forte marge (≥70%) : **${highMarginItems.length}**\n`
+          summary += `• Plats à faible marge (<60%) : **${lowMarginItems.length}**\n`
+          if (noIngredientItems.length > 0) {
+            summary += `• ⚠️ Plats sans ingrédients : **${noIngredientItems.length}**\n`
+          }
+          summary += `\n`
+
+          // Top 5 best margins
+          const sortedByMargin = [...menuItems].sort((a, b) => b.actual_margin_percent - a.actual_margin_percent)
+          summary += `🏆 **Top marges :**\n`
+          sortedByMargin.slice(0, 3).forEach((item, i) => {
+            const emoji = item.actual_margin_percent >= 70 ? '🟢' : item.actual_margin_percent >= 60 ? '🟡' : '🔴'
+            summary += `${i + 1}. ${item.name} → **${item.actual_margin_percent.toFixed(0)}%** ${emoji}\n`
+          })
+          summary += `\n`
+
+          // Items needing attention
+          if (lowMarginItems.length > 0) {
+            summary += `⚠️ **À optimiser :**\n`
+            lowMarginItems.slice(0, 3).forEach(item => {
+              const suggestedPrice = item.cost_price / 0.3 // For 70% margin
+              summary += `• ${item.name}: ${item.actual_margin_percent.toFixed(0)}% → suggéré ${formatCurrency(suggestedPrice)}\n`
+            })
+            summary += `\n`
+          }
+
+          summary += `**Veux-tu analyser un plat en détail ?**`
+
+          // Build options with actual menu items
+          const options = menuItems.slice(0, 4).map(item => item.name)
+          options.push('✅ Terminer')
+
+          ask(summary, options)
+          setPhase('margin_menu_item_detail')
           return
         }
 
@@ -2156,7 +2232,8 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           ask(
             `✅ Produit trouvé : **"${existing.name}"**\n\n` +
             `**Quel est ton prix d'achat unitaire (coût) ?**\n\n` +
-            `_En euros, par unité (ex: 2.50, 1.80)_`
+            `_En euros, par unité (ex: 2.50, 1.80)_\n\n` +
+            `💡 _Tu ne sais pas ? Réponds **"jsp"** et je te le calcule !_`
           )
           setPhase('margin_cost_price')
         } else {
@@ -2169,7 +2246,8 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           ask(
             `OK, on analyse **"${trimmed}"** 📊\n\n` +
             `**Quel est ton coût d'achat (prix fournisseur) par unité ?**\n\n` +
-            `_En euros (ex: 2.50, 1.80, 0.45)_`
+            `_En euros (ex: 2.50, 1.80, 0.45)_\n\n` +
+            `💡 _Tu ne sais pas ? Réponds **"jsp"** et je te le calcule !_`
           )
           setPhase('margin_cost_price')
         }
@@ -2177,10 +2255,26 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
       }
 
       case 'margin_cost_price': {
+        // Détecter "jsp" (je sais pas)
+        const jspKeywords = ['jsp', 'je sais pas', 'je ne sais pas', 'aucune idée', 'sais pas', 'calcule', 'aide']
+        if (jspKeywords.some(k => lowerInput.includes(k))) {
+          ask(
+            `Pas de souci, je vais te le calculer ! 🧮\n\n` +
+            `**Donne-moi la quantité achetée ET le prix total.**\n\n` +
+            `_Exemples :_\n` +
+            `• "10 kg à 45€"\n` +
+            `• "500g pour 12€"\n` +
+            `• "24 pièces à 36€"\n` +
+            `• "3 packs de 6 à 18€"`
+          )
+          setPhase('margin_calculate_unit_price')
+          return
+        }
+
         const cost = parseNumber(input)
 
         if (!cost || cost <= 0) {
-          ask("Je n'ai pas compris. Donne-moi le coût en euros.\n\n_Ex: 2.50, 1.80, 0.45_")
+          ask("Je n'ai pas compris. Donne-moi le coût en euros.\n\n_Ex: 2.50, 1.80, 0.45_\n\n💡 _Ou réponds **\"jsp\"** pour que je te le calcule_")
           return
         }
 
@@ -2190,6 +2284,196 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           `Coût d'achat : **${formatCurrency(cost)}** ✓\n\n` +
           `**À combien vends-tu "${marginCtx.productName}" TTC ?**\n\n` +
           `_Prix de vente en euros (ex: 7.50, 12.90)_`
+        )
+        setPhase('margin_selling_price')
+        break
+      }
+
+      case 'margin_calculate_unit_price': {
+        const numbers = extractNumbers(input)
+        const hasPackKeyword = detectPackaging(input)
+
+        // Détecter l'unité et le type de produit
+        let purchaseUnit = 'pièces'
+        let productType: 'food' | 'drink' | 'other' = 'other'
+        
+        if (lowerInput.includes('kg')) {
+          purchaseUnit = 'kg'
+          productType = 'food'
+        } else if (lowerInput.includes('g') && !lowerInput.includes('kg')) {
+          purchaseUnit = 'g'
+          productType = 'food'
+        } else if (lowerInput.includes('litre') || (lowerInput.includes('l') && !lowerInput.includes('ml') && !lowerInput.includes('cl'))) {
+          purchaseUnit = 'L'
+          productType = 'drink'
+        } else if (lowerInput.includes('ml')) {
+          purchaseUnit = 'ml'
+          productType = 'drink'
+        } else if (lowerInput.includes('cl')) {
+          purchaseUnit = 'cl'
+          productType = 'drink'
+        } else if (lowerInput.includes('pièce') || lowerInput.includes('piece') || lowerInput.includes('unité') || lowerInput.includes('unite')) {
+          purchaseUnit = 'pièces'
+          productType = 'other'
+        }
+
+        if (hasPackKeyword && numbers.length >= 3) {
+          // Format: "3 packs de 6 à 18€"
+          const [packs, unitsPerPack, price] = numbers
+          const totalUnits = packs * unitsPerPack
+          const costPerUnit = price / totalUnits
+
+          setMarginCtx({ 
+            ...marginCtx, 
+            purchaseQuantity: totalUnits,
+            purchaseUnit: 'pièces',
+            purchasePrice: price,
+            costPerPurchaseUnit: costPerUnit,
+            productType: 'other'
+          })
+
+          ask(
+            `📊 **Calcul effectué !**\n\n` +
+            `• ${packs} packs × ${unitsPerPack} = **${totalUnits} unités**\n` +
+            `• Prix total : ${formatCurrency(price)}\n` +
+            `• **Coût : ${formatCurrency(costPerUnit)}/unité**\n\n` +
+            `**Combien d'unités donnes-tu au client ?**\n\n` +
+            `_Ex: 1, 2, 0.5 (si demi-portion)_`
+          )
+          setPhase('margin_portion_size')
+        } else if (numbers.length >= 2) {
+          // Format: "10 kg à 45€" ou "500g pour 12€"
+          const [qty, price] = numbers
+          const costPerUnit = price / qty
+
+          setMarginCtx({ 
+            ...marginCtx, 
+            purchaseQuantity: qty,
+            purchaseUnit,
+            purchasePrice: price,
+            costPerPurchaseUnit: costPerUnit,
+            productType
+          })
+
+          // Proposer des unités de portion selon le type de produit
+          let portionQuestion = ''
+          if (productType === 'drink') {
+            portionQuestion = `**Quelle quantité sers-tu au client ?**\n\n` +
+              `_En cl ou ml (ex: 25cl, 33cl, 50cl, 250ml)_`
+          } else if (productType === 'food') {
+            portionQuestion = `**Quelle quantité donnes-tu au client ?**\n\n` +
+              `_En grammes (ex: 150g, 200g, 300g)_`
+          } else {
+            portionQuestion = `**Combien d'unités donnes-tu au client ?**\n\n` +
+              `_Ex: 1, 2, 0.5 (si demi-portion)_`
+          }
+
+          ask(
+            `📊 **Calcul effectué !**\n\n` +
+            `• Quantité achetée : ${qty} ${purchaseUnit}\n` +
+            `• Prix total : ${formatCurrency(price)}\n` +
+            `• **Coût : ${formatCurrency(costPerUnit)}/${purchaseUnit}**\n\n` +
+            portionQuestion
+          )
+          setPhase('margin_portion_size')
+        } else {
+          ask(
+            `Je n'ai pas compris. Donne-moi la **quantité ET le prix**.\n\n` +
+            `_Exemples :_\n` +
+            `• "10 kg à 45€" (nourriture)\n` +
+            `• "6 L à 12€" (boissons)\n` +
+            `• "24 pièces à 36€"\n` +
+            `• "3 packs de 6 à 18€"`
+          )
+        }
+        break
+      }
+
+      case 'margin_portion_size': {
+        const numbers = extractNumbers(input)
+        
+        if (numbers.length === 0) {
+          const productType = marginCtx.productType
+          if (productType === 'drink') {
+            ask(`Je n'ai pas compris. Donne-moi la quantité servie.\n\n_Ex: 25cl, 33cl, 250ml_`)
+          } else if (productType === 'food') {
+            ask(`Je n'ai pas compris. Donne-moi la quantité servie.\n\n_Ex: 150g, 200g, 300g_`)
+          } else {
+            ask(`Je n'ai pas compris. Donne-moi le nombre d'unités.\n\n_Ex: 1, 2, 0.5_`)
+          }
+          return
+        }
+
+        const portionQty = numbers[0]
+        
+        // Détecter l'unité de portion
+        let portionUnit = marginCtx.purchaseUnit || 'pièces'
+        if (lowerInput.includes('cl')) {
+          portionUnit = 'cl'
+        } else if (lowerInput.includes('ml')) {
+          portionUnit = 'ml'
+        } else if (lowerInput.includes('l') && !lowerInput.includes('ml') && !lowerInput.includes('cl')) {
+          portionUnit = 'L'
+        } else if (lowerInput.includes('g') && !lowerInput.includes('kg')) {
+          portionUnit = 'g'
+        } else if (lowerInput.includes('kg')) {
+          portionUnit = 'kg'
+        }
+
+        // Calculer le coût réel de la portion
+        const purchaseUnit = marginCtx.purchaseUnit || 'pièces'
+        const costPerPurchaseUnit = marginCtx.costPerPurchaseUnit || 0
+        
+        // Conversion pour calculer le coût de la portion
+        let portionCost = 0
+        
+        // Conversions pour les boissons
+        if (purchaseUnit === 'L') {
+          if (portionUnit === 'cl') portionCost = costPerPurchaseUnit * (portionQty / 100)
+          else if (portionUnit === 'ml') portionCost = costPerPurchaseUnit * (portionQty / 1000)
+          else if (portionUnit === 'L') portionCost = costPerPurchaseUnit * portionQty
+          else portionCost = costPerPurchaseUnit * portionQty
+        } else if (purchaseUnit === 'cl') {
+          if (portionUnit === 'cl') portionCost = costPerPurchaseUnit * portionQty
+          else if (portionUnit === 'ml') portionCost = costPerPurchaseUnit * (portionQty / 10)
+          else if (portionUnit === 'L') portionCost = costPerPurchaseUnit * (portionQty * 100)
+          else portionCost = costPerPurchaseUnit * portionQty
+        } else if (purchaseUnit === 'ml') {
+          if (portionUnit === 'ml') portionCost = costPerPurchaseUnit * portionQty
+          else if (portionUnit === 'cl') portionCost = costPerPurchaseUnit * (portionQty * 10)
+          else if (portionUnit === 'L') portionCost = costPerPurchaseUnit * (portionQty * 1000)
+          else portionCost = costPerPurchaseUnit * portionQty
+        }
+        // Conversions pour la nourriture
+        else if (purchaseUnit === 'kg') {
+          if (portionUnit === 'g') portionCost = costPerPurchaseUnit * (portionQty / 1000)
+          else if (portionUnit === 'kg') portionCost = costPerPurchaseUnit * portionQty
+          else portionCost = costPerPurchaseUnit * portionQty
+        } else if (purchaseUnit === 'g') {
+          if (portionUnit === 'g') portionCost = costPerPurchaseUnit * portionQty
+          else if (portionUnit === 'kg') portionCost = costPerPurchaseUnit * (portionQty * 1000)
+          else portionCost = costPerPurchaseUnit * portionQty
+        }
+        // Pièces/unités
+        else {
+          portionCost = costPerPurchaseUnit * portionQty
+        }
+
+        portionCost = Math.round(portionCost * 100) / 100
+
+        setMarginCtx({ 
+          ...marginCtx, 
+          portionSize: portionQty,
+          portionUnit,
+          costPrice: portionCost
+        })
+
+        ask(
+          `📊 **Coût de la portion calculé !**\n\n` +
+          `• Portion : ${portionQty} ${portionUnit}\n` +
+          `• **Coût réel de la portion : ${formatCurrency(portionCost)}** ✓\n\n` +
+          `**À combien vends-tu cette portion de "${marginCtx.productName}" ?**\n\n` +
+          `_Prix de vente TTC en euros (ex: 3.50, 5.00, 7.90)_`
         )
         setPhase('margin_selling_price')
         break

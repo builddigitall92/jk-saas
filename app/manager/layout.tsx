@@ -92,6 +92,27 @@ export default function ManagerLayout({
     return () => clearTimeout(timer)
   }, [])
 
+  // Heartbeat de présence - signale que le manager est en ligne
+  useEffect(() => {
+    if (!profile?.establishment_id) return
+
+    const sendPresenceHeartbeat = async () => {
+      try {
+        await fetch('/api/presence', { method: 'POST' })
+      } catch (err) {
+        // Silencieux
+      }
+    }
+
+    // Envoyer immédiatement
+    sendPresenceHeartbeat()
+
+    // Puis toutes les 30 secondes
+    const interval = setInterval(sendPresenceHeartbeat, 30000)
+
+    return () => clearInterval(interval)
+  }, [profile?.establishment_id])
+
   // Fermer les dropdowns quand on clique en dehors
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

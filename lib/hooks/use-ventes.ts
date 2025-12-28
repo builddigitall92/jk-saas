@@ -122,6 +122,261 @@ export function useVentes() {
         }
     }, [supabase])
 
+    // Fonction helper pour convertir les unités
+    const convertToStockUnit = (quantity: number, fromUnit: string, toUnit: string): number => {
+        if (fromUnit === toUnit) return quantity
+        
+        const from = fromUnit.toLowerCase()
+        const to = toUnit.toLowerCase()
+        
+        // Conversions masse
+        if (from === 'g' && to === 'kg') return quantity / 1000
+        if (from === 'kg' && to === 'g') return quantity * 1000
+        
+        // Conversions volume
+        if ((from === 'ml' || from === 'cl') && to === 'l') {
+            return from === 'ml' ? quantity / 1000 : quantity / 100
+        }
+        if (from === 'l' && (to === 'ml' || to === 'cl')) {
+            return to === 'ml' ? quantity * 1000 : quantity * 100
+        }
+        if (from === 'cl' && to === 'ml') return quantity * 10
+        if (from === 'ml' && to === 'cl') return quantity / 10
+        
+        return quantity
+    }
+
+    // Restaurer le stock pour tous les ingrédients d'un menu_item (lors de la suppression d'une vente)
+    const restoreStockFromSale = async (menuItemId: string, saleQuantity: number, establishmentId: string): Promise<void> => {
+        // Récupérer tous les ingrédients du menu_item
+        const { data: ingredients, error: ingredientsError } = await supabase
+            .from('menu_item_ingredients')
+            .select(`
+                product_id,
+                quantity,
+                unit,
+                product:products(*)
+            `)
+            .eq('menu_item_id', menuItemId)
+
+        if (ingredientsError) {
+            console.error('Erreur lors de la récupération des ingrédients:', ingredientsError)
+            return
+        }
+
+        if (!ingredients || ingredients.length === 0) {
+            console.warn('Aucun ingrédient trouvé pour ce menu_item')
+            return
+        }
+
+        // Pour chaque ingrédient, restaurer le stock
+        for (const ingredient of ingredients) {
+            const productId = ingredient.product_id
+            const ingredientQuantity = Number(ingredient.quantity) || 0
+            const ingredientUnit = ingredient.unit || 'unités'
+            
+            // Quantité totale à restaurer = quantité par portion × nombre de portions vendues
+            const totalQuantityToRestore = ingredientQuantity * saleQuantity
+
+            // Récupérer tous les lots de stock pour ce produit (LIFO: Last In First Out pour la restauration)
+            const { data: allStocks, error: stockError } = await supabase
+                .from('stock')
+                .select(`
+                    *,
+                    product:products(*)
+                `)
+                .eq('product_id', productId)
+                .eq('establishment_id', establishmentId)
+                .order('created_at', { ascending: false }) // Les plus récents en premier (LIFO)
+
+            if (stockError) {
+                console.warn(`Erreur lors de la récupération du stock pour le produit ${productId}:`, stockError.message)
+                continue
+            }
+
+            if (!allStocks || allStocks.length === 0) {
+                // Si aucun stock n'existe, créer une nouvelle entrée de stock
+                const { data: productData } = await supabase
+                    .from('products')
+                    .select('*')
+                    .eq('id', productId)
+                    .single()
+
+                if (productData) {
+                    const stockUnit = (productData as Product).unit || 'unités'
+                    const quantityToRestoreInStockUnit = convertToStockUnit(
+                        totalQuantityToRestore,
+                        ingredientUnit,
+                        stockUnit
+                    )
+
+                    // Créer une nouvelle entrée de stock
+                    const { error: insertError } = await supabase
+                        .from('stock')
+                        .insert({
+                            establishment_id: establishmentId,
+                            product_id: productId,
+                            quantity: quantityToRestoreInStockUnit,
+                            unit_price: 0, // Prix par défaut, peut être mis à jour plus tard
+                            initial_quantity: quantityToRestoreInStockUnit
+                        })
+
+                    if (insertError) {
+                        console.error(`Erreur lors de la création du stock pour ${productId}:`, insertError)
+                    } else {
+                        console.log(`Stock restauré (nouveau lot): ${productId} - ${quantityToRestoreInStockUnit} ${stockUnit}`)
+                    }
+                }
+                continue
+            }
+
+            // Récupérer l'unité du produit depuis le premier lot
+            const firstStock = allStocks[0]
+            const stockUnit = (firstStock.product as Product)?.unit || 'unités'
+
+            // Convertir la quantité de l'ingrédient vers l'unité du stock
+            let remainingToRestore = convertToStockUnit(
+                totalQuantityToRestore,
+                ingredientUnit,
+                stockUnit
+            )
+
+            // Restaurer le stock en utilisant la stratégie LIFO (dans les lots les plus récents)
+            for (const stockItem of allStocks) {
+                if (remainingToRestore <= 0) break
+
+                const currentStockQuantity = Number(stockItem.quantity) || 0
+                const quantityToRestoreToThisLot = remainingToRestore
+                const newQuantity = currentStockQuantity + quantityToRestoreToThisLot
+
+                // Mettre à jour le stock de ce lot
+                const { error: updateError } = await supabase
+                    .from('stock')
+                    .update({ quantity: newQuantity })
+                    .eq('id', stockItem.id)
+
+                if (updateError) {
+                    console.error(`Erreur lors de la restauration du stock pour ${productId} (lot ${stockItem.id}):`, updateError)
+                } else {
+                    console.log(`Stock restauré: ${productId} - ${quantityToRestoreToThisLot} ${stockUnit} au lot ${stockItem.id} (nouveau stock: ${newQuantity})`)
+                }
+
+                remainingToRestore = 0 // On restaure tout dans le premier lot disponible
+                break
+            }
+
+            // Si il reste encore de la quantité à restaurer après avoir rempli tous les lots, créer un nouveau lot
+            if (remainingToRestore > 0) {
+                const { error: insertError } = await supabase
+                    .from('stock')
+                    .insert({
+                        establishment_id: establishmentId,
+                        product_id: productId,
+                        quantity: remainingToRestore,
+                        unit_price: 0, // Prix par défaut
+                        initial_quantity: remainingToRestore
+                    })
+
+                if (insertError) {
+                    console.error(`Erreur lors de la création d'un nouveau lot de stock pour ${productId}:`, insertError)
+                } else {
+                    console.log(`Stock restauré (nouveau lot): ${productId} - ${remainingToRestore} ${stockUnit}`)
+                }
+            }
+        }
+    }
+
+    // Déduire le stock pour tous les ingrédients d'un menu_item
+    const deductStockFromSale = async (menuItemId: string, saleQuantity: number, establishmentId: string): Promise<void> => {
+        // Récupérer tous les ingrédients du menu_item
+        const { data: ingredients, error: ingredientsError } = await supabase
+            .from('menu_item_ingredients')
+            .select(`
+                product_id,
+                quantity,
+                unit,
+                product:products(*)
+            `)
+            .eq('menu_item_id', menuItemId)
+
+        if (ingredientsError) {
+            console.error('Erreur lors de la récupération des ingrédients:', ingredientsError)
+            return
+        }
+
+        if (!ingredients || ingredients.length === 0) {
+            console.warn('Aucun ingrédient trouvé pour ce menu_item')
+            return
+        }
+
+        // Pour chaque ingrédient, déduire le stock
+        for (const ingredient of ingredients) {
+            const productId = ingredient.product_id
+            const ingredientQuantity = Number(ingredient.quantity) || 0
+            const ingredientUnit = ingredient.unit || 'unités'
+            
+            // Quantité totale à déduire = quantité par portion × nombre de portions vendues
+            const totalQuantityToDeduct = ingredientQuantity * saleQuantity
+
+            // Récupérer tous les lots de stock pour ce produit (FIFO: First In First Out)
+            const { data: allStocks, error: stockError } = await supabase
+                .from('stock')
+                .select(`
+                    *,
+                    product:products(*)
+                `)
+                .eq('product_id', productId)
+                .eq('establishment_id', establishmentId)
+                .gt('quantity', 0) // Seulement les lots avec du stock disponible
+                .order('created_at', { ascending: true }) // Les plus anciens en premier (FIFO)
+
+            if (stockError || !allStocks || allStocks.length === 0) {
+                console.warn(`Stock introuvable pour le produit ${productId}:`, stockError?.message)
+                continue
+            }
+
+            // Récupérer l'unité du produit depuis le premier lot
+            const firstStock = allStocks[0]
+            const stockUnit = (firstStock.product as Product)?.unit || 'unités'
+
+            // Convertir la quantité de l'ingrédient vers l'unité du stock
+            let remainingToDeduct = convertToStockUnit(
+                totalQuantityToDeduct,
+                ingredientUnit,
+                stockUnit
+            )
+
+            // Déduire le stock en utilisant la stratégie FIFO
+            for (const stockItem of allStocks) {
+                if (remainingToDeduct <= 0) break
+
+                const currentStockQuantity = Number(stockItem.quantity) || 0
+                if (currentStockQuantity <= 0) continue
+
+                const quantityToDeductFromThisLot = Math.min(remainingToDeduct, currentStockQuantity)
+                const newQuantity = Math.max(0, currentStockQuantity - quantityToDeductFromThisLot)
+
+                // Mettre à jour le stock de ce lot
+                const { error: updateError } = await supabase
+                    .from('stock')
+                    .update({ quantity: newQuantity })
+                    .eq('id', stockItem.id)
+
+                if (updateError) {
+                    console.error(`Erreur lors de la mise à jour du stock pour ${productId} (lot ${stockItem.id}):`, updateError)
+                } else {
+                    console.log(`Stock déduit: ${productId} - ${quantityToDeductFromThisLot} ${stockUnit} du lot ${stockItem.id} (nouveau stock: ${newQuantity})`)
+                }
+
+                remainingToDeduct -= quantityToDeductFromThisLot
+            }
+
+            if (remainingToDeduct > 0) {
+                console.warn(`Stock insuffisant pour le produit ${productId}. Il manque ${remainingToDeduct} ${stockUnit}`)
+            }
+        }
+    }
+
     // Enregistrer une nouvelle vente
     const enregistrerVente = async (menuItemId: string, quantity: number): Promise<{ success: boolean; error?: string }> => {
         try {
@@ -161,6 +416,9 @@ export function useVentes() {
 
             if (insertError) throw insertError
 
+            // Déduire le stock pour tous les ingrédients du menu_item
+            await deductStockFromSale(menuItemId, quantity, profile.establishment_id)
+
             // Rafraîchir les ventes
             await fetchVentesJour()
 
@@ -175,6 +433,27 @@ export function useVentes() {
     // Supprimer une vente
     const supprimerVente = async (venteId: string): Promise<{ success: boolean; error?: string }> => {
         try {
+            // Récupérer les informations de la vente avant de la supprimer
+            const { data: venteData, error: fetchError } = await supabase
+                .from('ventes')
+                .select('menu_item_id, quantity, establishment_id')
+                .eq('id', venteId)
+                .single()
+
+            if (fetchError) throw fetchError
+
+            if (!venteData) {
+                throw new Error('Vente introuvable')
+            }
+
+            // Restaurer le stock avant de supprimer la vente
+            await restoreStockFromSale(
+                venteData.menu_item_id,
+                venteData.quantity,
+                venteData.establishment_id
+            )
+
+            // Supprimer la vente
             const { error: deleteError } = await supabase
                 .from('ventes')
                 .delete()
@@ -203,6 +482,7 @@ export function useVentes() {
           menu_item:menu_items(
             *,
             ingredients:menu_item_ingredients(
+              *,
               product:products(*)
             )
           )

@@ -254,12 +254,32 @@ function CreateMenuItemWizard({ isOpen, onClose, products, stocks, onCreateItem,
     return Math.round((ingredientsCost / (1 - targetMargin / 100)) * 100) / 100
   }, [ingredientsCost, targetMargin])
 
+  // Extraire les produits uniques depuis les stocks
+  const availableProducts = useMemo(() => {
+    const productMap = new Map<string, Product>()
+    stocks.forEach(stock => {
+      if (stock.product && !productMap.has(stock.product.id)) {
+        productMap.set(stock.product.id, stock.product)
+      }
+    })
+    // Ajouter aussi les produits qui n'ont pas de stock mais qui existent
+    products.forEach(product => {
+      if (!productMap.has(product.id)) {
+        productMap.set(product.id, product)
+      }
+    })
+    return Array.from(productMap.values())
+  }, [stocks, products])
+
   const filteredProducts = useMemo(() => {
-    if (!searchIngredient.trim()) return products.slice(0, 10)
-    return products.filter(p => 
+    if (!searchIngredient.trim()) {
+      // Afficher tous les produits disponibles (limité à 20)
+      return availableProducts.slice(0, 20)
+    }
+    return availableProducts.filter(p => 
       p.name.toLowerCase().includes(searchIngredient.toLowerCase())
-    ).slice(0, 10)
-  }, [products, searchIngredient])
+    ).slice(0, 20)
+  }, [availableProducts, searchIngredient])
 
   const addIngredient = (product: Product) => {
     if (ingredients.find(i => i.product_id === product.id)) return
@@ -458,7 +478,7 @@ function CreateMenuItemWizard({ isOpen, onClose, products, stocks, onCreateItem,
               <div className="menu-form-group">
                 <label>Icône</label>
                 <div className="menu-icon-selector">
-                  {['🍕', '🍔', '🥗', '🍖', '🍰', '☕', '🍺', '🍽️', '🍜', '🥘', '🌮', '🍣'].map(emoji => (
+                  {['🍕', '🍔', '🥗', '🍖', '🍰', '☕', '🥤', '🍽️', '🍜', '🥘', '🌮', '🍣'].map(emoji => (
                     <button
                       key={emoji}
                       type="button"
@@ -488,24 +508,36 @@ function CreateMenuItemWizard({ isOpen, onClose, products, stocks, onCreateItem,
                   />
                 </div>
                 
-                {searchIngredient && filteredProducts.length > 0 && (
+                {filteredProducts.length > 0 && (
                   <div className="menu-ingredient-dropdown">
-                    {filteredProducts.map(product => (
-                      <button
-                        key={product.id}
-                        type="button"
-                        className="menu-ingredient-option"
-                        onClick={() => addIngredient(product)}
-                        disabled={ingredients.some(i => i.product_id === product.id)}
-                      >
-                        <span className="menu-ingredient-option-icon">{product.icon || '📦'}</span>
-                        <span className="menu-ingredient-option-name">{product.name}</span>
-                        <span className="menu-ingredient-option-unit">{product.unit}</span>
-                        {ingredients.some(i => i.product_id === product.id) && (
-                          <Check className="w-4 h-4 text-emerald-400" />
-                        )}
-                      </button>
-                    ))}
+                    {filteredProducts.map(product => {
+                      const stock = getProductStock(product.id)
+                      const hasStock = stock && Number(stock.quantity) > 0
+                      return (
+                        <button
+                          key={product.id}
+                          type="button"
+                          className="menu-ingredient-option"
+                          onClick={() => addIngredient(product)}
+                          disabled={ingredients.some(i => i.product_id === product.id)}
+                        >
+                          <span className="menu-ingredient-option-icon">{product.icon || '📦'}</span>
+                          <span className="menu-ingredient-option-name">{product.name}</span>
+                          <span className="menu-ingredient-option-unit">{product.unit}</span>
+                          {hasStock && (
+                            <span className="text-xs text-emerald-400">En stock</span>
+                          )}
+                          {ingredients.some(i => i.product_id === product.id) && (
+                            <Check className="w-4 h-4 text-emerald-400" />
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+                {filteredProducts.length === 0 && searchIngredient && (
+                  <div className="text-center py-4 text-slate-400 text-sm">
+                    Aucun produit trouvé pour "{searchIngredient}"
                   </div>
                 )}
               </div>

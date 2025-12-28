@@ -775,44 +775,40 @@ function TrendsAndActionsSection({ chartData, hasData, caJour, caMois }: { chart
 // SECTION 4 - TOP PRODUITS
 // ============================================
 function TopProductsSection({
-  topMargin,
+  topSelling,
   problematic,
   menuItems,
   stocks
 }: {
-  topMargin: any[]
+  topSelling: Array<{ name: string; quantity: number; totalRevenue: number }>
   problematic: any[]
   menuItems: any[]
   stocks: any[]
 }) {
-  // Formater les top marges depuis les données réelles
-  const formattedTopMargin = topMargin.length > 0
-    ? topMargin.map(item => ({
-      name: item.name,
-      value: Number(item.selling_price) || 0,
-      percent: Math.round(item.actual_margin_percent || 0)
-    }))
+  // Formater les top produits les plus vendus (top 5)
+  const formattedTopSelling = topSelling.length > 0
+    ? topSelling
+        .slice(0, 5) // Prendre les 5 premiers (déjà triés par quantité décroissante)
+        .map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          revenue: item.totalRevenue
+        }))
     : [
-      { name: "Aucun plat configuré", value: 0, percent: 0 },
+      { name: "Aucune vente enregistrée", quantity: 0, revenue: 0 },
     ]
 
-  // Formater les produits problématiques
-  const formattedProblematic = problematic.length > 0
-    ? problematic.map((item: any) => ({
-      name: item.name || 'Produit',
-      value: item.value || (Number(item.selling_price) || 0),
-      variation: item.type === 'Surstock' ? -15 : -(100 - (item.actual_margin_percent || 50)),
-      type: item.type || 'Faible marge'
-    }))
-    : stocks
-      .filter(s => Number(s.quantity) > 20)
-      .slice(0, 5)
-      .map(stock => ({
-        name: stock.product?.name || 'Produit',
-        value: (Number(stock.quantity) || 0) * (Number(stock.unit_price) || 0),
-        variation: -10,
-        type: 'Stock élevé'
-      }))
+  // Formater les produits les moins vendus (5 derniers)
+  const formattedLeastSelling = topSelling.length > 0
+    ? [...topSelling]
+        .sort((a, b) => a.quantity - b.quantity) // Tri croissant (moins vendus en premier)
+        .slice(0, 5) // Prendre les 5 premiers du tri croissant
+        .map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          revenue: item.totalRevenue
+        }))
+    : []
 
   // Si pas de données, afficher un placeholder
   const hasData = menuItems.length > 0 || stocks.length > 0
@@ -824,16 +820,16 @@ function TopProductsSection({
         Top Produits
       </h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top 5 Produits par Marge */}
+        {/* Top 5 Produits les plus vendus */}
         <div className="products-card">
           <h3 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-emerald-400" />
-            Top 5 Produits par Marge
+            Top 5 Produits les plus vendus
           </h3>
           <div className="space-y-1">
-            {formattedTopMargin.length > 0 ? formattedTopMargin.map((product, index) => (
+            {formattedTopSelling.length > 0 && formattedTopSelling[0].name !== "Aucune vente enregistrée" ? formattedTopSelling.map((product, index) => (
               <div
-                key={`margin-${index}`}
+                key={`selling-${index}`}
                 className="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/5 transition-colors group"
               >
                 <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
@@ -841,55 +837,50 @@ function TopProductsSection({
                 </span>
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-semibold text-emerald-400">
-                    {product.value.toLocaleString('fr-FR')} €
+                    {product.quantity} ventes
                   </span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${product.percent >= 70
-                    ? 'text-emerald-400/70 bg-emerald-500/10'
-                    : product.percent >= 50
-                      ? 'text-yellow-400/70 bg-yellow-500/10'
-                      : 'text-red-400/70 bg-red-500/10'
-                    }`}>
-                    ({product.percent}%)
+                  <span className="text-xs px-2 py-0.5 rounded-full text-blue-400/70 bg-blue-500/10">
+                    {product.revenue.toLocaleString('fr-FR')} €
                   </span>
                 </div>
               </div>
             )) : (
               <div className="text-center py-8 text-slate-400">
-                <p>Aucune donnée de marge disponible</p>
-                <p className="text-xs mt-1">Configurez vos plats dans le Menu</p>
+                <p>Aucune vente enregistrée</p>
+                <p className="text-xs mt-1">Les ventes apparaîtront ici une fois enregistrées</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Top 5 Produits Problématiques */}
+        {/* Produits les moins vendus */}
         <div className="products-card">
           <h3 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-red-400" />
-            Top 5 Produits Problématiques (Surstock/Rotation)
+            <TrendingDown className="w-4 h-4 text-orange-400" />
+            Produits les moins vendus
           </h3>
           <div className="space-y-1">
-            {formattedProblematic.length > 0 ? formattedProblematic.map((product, index) => (
+            {formattedLeastSelling.length > 0 ? formattedLeastSelling.map((product, index) => (
               <div
-                key={`problem-${index}`}
+                key={`least-selling-${index}`}
                 className="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-white/5 transition-colors group"
               >
                 <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
                   {product.name}
                 </span>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-red-400">
-                    {product.value.toLocaleString('fr-FR')} €
+                  <span className="text-sm font-semibold text-orange-400">
+                    {product.quantity} ventes
                   </span>
-                  <span className="text-xs text-red-400/70 bg-red-500/10 px-2 py-0.5 rounded-full">
-                    ({product.variation.toFixed(1)}%)
+                  <span className="text-xs px-2 py-0.5 rounded-full text-orange-400/70 bg-orange-500/10">
+                    {product.revenue.toLocaleString('fr-FR')} €
                   </span>
                 </div>
               </div>
             )) : (
               <div className="text-center py-8 text-slate-400">
-                <p>Aucun produit problématique</p>
-                <p className="text-xs mt-1 text-emerald-400">✓ Tout est sous contrôle !</p>
+                <p>Aucune vente enregistrée</p>
+                <p className="text-xs mt-1">Les ventes apparaîtront ici une fois enregistrées</p>
               </div>
             )}
           </div>
@@ -911,6 +902,7 @@ export default function ManagerDashboard() {
   const { stats: dashboardStats, loading: statsLoading } = useDashboardStats()
   const [wasteData, setWasteData] = useState({ cost: 0, count: 0 })
   const [wasteLoading, setWasteLoading] = useState(true)
+  const [topSellingProducts, setTopSellingProducts] = useState<Array<{ name: string; quantity: number; totalRevenue: number }>>([])
   const supabase = createClient()
 
   const loading = realtimeLoading || stockLoading || menuLoading || statsLoading || wasteLoading
@@ -1035,7 +1027,83 @@ export default function ManagerDashboard() {
     return expiry < new Date()
   })
 
-  // Top produits par marge
+  // Récupérer les ventes pour calculer le top 5 des produits les plus vendus
+  useEffect(() => {
+    const fetchTopSellingProducts = async () => {
+      if (!profile?.establishment_id) return
+
+      try {
+        // Récupérer toutes les ventes du mois
+        const startOfMonth = new Date()
+        startOfMonth.setDate(1)
+        startOfMonth.setHours(0, 0, 0, 0)
+
+        const { data: ventes, error } = await supabase
+          .from('ventes')
+          .select(`
+            menu_item_id,
+            quantity,
+            total_price,
+            menu_item:menu_items(name)
+          `)
+          .eq('establishment_id', profile.establishment_id)
+          .gte('created_at', startOfMonth.toISOString())
+
+        if (error) throw error
+
+        // Agréger par produit
+        const productSales: Record<string, { name: string; quantity: number; totalRevenue: number }> = {}
+        
+        ;(ventes || []).forEach((vente: any) => {
+          const menuItemId = vente.menu_item_id
+          const menuItemName = vente.menu_item?.name || 'Produit inconnu'
+          const quantity = Number(vente.quantity) || 0
+          const totalPrice = Number(vente.total_price) || 0
+
+          if (!productSales[menuItemId]) {
+            productSales[menuItemId] = {
+              name: menuItemName,
+              quantity: 0,
+              totalRevenue: 0
+            }
+          }
+
+          productSales[menuItemId].quantity += quantity
+          productSales[menuItemId].totalRevenue += totalPrice
+        })
+
+        // Convertir en tableau et trier par quantité vendue (décroissant)
+        const allProducts = Object.values(productSales)
+          .sort((a, b) => b.quantity - a.quantity)
+
+        // Stocker tous les produits (pas seulement le top 5) pour pouvoir calculer les moins vendus
+        setTopSellingProducts(allProducts)
+      } catch (err) {
+        console.error('Erreur lors du chargement des ventes:', err)
+        setTopSellingProducts([])
+      }
+    }
+
+    fetchTopSellingProducts()
+
+    // Abonnement realtime pour les mises à jour
+    const channel = supabase
+      .channel('ventes-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'ventes' },
+        () => {
+          fetchTopSellingProducts()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [profile?.establishment_id, supabase])
+
+  // Top produits par marge (gardé pour référence mais non utilisé dans l'affichage)
   const topMarginProducts = [...menuItems]
     .filter(item => item.actual_margin_percent > 0)
     .sort((a, b) => b.actual_margin_percent - a.actual_margin_percent)
@@ -2440,7 +2508,7 @@ export default function ManagerDashboard() {
 
         {/* Section 4 - Top Produits */}
         <TopProductsSection
-          topMargin={topMarginProducts}
+          topSelling={topSellingProducts}
           problematic={problematicProducts}
           menuItems={menuItems}
           stocks={stocks}

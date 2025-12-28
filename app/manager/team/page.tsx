@@ -57,18 +57,102 @@ export default function ManagerTeamPage() {
   // Fonction pour charger les membres avec leur statut de présence
   const fetchMembers = async () => {
     try {
-      const response = await fetch('/api/presence')
-      const data = await response.json()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
-      if (response.ok && data.members) {
-        // Filtrer pour exclure l'utilisateur actuel
-        const { data: { user } } = await supabase.auth.getUser()
-        const filteredMembers = data.members.filter((m: TeamMember) => m.id !== user?.id)
-        console.log('Membres chargés:', filteredMembers.length)
-        setTeamMembers(filteredMembers)
+      // Récupérer l'établissement du manager
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('establishment_id')
+        .eq('id', user.id)
+        .single()
+
+      if (!profile?.establishment_id) {
+        console.log('❌ Pas d\'établissement pour le manager')
+        setTeamMembers([])
+        return
       }
+
+      // Essayer d'abord l'API
+      try {
+        const response = await fetch('/api/presence')
+        const data = await response.json()
+
+        if (response.ok && data.members) {
+          // Filtrer pour exclure l'utilisateur actuel
+          const filteredMembers = data.members.filter((m: TeamMember) => m.id !== user.id)
+          console.log('✅ Membres chargés via API:', filteredMembers.length)
+          if (filteredMembers.length > 0) {
+            console.log('Membres:', filteredMembers.map((m: TeamMember) => ({
+              name: `${m.first_name} ${m.last_name}`,
+              role: m.role,
+              is_online: m.is_online
+            })))
+          }
+          setTeamMembers(filteredMembers)
+          return
+        } else {
+          console.warn('⚠️ API présence a retourné une erreur:', data.error)
+        }
+      } catch (apiErr) {
+        console.warn('⚠️ Erreur API présence, fallback sur Supabase:', apiErr)
+      }
+
+      // Fallback : récupérer directement depuis Supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: members, error } = await (supabase as any)
+        .from('profiles')
+        .select('id, first_name, last_name, role, is_active, avatar_url, created_at, updated_at')
+        .eq('establishment_id', profile.establishment_id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('❌ Erreur Supabase:', error)
+        setTeamMembers([])
+        return
+      }
+
+      if (!members || members.length === 0) {
+        console.log('ℹ️ Aucun membre trouvé dans l\'établissement')
+        setTeamMembers([])
+        return
+      }
+
+      // Calculer le statut en ligne pour chaque membre
+      const now = new Date()
+      const membersWithStatus: TeamMember[] = members
+        .filter((m: any) => m.id !== user.id) // Exclure l'utilisateur actuel
+        .map((member: any) => {
+          const lastSeen = new Date(member.updated_at)
+          const diffMinutes = (now.getTime() - lastSeen.getTime()) / (1000 * 60)
+          
+          return {
+            id: member.id,
+            first_name: member.first_name,
+            last_name: member.last_name,
+            role: member.role,
+            is_active: member.is_active,
+            avatar_url: member.avatar_url,
+            created_at: member.created_at,
+            is_online: diffMinutes < 2, // En ligne si activité < 2 minutes
+            last_seen: member.updated_at
+          }
+        })
+
+      console.log('✅ Membres chargés via Supabase:', membersWithStatus.length)
+      if (membersWithStatus.length > 0) {
+        console.log('Membres:', membersWithStatus.map((m: TeamMember) => ({
+          name: `${m.first_name} ${m.last_name}`,
+          role: m.role,
+          is_online: m.is_online
+        })))
+      }
+      setTeamMembers(membersWithStatus)
     } catch (err) {
-      console.error('Erreur:', err)
+      console.error('❌ Erreur fetch membres:', err)
+      setTeamMembers([])
     }
   }
 
@@ -353,11 +437,21 @@ export default function ManagerTeamPage() {
               {searchQuery ? (
                 <>Aucun résultat pour "<span className="glow-cyan">{searchQuery}</span>"</>
               ) : (
-                <>Aucun <span className="glow-cyan">membre</span></>
+                <>Aucun <span className="glow-cyan">membre</span> dans votre équipe</>
               )}
             </p>
             <p className="glass-empty-desc">
-              {searchQuery ? 'Essayez avec un autre terme' : 'Invitez des membres à rejoindre votre équipe'}
+              {searchQuery ? (
+                'Essayez avec un autre terme'
+              ) : (
+                <>
+                  Les employés qui se connectent avec le même établissement apparaîtront ici.
+                  <br />
+                  <span className="text-xs text-slate-500 mt-2 block">
+                    Vérifiez que vos employés ont bien le même establishment_id que vous.
+                  </span>
+                </>
+              )}
             </p>
           </div>
         ) : (
@@ -412,15 +506,22 @@ export default function ManagerTeamPage() {
                         )}
                       </div>
                       
-                      {/* Indicateur de présence en ligne */}
+                      {/* Indicateur de présence en ligne - plus visible */}
                       <div 
-                        className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full ${member.is_online ? 'animate-pulse' : ''}`}
+                        className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${member.is_online ? 'animate-pulse' : ''}`}
                         style={{
                           background: member.is_online ? '#22c55e' : '#64748b',
-                          border: '2px solid #0f172a',
+                          border: '3px solid #0f172a',
+                          boxShadow: member.is_online 
+                            ? '0 0 10px rgba(34, 197, 94, 0.5)' 
+                            : 'none',
                         }}
-                        title={member.is_online ? 'En ligne' : 'Hors ligne'}
-                      />
+                        title={member.is_online ? 'En ligne maintenant' : `Hors ligne${member.last_seen ? ` - Dernière activité: ${new Date(member.last_seen).toLocaleTimeString('fr-FR')}` : ''}`}
+                      >
+                        {member.is_online && (
+                          <div className="w-2 h-2 rounded-full bg-white" />
+                        )}
+                      </div>
                     </div>
 
                     {/* Infos */}

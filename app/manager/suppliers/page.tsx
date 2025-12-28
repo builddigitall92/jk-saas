@@ -14,7 +14,7 @@ import { createClient } from "@/utils/supabase/client"
 import type { Supplier } from "@/lib/database.types"
 
 export default function SuppliersPage() {
-  const { suppliers, loading, avgRating, createSupplier, deleteSupplier } = useSuppliers()
+  const { suppliers, loading, avgRating, createSupplier, deleteSupplier, updateSupplier } = useSuppliers()
   
   // Calculer la somme totale dépensée (avec useMemo pour recalculer quand suppliers change)
   const totalDepense = useMemo(() => {
@@ -78,6 +78,52 @@ export default function SuppliersPage() {
     if (!result.success) {
       alert("Erreur: " + result.error)
     }
+  }
+
+  const handleRatingChange = async (supplierId: string, newRating: number) => {
+    const result = await updateSupplier(supplierId, { rating: newRating })
+    if (!result.success) {
+      alert("Erreur lors de la mise à jour de la note: " + result.error)
+    }
+  }
+
+  // Composant d'étoiles interactif
+  const StarRating = ({ supplierId, currentRating }: { supplierId: string; currentRating: number }) => {
+    const [hoveredRating, setHoveredRating] = useState<number | null>(null)
+    const [isUpdating, setIsUpdating] = useState(false)
+
+    const handleStarClick = async (rating: number) => {
+      setIsUpdating(true)
+      await handleRatingChange(supplierId, rating)
+      setIsUpdating(false)
+    }
+
+    const displayRating = hoveredRating !== null ? hoveredRating : currentRating
+
+    return (
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => handleStarClick(star)}
+            onMouseEnter={() => setHoveredRating(star)}
+            onMouseLeave={() => setHoveredRating(null)}
+            disabled={isUpdating}
+            className="transition-all duration-200 hover:scale-125 disabled:opacity-50 disabled:cursor-not-allowed"
+            title={`Noter ${star} étoile${star > 1 ? 's' : ''}`}
+          >
+            <Star
+              className={`h-5 w-5 ${
+                star <= displayRating
+                  ? 'fill-orange-400 text-orange-400'
+                  : 'fill-none text-slate-500'
+              } transition-colors duration-200`}
+            />
+          </button>
+        ))}
+      </div>
+    )
   }
 
   // Fonction pour obtenir les prix comparés par produit
@@ -344,14 +390,16 @@ export default function SuppliersPage() {
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-semibold text-white text-lg">{supplier.name}</h3>
                       <div 
-                        className="flex items-center gap-1 px-2 py-0.5 rounded-full"
+                        className="flex items-center gap-2 px-3 py-1 rounded-full"
                         style={{
                           background: "rgba(251, 146, 60, 0.15)",
                           border: "1px solid rgba(251, 146, 60, 0.3)",
                         }}
                       >
-                        <Star className="h-3 w-3 fill-orange-400 text-orange-400" />
-                        <span className="text-xs font-medium text-orange-400">{Number(supplier.rating).toFixed(1)}</span>
+                        <StarRating supplierId={supplier.id} currentRating={Number(supplier.rating || 0)} />
+                        <span className="text-xs font-medium text-orange-400 ml-1">
+                          {Number(supplier.rating || 0).toFixed(1)}
+                        </span>
                       </div>
                       {/* Badge Somme Dépensée */}
                       {(supplier.total_depense && Number(supplier.total_depense) > 0) && (

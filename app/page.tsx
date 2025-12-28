@@ -114,7 +114,7 @@ function FAQItem({ question, answer, isOpen, onClick }: {
 }
 
 export default function LandingPage() {
-  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("annual")
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "lifetime">("lifetime")
   const [openFAQ, setOpenFAQ] = useState<number | null>(null)
   const [isVisible, setIsVisible] = useState(false)
 
@@ -210,9 +210,9 @@ export default function LandingPage() {
       tagline: "Premiers pas vers la maîtrise du stock",
       target: "Petits restos, snacks, food trucks",
       monthlyPrice: 60,
-      annualPrice: 649,
-      annualOriginal: 720,
-      annualSavings: "~1 mois offert",
+      lifetimePrice: 580,
+      lifetimeOriginal: 720,
+      lifetimeSavings: "Économie à vie",
       features: [
         "1 établissement",
         "Jusqu'à 3 utilisateurs",
@@ -238,9 +238,9 @@ export default function LandingPage() {
       tagline: "Le choix des équipes sérieuses",
       target: "Restaurants établis, brasseries",
       monthlyPrice: 120,
-      annualPrice: 1199,
-      annualOriginal: 1440,
-      annualSavings: "~2 mois offerts",
+      lifetimePrice: 1199,
+      lifetimeOriginal: 1440,
+      lifetimeSavings: "Économie à vie",
       features: [
         "1 établissement",
         "Jusqu'à 10 utilisateurs",
@@ -271,9 +271,9 @@ export default function LandingPage() {
       tagline: "Pour les opérations à grande échelle",
       target: "Groupes, dark kitchens, chaînes",
       monthlyPrice: 200,
-      annualPrice: 1799,
-      annualOriginal: 2400,
-      annualSavings: ">3 mois offerts",
+      lifetimePrice: 1799,
+      lifetimeOriginal: 2400,
+      lifetimeSavings: "Économie à vie",
       features: [
         "Établissements illimités",
         "Utilisateurs illimités",
@@ -669,11 +669,11 @@ export default function LandingPage() {
         
         <div className="max-w-7xl mx-auto relative">
           <div className="text-center mb-12">
-            {/* Badge annuel */}
-            {billingPeriod === "annual" && (
+            {/* Badge à vie */}
+            {billingPeriod === "lifetime" && (
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 mb-6 animate-pulse">
                 <Sparkles className="h-4 w-4 text-emerald-400" />
-                <span className="text-sm font-semibold text-emerald-400">Jusqu'à 3 mois offerts en annuel</span>
+                <span className="text-sm font-semibold text-emerald-400">Paiement unique, accès à vie</span>
               </div>
             )}
             
@@ -690,16 +690,16 @@ export default function LandingPage() {
                 Mensuel
               </button>
               <button
-                onClick={() => setBillingPeriod("annual")}
+                onClick={() => setBillingPeriod("lifetime")}
                 className={`px-6 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${
-                  billingPeriod === "annual" 
+                  billingPeriod === "lifetime" 
                     ? "bg-white text-black" 
                     : "text-gray-400 hover:text-white"
                 }`}
               >
-                Annuel
+                À vie
                 <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                  billingPeriod === "annual"
+                  billingPeriod === "lifetime"
                     ? "bg-emerald-500 text-white"
                     : "bg-emerald-500/80 text-white"
                 }`}>
@@ -716,11 +716,11 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-6 lg:gap-8 items-start">
             {/* Starter */}
             <div className="group relative rounded-3xl bg-white/[0.02] border border-white/10 p-8 hover:border-white/20 transition-all duration-300">
-              {/* Promo badge - annual only */}
-              {billingPeriod === "annual" && (
+              {/* Promo badge - lifetime only */}
+              {billingPeriod === "lifetime" && (
                 <div className="absolute -top-3 right-4">
                   <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-emerald-500/30">
-                    {plans.starter.annualSavings}
+                    {plans.starter.lifetimeSavings}
                   </div>
                 </div>
               )}
@@ -733,19 +733,19 @@ export default function LandingPage() {
 
               <div className="mb-6">
                 <div className="flex items-baseline gap-2">
-                  {billingPeriod === "annual" && plans.starter.annualOriginal && (
+                  {billingPeriod === "lifetime" && plans.starter.lifetimeOriginal && (
                     <span className="text-xl font-medium text-gray-500 line-through">
-                      {plans.starter.annualOriginal}€
+                      {plans.starter.lifetimeOriginal}€
                     </span>
                   )}
                   <span className="text-5xl font-black text-white">
-                    {billingPeriod === "monthly" ? plans.starter.monthlyPrice : plans.starter.annualPrice}€
+                    {billingPeriod === "monthly" ? plans.starter.monthlyPrice : plans.starter.lifetimePrice}€
                   </span>
-                  <span className="text-gray-500">/{billingPeriod === "monthly" ? "mois" : "an"}</span>
+                  <span className="text-gray-500">{billingPeriod === "monthly" ? "/mois" : " à vie"}</span>
                 </div>
-                {billingPeriod === "annual" && plans.starter.annualOriginal && (
+                {billingPeriod === "lifetime" && plans.starter.lifetimeOriginal && (
                   <p className="text-sm text-emerald-400 font-semibold mt-1">
-                    Économise {plans.starter.annualOriginal - plans.starter.annualPrice}€/an
+                    Économise {plans.starter.lifetimeOriginal - plans.starter.lifetimePrice}€
                   </p>
                 )}
               </div>
@@ -796,18 +796,18 @@ export default function LandingPage() {
               
               <div className="relative bg-gradient-to-br from-gray-900 to-gray-950 rounded-3xl border-2 border-emerald-500/50 p-8 shadow-2xl shadow-emerald-500/20">
                 {/* Popular badge */}
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-10">
                   <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-emerald-500/30">
                     <Crown className="h-4 w-4" />
                     Recommandé
                   </div>
                 </div>
 
-                {/* Promo badge - annual only */}
-                {billingPeriod === "annual" && (
+                {/* Promo badge - lifetime only */}
+                {billingPeriod === "lifetime" && (
                   <div className="absolute -top-3 right-4 z-10">
-                    <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-emerald-500/30">
-                      {plans.pro.annualSavings}
+                    <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-[10px] px-2.5 py-0.5 rounded-full font-bold shadow-lg shadow-emerald-500/30">
+                      {plans.pro.lifetimeSavings}
                     </div>
                   </div>
                 )}
@@ -820,19 +820,19 @@ export default function LandingPage() {
 
                 <div className="mb-6">
                   <div className="flex items-baseline gap-2">
-                    {billingPeriod === "annual" && plans.pro.annualOriginal && (
+                    {billingPeriod === "lifetime" && plans.pro.lifetimeOriginal && (
                       <span className="text-xl font-medium text-gray-500 line-through">
-                        {plans.pro.annualOriginal}€
+                        {plans.pro.lifetimeOriginal}€
                       </span>
                     )}
                     <span className="text-5xl font-black text-emerald-400">
-                      {billingPeriod === "monthly" ? plans.pro.monthlyPrice : plans.pro.annualPrice}€
+                      {billingPeriod === "monthly" ? plans.pro.monthlyPrice : plans.pro.lifetimePrice}€
                     </span>
-                    <span className="text-gray-500">/{billingPeriod === "monthly" ? "mois" : "an"}</span>
+                    <span className="text-gray-500">{billingPeriod === "monthly" ? "/mois" : " à vie"}</span>
                   </div>
-                  {billingPeriod === "annual" && plans.pro.annualOriginal && (
+                  {billingPeriod === "lifetime" && plans.pro.lifetimeOriginal && (
                     <p className="text-sm text-emerald-400 font-semibold mt-1">
-                      Économise {plans.pro.annualOriginal - plans.pro.annualPrice}€/an
+                      Économise {plans.pro.lifetimeOriginal - plans.pro.lifetimePrice}€
                     </p>
                   )}
                 </div>
@@ -880,11 +880,11 @@ export default function LandingPage() {
 
             {/* Premium */}
             <div className="group relative rounded-3xl bg-white/[0.02] border border-white/10 p-8 hover:border-amber-500/30 transition-all duration-300">
-              {/* Promo badge - annual only */}
-              {billingPeriod === "annual" && (
+              {/* Promo badge - lifetime only */}
+              {billingPeriod === "lifetime" && (
                 <div className="absolute -top-3 right-4">
                   <div className="bg-gradient-to-r from-amber-600 to-amber-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-amber-500/30">
-                    {plans.premium.annualSavings}
+                    {plans.premium.lifetimeSavings}
                   </div>
                 </div>
               )}
@@ -897,19 +897,19 @@ export default function LandingPage() {
 
               <div className="mb-6">
                 <div className="flex items-baseline gap-2">
-                  {billingPeriod === "annual" && plans.premium.annualOriginal && (
+                  {billingPeriod === "lifetime" && plans.premium.lifetimeOriginal && (
                     <span className="text-xl font-medium text-gray-500 line-through">
-                      {plans.premium.annualOriginal}€
+                      {plans.premium.lifetimeOriginal}€
                     </span>
                   )}
                   <span className="text-5xl font-black text-amber-400">
-                    {billingPeriod === "monthly" ? plans.premium.monthlyPrice : plans.premium.annualPrice}€
+                    {billingPeriod === "monthly" ? plans.premium.monthlyPrice : plans.premium.lifetimePrice}€
                   </span>
-                  <span className="text-gray-500">/{billingPeriod === "monthly" ? "mois" : "an"}</span>
+                  <span className="text-gray-500">{billingPeriod === "monthly" ? "/mois" : " à vie"}</span>
                 </div>
-                {billingPeriod === "annual" && plans.premium.annualOriginal && (
+                {billingPeriod === "lifetime" && plans.premium.lifetimeOriginal && (
                   <p className="text-sm text-amber-400 font-semibold mt-1">
-                    Économise {plans.premium.annualOriginal - plans.premium.annualPrice}€/an
+                    Économise {plans.premium.lifetimeOriginal - plans.premium.lifetimePrice}€
                   </p>
                 )}
               </div>
