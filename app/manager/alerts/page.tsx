@@ -1,27 +1,25 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSearchParams } from "next/navigation"
 import { Bell, Check, Filter, AlertCircle, AlertTriangle, Info, CheckCircle2, Loader2, Package, Calendar, RefreshCw } from "lucide-react"
 import { useNotifications, type Notification } from "@/lib/hooks/use-notifications"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
 export default function AlertsPage() {
-  const searchParams = useSearchParams()
-  const initialFilter = searchParams.get('filter') as 'all' | 'unread' | 'critical' | 'stock' | 'peremption' || 'all'
-  
   const { notifications, loading, unreadCount, stats, markAsRead, markAllAsRead, refresh } = useNotifications()
-  const [filter, setFilter] = useState<'all' | 'unread' | 'critical' | 'stock' | 'peremption'>(initialFilter)
+  const [filter, setFilter] = useState<'all' | 'unread' | 'critical' | 'stock' | 'peremption'>('all')
 
   // Mettre à jour le filtre si le paramètre URL change
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const initialFilter = params.get('filter') as 'all' | 'unread' | 'critical' | 'stock' | 'peremption' | 'ruptures' | null
     if (initialFilter === 'ruptures') {
       setFilter('stock')
     } else if (initialFilter) {
       setFilter(initialFilter)
     }
-  }, [initialFilter])
+  }, [])
 
   const filteredNotifications = notifications.filter(notif => {
     if (filter === 'unread') return notif.unread
