@@ -1,6 +1,6 @@
 "use client"
 
-import { Shield, ArrowLeft, Package, ShoppingCart, BarChart3, Calendar, Building2, Heart, Home, Bell } from "lucide-react"
+import { Shield, ArrowLeft, Package, BarChart3, Calendar, Building2, Heart, Home, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
@@ -17,7 +17,6 @@ export function RoleNav({ role }: RoleNavProps) {
   const managerTabs = [
     { name: "Tableau de Bord", href: "/manager", icon: BarChart3 },
     { name: "Stocks", href: "/manager/stock", icon: Package },
-    { name: "Commandes", href: "/manager/orders", icon: ShoppingCart },
     { name: "Fournisseurs", href: "/manager/suppliers", icon: Building2 },
     { name: "Alertes", href: "/manager/alerts", icon: Bell },
     { name: "Prévisions", href: "/manager/forecasts", icon: Calendar },

@@ -1,23 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/utils/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
-// Créer un client Supabase admin (bypass RLS)
-function getSupabaseAdmin() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Configuration Supabase manquante')
-  }
-
-  return createClient(supabaseUrl, serviceRoleKey)
-}
-
 export async function POST(request: NextRequest) {
   try {
-    // Vérifier l'authentification de l'utilisateur
+    // Créer le client Supabase avec le contexte de l'utilisateur
     const supabase = await createServerClient()
+    
+    // Vérifier l'authentification de l'utilisateur
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -53,11 +42,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Vous ne pouvez pas vous retirer vous-même' }, { status: 400 })
     }
 
-    // Utiliser le client admin pour bypass RLS
-    const supabaseAdmin = getSupabaseAdmin()
-
     // Vérifier que le membre appartient au même établissement
-    const { data: memberProfile, error: memberError } = await supabaseAdmin
+    const { data: memberProfile, error: memberError } = await supabase
       .from('profiles')
       .select('establishment_id')
       .eq('id', memberId)
@@ -71,11 +57,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ce membre ne fait pas partie de votre établissement' }, { status: 403 })
     }
 
-    // Retirer le membre : mettre establishment_id à null et is_active à false
-    const { data: updatedMember, error: updateError } = await supabaseAdmin
+    // Retirer le membre : garder establishment_id pour pouvoir le réactiver, mais mettre is_active à false
+    const { data: updatedMember, error: updateError } = await supabase
       .from('profiles')
       .update({ 
-        establishment_id: null,
         is_active: false 
       })
       .eq('id', memberId)
@@ -84,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error('Erreur lors de la mise à jour:', updateError)
-      return NextResponse.json({ error: 'Erreur lors de la suppression' }, { status: 500 })
+      return NextResponse.json({ error: 'Erreur lors de la suppression: ' + updateError.message }, { status: 500 })
     }
 
     console.log('✅ Membre retiré avec succès:', memberId)
@@ -101,4 +86,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
-

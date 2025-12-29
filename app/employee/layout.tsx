@@ -21,11 +21,10 @@ import {
   ChevronDown,
   Shield,
   HelpCircle,
-  History,
   ChefHat,
 } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
-import { useAlerts } from "@/lib/hooks/use-alerts"
+import { useNotifications } from "@/lib/hooks/use-notifications"
 
 const mainNavItems = [
   { name: "Dashboard", href: "/employee", icon: LayoutDashboard, color: "blue" },
@@ -34,7 +33,6 @@ const mainNavItems = [
   { name: "Gaspillage", href: "/employee/waste", icon: Trash2, color: "orange" },
   { name: "Check-in", href: "/employee/service-check", icon: ClipboardCheck, color: "green" },
   { name: "Alertes", href: "/employee/alerts", icon: AlertTriangle, color: "pink", hasBadge: true },
-  { name: "Historique", href: "/employee/history", icon: History, color: "purple" },
 ]
 
 const bottomNavItems = [
@@ -49,7 +47,7 @@ export default function EmployeeLayout({
   const pathname = usePathname()
   const router = useRouter()
   const { profile, loading: authLoading } = useAuth()
-  const { unreadCount } = useAlerts()
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
   const userName = profile?.first_name || "Employé"
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
@@ -198,35 +196,7 @@ export default function EmployeeLayout({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  // Données de notifications exemple
-  const notifications = [
-    {
-      id: 1,
-      type: 'alert',
-      title: 'Stock faible détecté',
-      message: 'Tomates : seulement 5 unités restantes',
-      time: 'Il y a 2 minutes',
-      unread: true
-    },
-    {
-      id: 2,
-      type: 'info',
-      title: 'Check-in requis',
-      message: 'N\'oubliez pas de faire le check-in du service',
-      time: 'Il y a 15 minutes',
-      unread: true
-    },
-    {
-      id: 3,
-      type: 'warning',
-      title: 'DLC approche',
-      message: '3 produits expireront dans 2 jours',
-      time: 'Il y a 1 heure',
-      unread: false
-    }
-  ]
-
-  const notificationUnreadCount = notifications.filter(n => n.unread).length
+  // Le hook useNotifications fournit maintenant les vraies notifications
 
   // Index de recherche pour la navigation
   const searchableItems = [
@@ -236,7 +206,6 @@ export default function EmployeeLayout({
     { name: "Gaspillage", href: "/employee/waste", keywords: ["gaspillage", "perte", "déchet", "waste"] },
     { name: "Check-in", href: "/employee/service-check", keywords: ["check", "service", "contrôle", "validation"] },
     { name: "Alertes", href: "/employee/alerts", keywords: ["alerte", "notification", "warning"] },
-    { name: "Historique", href: "/employee/history", keywords: ["historique", "history", "passé", "logs"] },
     { name: "Paramètres", href: "/employee/settings", keywords: ["paramètre", "paramètres", "settings", "configuration"] },
   ]
 
@@ -473,7 +442,6 @@ export default function EmployeeLayout({
              pathname.includes("/waste") ? "Gaspillage" :
              pathname.includes("/service-check") ? "Check-in" :
              pathname.includes("/alerts") ? "Alertes" :
-             pathname.includes("/history") ? "Historique" :
              pathname.includes("/settings") ? "Paramètres" : "Dashboard"}
           </h2>
 
@@ -561,9 +529,9 @@ export default function EmployeeLayout({
                 className="notification-button glass-btn glass-btn-icon relative"
               >
                 <Bell className="w-[18px] h-[18px] text-slate-400" />
-                {notificationUnreadCount > 0 && (
+                {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg shadow-red-500/50">
-                    {notificationUnreadCount}
+                    {unreadCount}
                   </span>
                 )}
               </button>
@@ -573,18 +541,23 @@ export default function EmployeeLayout({
                 <div className="absolute right-0 top-full mt-2 w-80 glass-dropdown z-[999999]">
                   <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-white">Notifications</h3>
-                    {notificationUnreadCount > 0 && (
+                    {unreadCount > 0 && (
                       <span className="text-xs text-orange-400 font-medium">
-                        {notificationUnreadCount} non lue{notificationUnreadCount > 1 ? 's' : ''}
+                        {unreadCount} non lue{unreadCount > 1 ? 's' : ''}
                       </span>
                     )}
                   </div>
                   <div className="max-h-96 overflow-y-auto">
                     {notifications.length > 0 ? (
-                      notifications.map((notification) => (
-                        <div
+                      notifications.slice(0, 5).map((notification) => (
+                        <Link
                           key={notification.id}
-                          className={`px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${
+                          href={notification.href?.replace('/manager/', '/employee/') || '/employee/alerts'}
+                          onClick={() => {
+                            markAsRead(notification.id)
+                            setIsNotificationsOpen(false)
+                          }}
+                          className={`block px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${
                             notification.unread ? 'bg-orange-500/5' : ''
                           }`}
                         >
@@ -603,7 +576,7 @@ export default function EmployeeLayout({
                               <div className="w-2 h-2 rounded-full bg-orange-500 shrink-0 mt-2" />
                             )}
                           </div>
-                        </div>
+                        </Link>
                       ))
                     ) : (
                       <div className="px-4 py-8 text-center">
@@ -613,10 +586,22 @@ export default function EmployeeLayout({
                     )}
                   </div>
                   {notifications.length > 0 && (
-                    <div className="px-4 py-2 border-t border-white/10">
-                      <button className="text-xs text-orange-400 hover:text-orange-300 font-medium w-full text-center">
-                        Marquer tout comme lu
-                      </button>
+                    <div className="px-4 py-2 border-t border-white/10 flex items-center justify-between">
+                      <Link 
+                        href="/employee/alerts"
+                        onClick={() => setIsNotificationsOpen(false)}
+                        className="text-xs text-slate-400 hover:text-white font-medium"
+                      >
+                        Voir toutes
+                      </Link>
+                      {unreadCount > 0 && (
+                        <button 
+                          onClick={markAllAsRead}
+                          className="text-xs text-orange-400 hover:text-orange-300 font-medium"
+                        >
+                          Tout marquer lu
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -669,10 +654,6 @@ export default function EmployeeLayout({
                     <span>Paramètres</span>
                   </Link>
                   <div className="glass-dropdown-divider" />
-                  <Link href="/employee/history" className="glass-dropdown-item">
-                    <History className="w-4 h-4" />
-                    <span>Mon Historique</span>
-                  </Link>
                   <Link href="/employee/alerts" className="glass-dropdown-item">
                     <HelpCircle className="w-4 h-4" />
                     <span>Aide & Support</span>

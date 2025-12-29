@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import {
   Package,
-  ShoppingCart,
   Truck,
   TrendingUp,
   TrendingDown,
@@ -148,7 +147,7 @@ const businessHealthStyles: Record<BusinessHealthType, {
 };
 
 function BusinessHealthSection({
-  caMonth,
+  caJour,
   stockValue,
   marginValue,
   marginPercent,
@@ -156,7 +155,7 @@ function BusinessHealthSection({
   wasteCount,
   hasData
 }: {
-  caMonth: number
+  caJour: number
   stockValue: number
   marginValue: number
   marginPercent: number
@@ -177,11 +176,11 @@ function BusinessHealthSection({
       {
         id: "ca",
         type: "revenue",
-        label: "CA du Mois",
-        value: hasData && caMonth > 0 ? `${caMonth.toLocaleString('fr-FR')} €` : "-- €",
+        label: "CA du Jour",
+        value: hasData && caJour > 0 ? `${caJour.toLocaleString('fr-FR')} €` : "-- €",
         variation: null, // Pas de variation sans historique de ventes
         variationSuffix: "%",
-        noData: !hasData || caMonth === 0,
+        noData: !hasData || caJour === 0,
       },
       {
         id: "stock",
@@ -412,9 +411,9 @@ function AttentionSection({
         title: "Commandes Fournisseurs",
         count: "À vérifier",
         countValue: 0,
-        action: "Voir commandes",
+        action: "Voir Stocks",
         variant: "orders",
-        href: "/manager/orders",
+        href: "/manager/stock",
         thresholds: { low: 10, medium: 15, high: 20 }, // Seuils très hauts = pas de shake
         isCritical: false, // Pas critique - ne shake jamais
       },
@@ -541,7 +540,6 @@ function TrendsAndActionsSection({ chartData, hasData, caJour, caMois }: { chart
 
   const quickActions: Array<{ id: string; icon: React.ElementType; label: string; href: string; theme: QuickActionTheme }> = [
     { id: "entree", icon: Plus, label: "Ajouter Entrée/Sortie", href: "/manager/stock", theme: "blue" },
-    { id: "commande", icon: ShoppingCart, label: "Créer Commande", href: "/manager/orders", theme: "green" },
     { id: "inventaire", icon: ClipboardList, label: "Lancer Inventaire", href: "/manager/stock", theme: "purple" },
     { id: "alertes", icon: Bell, label: "Consulter Alertes", href: "/manager/alerts", theme: "orange" },
     { id: "rapport", icon: FileText, label: "Générer Rapport", href: "/manager/reports", theme: "teal" },
@@ -1006,11 +1004,13 @@ export default function ManagerDashboard() {
   const nbVentesJour = dashboardStats.nbVentesJour
   const nbMenusActifs = dashboardStats.nbMenusActifs || menuItems.length
 
-  // Alertes réelles
+  // Alertes réelles basées sur les seuils de stock et dates de péremption
   const lowStockItems = stocks.filter(stock => {
     const qty = Number(stock.quantity) || 0
-    const alertLevel = Number(stock.alert_threshold) || 5
-    return qty <= alertLevel
+    // Utiliser le seuil minimum défini sur le produit
+    const minThreshold = Number(stock.product?.min_stock_threshold) || 0
+    // Ne considérer comme alerte que si un seuil est défini et que la quantité est en dessous
+    return minThreshold > 0 && qty <= minThreshold
   })
 
   const expiringItems = stocks.filter(stock => {
@@ -2488,7 +2488,7 @@ export default function ManagerDashboard() {
       <div className="p-6 space-y-8 max-w-[1600px] mx-auto">
         {/* Section 1 - Santé du Business */}
         <BusinessHealthSection
-          caMonth={Math.round(caMois)}
+          caJour={Math.round(caJour)}
           stockValue={Math.round(stockValue)}
           marginValue={marginValue}
           marginPercent={marginPercent}

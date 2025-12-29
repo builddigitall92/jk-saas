@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Package, ShoppingCart, Trash2, ClipboardCheck, Menu, X, Shield } from 'lucide-react'
+import { Package, Trash2, ClipboardCheck, Menu, X, Shield } from 'lucide-react'
 
 export function DashboardNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -11,7 +11,6 @@ export function DashboardNav() {
   const navItems = [
     { href: '/', label: 'Tableau de Bord', icon: Package },
     { href: '/stock', label: 'Stock', icon: Package },
-    { href: '/orders', label: 'Commandes', icon: ShoppingCart },
     { href: '/waste', label: 'Gaspillage', icon: Trash2 },
     { href: '/checks', label: 'Contrôles', icon: ClipboardCheck },
   ]

@@ -7,7 +7,6 @@ import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard,
   Package,
-  ShoppingCart,
   Truck,
   TrendingUp,
   BarChart3,
@@ -31,14 +30,14 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useSubscription } from "@/lib/hooks/use-subscription"
+import { useNotifications } from "@/lib/hooks/use-notifications"
 
 const mainNavItems = [
   { name: "Dashboard", href: "/manager", icon: LayoutDashboard, color: "blue" },
   { name: "Menu", href: "/manager/menu", icon: ChefHat, color: "emerald" },
   { name: "Ventes", href: "/manager/ventes", icon: Receipt, color: "green" },
-  { name: "Stocks", href: "/manager/stock", icon: Package, badge: 4, color: "cyan" },
-  { name: "Commandes", href: "/manager/orders", icon: ShoppingCart, color: "purple" },
-  { name: "Fournisseurs", href: "/manager/suppliers", icon: Truck, badge: 3, color: "green" },
+  { name: "Stocks", href: "/manager/stock", icon: Package, color: "cyan" },
+  { name: "Fournisseurs", href: "/manager/suppliers", icon: Truck, color: "green" },
   { name: "Prévisions", href: "/manager/forecasts", icon: TrendingUp, color: "orange" },
   { name: "Rapports", href: "/manager/reports", icon: BarChart3, color: "pink" },
   { name: "Calculateur", href: "/manager/calculator", icon: Calculator, color: "yellow" },
@@ -60,6 +59,7 @@ export default function ManagerLayout({
   const router = useRouter()
   const { profile, user } = useAuth()
   const { subscription, currentPlan, isTrialing, loading: subscriptionLoading } = useSubscription()
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
   const userName = profile?.first_name || "Manager"
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
@@ -153,41 +153,12 @@ export default function ManagerLayout({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  // Données de notifications exemple
-  const notifications = [
-    {
-      id: 1,
-      type: 'alert',
-      title: 'Stock faible détecté',
-      message: 'Tomates : seulement 5 unités restantes',
-      time: 'Il y a 2 minutes',
-      unread: true
-    },
-    {
-      id: 2,
-      type: 'info',
-      title: 'Nouvelle commande',
-      message: 'Commande #1234 reçue de Metro',
-      time: 'Il y a 15 minutes',
-      unread: true
-    },
-    {
-      id: 3,
-      type: 'warning',
-      title: 'DLC approche',
-      message: '3 produits expireront dans 2 jours',
-      time: 'Il y a 1 heure',
-      unread: false
-    }
-  ]
-
-  const unreadCount = notifications.filter(n => n.unread).length
+  // Les notifications sont maintenant gérées par le hook useNotifications
 
   // Index de recherche pour la navigation
   const searchableItems = [
     { name: "Dashboard", href: "/manager", keywords: ["dashboard", "accueil", "vue d'ensemble"] },
     { name: "Stocks", href: "/manager/stock", keywords: ["stock", "stocks", "inventaire", "produits"] },
-    { name: "Commandes", href: "/manager/orders", keywords: ["commande", "commandes", "achat", "achats"] },
     { name: "Fournisseurs", href: "/manager/suppliers", keywords: ["fournisseur", "fournisseurs", "supplier"] },
     { name: "Prévisions", href: "/manager/forecasts", keywords: ["prévision", "prévisions", "forecast", "prédiction"] },
     { name: "Rapports", href: "/manager/reports", keywords: ["rapport", "rapports", "report", "analyse"] },
@@ -416,15 +387,14 @@ export default function ManagerLayout({
           <h2 className={`glass-title ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
             {pathname === "/manager" ? "Dashboard" :
               pathname.includes("/stock") ? "Stocks" :
-                pathname.includes("/orders") ? "Commandes" :
-                  pathname.includes("/suppliers") ? "Fournisseurs" :
-                    pathname.includes("/forecasts") ? "Prévisions" :
-                      pathname.includes("/reports") ? "Rapports" :
-                        pathname.includes("/calculator") ? "Calculateur" :
-                          pathname.includes("/feedback") ? "Feedbacks" :
-                            pathname.includes("/account") ? "Mon Profil" :
-                              pathname.includes("/help") ? "Aide & Support" :
-                                pathname.includes("/settings") ? "Paramètres" : "Dashboard"}
+                pathname.includes("/suppliers") ? "Fournisseurs" :
+                  pathname.includes("/forecasts") ? "Prévisions" :
+                    pathname.includes("/reports") ? "Rapports" :
+                      pathname.includes("/calculator") ? "Calculateur" :
+                        pathname.includes("/feedback") ? "Feedbacks" :
+                          pathname.includes("/account") ? "Mon Profil" :
+                            pathname.includes("/help") ? "Aide & Support" :
+                              pathname.includes("/settings") ? "Paramètres" : "Dashboard"}
           </h2>
 
           {/* Right Actions */}
@@ -532,12 +502,20 @@ export default function ManagerLayout({
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
+                          onClick={() => {
+                            markAsRead(notification.id)
+                            if (notification.href) {
+                              router.push(notification.href)
+                              setIsNotificationsOpen(false)
+                            }
+                          }}
                           className={`px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${notification.unread ? 'bg-emerald-500/5' : ''
                             }`}
                         >
                           <div className="flex items-start gap-3">
                             <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${notification.type === 'alert' ? 'bg-red-500' :
                                 notification.type === 'warning' ? 'bg-orange-500' :
+                                  notification.type === 'success' ? 'bg-emerald-500' :
                                   'bg-blue-500'
                               }`} />
                             <div className="flex-1 min-w-0">
@@ -555,12 +533,16 @@ export default function ManagerLayout({
                       <div className="px-4 py-8 text-center">
                         <Bell className="w-8 h-8 text-slate-500 mx-auto mb-2 opacity-50" />
                         <p className="text-sm text-slate-400">Aucune notification</p>
+                        <p className="text-xs text-slate-500 mt-1">Tous vos stocks sont en ordre</p>
                       </div>
                     )}
                   </div>
-                  {notifications.length > 0 && (
+                  {notifications.length > 0 && unreadCount > 0 && (
                     <div className="px-4 py-2 border-t border-white/10">
-                      <button className="text-xs text-emerald-400 hover:text-emerald-300 font-medium w-full text-center">
+                      <button 
+                        onClick={() => markAllAsRead()}
+                        className="text-xs text-emerald-400 hover:text-emerald-300 font-medium w-full text-center"
+                      >
                         Marquer tout comme lu
                       </button>
                     </div>

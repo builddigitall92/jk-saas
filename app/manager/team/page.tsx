@@ -51,6 +51,21 @@ export default function ManagerTeamPage() {
   const [isRemoving, setIsRemoving] = useState(false)
   const [removeError, setRemoveError] = useState<string | null>(null)
   
+  // États pour la réactivation
+  const [memberToReactivate, setMemberToReactivate] = useState<TeamMember | null>(null)
+  const [isReactivating, setIsReactivating] = useState(false)
+  const [reactivateError, setReactivateError] = useState<string | null>(null)
+  
+  // États pour la recherche par email
+  const [showSearchModal, setShowSearchModal] = useState(false)
+  const [searchEmail, setSearchEmail] = useState("")
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
+  const [foundMember, setFoundMember] = useState<(TeamMember & { email?: string; canReactivate?: boolean }) | null>(null)
+  
+  // Onglet actif (actifs / désactivés)
+  const [showInactive, setShowInactive] = useState(false)
+  
   // Assistant IA
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false)
 
@@ -99,13 +114,13 @@ export default function ManagerTeamPage() {
         console.warn('⚠️ Erreur API présence, fallback sur Supabase:', apiErr)
       }
 
-      // Fallback : récupérer directement depuis Supabase
+      // Fallback : récupérer directement depuis Supabase (tous les membres, actifs et inactifs)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: members, error } = await (supabase as any)
         .from('profiles')
         .select('id, first_name, last_name, role, is_active, avatar_url, created_at, updated_at')
         .eq('establishment_id', profile.establishment_id)
-        .eq('is_active', true)
+        .order('is_active', { ascending: false }) // Actifs en premier
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -253,22 +268,138 @@ export default function ManagerTeamPage() {
     }
   }
 
+  // Fonction pour réactiver un membre via l'API
+  const handleReactivateMember = async () => {
+    if (!memberToReactivate) return
+    
+    setIsReactivating(true)
+    setReactivateError(null)
+    
+    const memberIdToReactivate = memberToReactivate.id
+    const memberName = `${memberToReactivate.first_name || ''} ${memberToReactivate.last_name || ''}`.trim()
+    
+    try {
+      console.log('🔄 Tentative de réactivation du membre via API:', memberIdToReactivate)
+      
+      const response = await fetch('/api/team/reactivate-member', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId: memberIdToReactivate })
+      })
+      
+      const result = await response.json()
+      
+      if (!response.ok) {
+        console.error('❌ Erreur API:', result.error)
+        throw new Error(result.error || 'Erreur lors de la réactivation')
+      }
+      
+      console.log('✅ Membre réactivé avec succès:', result)
+      
+      // Fermer le modal
+      setMemberToReactivate(null)
+      
+      // Basculer vers l'onglet des membres actifs
+      setShowInactive(false)
+      
+      // Rafraîchir la liste complète depuis la base de données
+      await fetchMembers()
+      
+      console.log(`🎉 ${memberName} a été réactivé et devrait maintenant apparaître dans les membres actifs`)
+      
+    } catch (err) {
+      console.error('Erreur lors de la réactivation:', err)
+      setReactivateError(err instanceof Error ? err.message : 'Une erreur est survenue')
+    } finally {
+      setIsReactivating(false)
+    }
+  }
+
+  // Fonction pour rechercher un membre par email
+  const handleSearchByEmail = async () => {
+    if (!searchEmail.trim()) return
+    
+    setIsSearching(true)
+    setSearchError(null)
+    setFoundMember(null)
+    
+    try {
+      const response = await fetch('/api/team/search-member', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: searchEmail.trim() })
+      })
+      
+      const result = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Erreur lors de la recherche')
+      }
+      
+      setFoundMember(result.member)
+      
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : 'Une erreur est survenue')
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  // Fonction pour réactiver un membre trouvé par recherche
+  const handleReactivateFoundMember = async () => {
+    if (!foundMember) return
+    
+    setIsReactivating(true)
+    setSearchError(null)
+    
+    try {
+      const response = await fetch('/api/team/reactivate-member', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId: foundMember.id })
+      })
+      
+      const result = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Erreur lors de la réactivation')
+      }
+      
+      // Fermer le modal et rafraîchir la liste
+      setShowSearchModal(false)
+      setSearchEmail("")
+      setFoundMember(null)
+      await fetchMembers()
+      
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : 'Une erreur est survenue')
+    } finally {
+      setIsReactivating(false)
+    }
+  }
+
   // Fonction pour rafraîchir manuellement la liste
   const handleRefresh = async () => {
     await fetchMembers()
   }
 
-  // Filtrer les membres
-  const filteredMembers = teamMembers.filter(member => {
+  // Séparer les membres actifs et inactifs
+  const activeMembers = teamMembers.filter(m => m.is_active)
+  const inactiveMembers = teamMembers.filter(m => !m.is_active)
+  
+  // Filtrer les membres selon l'onglet actif
+  const membersToFilter = showInactive ? inactiveMembers : activeMembers
+  const filteredMembers = membersToFilter.filter(member => {
     const fullName = `${member.first_name || ''} ${member.last_name || ''}`.toLowerCase()
     const matchesSearch = fullName.includes(searchQuery.toLowerCase())
     const matchesRole = filterRole === "all" || member.role === filterRole
     return matchesSearch && matchesRole
   })
 
-  const onlineCount = teamMembers.filter(m => m.is_online).length
-  const employeeCount = teamMembers.filter(m => m.role === 'employee').length
-  const managerCount = teamMembers.filter(m => m.role === 'manager' || m.role === 'admin').length
+  const onlineCount = activeMembers.filter(m => m.is_online).length
+  const employeeCount = activeMembers.filter(m => m.role === 'employee').length
+  const managerCount = activeMembers.filter(m => m.role === 'manager' || m.role === 'admin').length
+  const inactiveCount = inactiveMembers.length
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
@@ -327,14 +458,14 @@ export default function ManagerTeamPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-5 gap-4">
         <div className="glass-stat-card glass-animate-fade-up glass-stagger-1">
           <div className="glass-stat-icon glass-stat-icon-cyan">
             <Users className="h-5 w-5" />
           </div>
-          <p className="glass-stat-value glass-stat-value-cyan glass-title-black">{teamMembers.length}</p>
+          <p className="glass-stat-value glass-stat-value-cyan glass-title-black">{activeMembers.length}</p>
           <p className="glass-stat-label">
-            <span className="glow-cyan">Membres</span> total
+            <span className="glow-cyan">Membres</span> actifs
           </p>
         </div>
         <div className="glass-stat-card glass-animate-fade-up glass-stagger-2">
@@ -364,10 +495,54 @@ export default function ManagerTeamPage() {
             <span className="glow-purple">Managers</span>
           </p>
         </div>
+        <div 
+          className={`glass-stat-card glass-animate-fade-up glass-stagger-5 cursor-pointer transition-all ${inactiveCount > 0 ? 'hover:border-red-500/30' : ''}`}
+          onClick={() => inactiveCount > 0 && setShowInactive(!showInactive)}
+        >
+          <div className="glass-stat-icon" style={{ background: 'rgba(239, 68, 68, 0.15)', borderColor: 'rgba(239, 68, 68, 0.3)' }}>
+            <UserX className="h-5 w-5 text-red-400" />
+          </div>
+          <p className="glass-stat-value text-red-400 glass-title-black">{inactiveCount}</p>
+          <p className="glass-stat-label">
+            <span className="text-red-400">Désactivés</span>
+          </p>
+        </div>
       </div>
 
+      {/* Onglets Actifs / Désactivés */}
+      {inactiveCount > 0 && (
+        <div className="flex gap-2 glass-animate-fade-up glass-stagger-5">
+          <button
+            onClick={() => setShowInactive(false)}
+            className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              !showInactive
+                ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30'
+                : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:border-slate-600/50'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <UserCheck className="h-4 w-4" />
+              Membres actifs ({activeMembers.length})
+            </span>
+          </button>
+          <button
+            onClick={() => setShowInactive(true)}
+            className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              showInactive
+                ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
+                : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:border-slate-600/50'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <UserX className="h-4 w-4" />
+              Anciens membres ({inactiveCount})
+            </span>
+          </button>
+        </div>
+      )}
+
       {/* Filtres */}
-      <div className="glass-stat-card glass-animate-fade-up glass-stagger-5">
+      <div className="glass-stat-card glass-animate-fade-up glass-stagger-6">
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Recherche */}
           <div className="relative flex-1">
@@ -418,12 +593,16 @@ export default function ManagerTeamPage() {
       </div>
 
       {/* Liste des membres */}
-      <div className="glass-stat-card glass-animate-fade-up glass-stagger-6">
+      <div className="glass-stat-card glass-animate-fade-up glass-stagger-7">
         <h2 className="font-semibold text-white mb-5 glass-title">
-          Membres de l'<span className="glow-cyan">équipe</span>
-          {filteredMembers.length !== teamMembers.length && (
+          {showInactive ? (
+            <>Anciens <span className="text-red-400">membres</span></>
+          ) : (
+            <>Membres de l'<span className="glow-cyan">équipe</span></>
+          )}
+          {filteredMembers.length !== membersToFilter.length && (
             <span className="text-slate-500 text-sm font-normal ml-2">
-              ({filteredMembers.length} sur {teamMembers.length})
+              ({filteredMembers.length} sur {membersToFilter.length})
             </span>
           )}
         </h2>
@@ -527,7 +706,7 @@ export default function ManagerTeamPage() {
                     {/* Infos */}
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-white truncate">{fullName}</p>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <span 
                           className="text-xs font-medium px-2 py-0.5 rounded-full"
                           style={{
@@ -542,23 +721,37 @@ export default function ManagerTeamPage() {
                         >
                           {isEmployee ? 'Employé' : 'Manager'}
                         </span>
-                        <span 
-                          className="text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1"
-                          style={{
-                            background: member.is_online 
-                              ? 'rgba(34, 197, 94, 0.15)' 
-                              : 'rgba(100, 116, 139, 0.15)',
-                            color: member.is_online ? '#4ade80' : '#94a3b8',
-                            border: member.is_online
-                              ? '1px solid rgba(34, 197, 94, 0.3)'
-                              : '1px solid rgba(100, 116, 139, 0.3)',
-                          }}
-                        >
+                        {member.is_active ? (
                           <span 
-                            className={`w-1.5 h-1.5 rounded-full ${member.is_online ? 'bg-green-400 animate-pulse' : 'bg-slate-400'}`}
-                          />
-                          {member.is_online ? 'En ligne' : 'Hors ligne'}
-                        </span>
+                            className="text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1"
+                            style={{
+                              background: member.is_online 
+                                ? 'rgba(34, 197, 94, 0.15)' 
+                                : 'rgba(100, 116, 139, 0.15)',
+                              color: member.is_online ? '#4ade80' : '#94a3b8',
+                              border: member.is_online
+                                ? '1px solid rgba(34, 197, 94, 0.3)'
+                                : '1px solid rgba(100, 116, 139, 0.3)',
+                            }}
+                          >
+                            <span 
+                              className={`w-1.5 h-1.5 rounded-full ${member.is_online ? 'bg-green-400 animate-pulse' : 'bg-slate-400'}`}
+                            />
+                            {member.is_online ? 'En ligne' : 'Hors ligne'}
+                          </span>
+                        ) : (
+                          <span 
+                            className="text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1"
+                            style={{
+                              background: 'rgba(239, 68, 68, 0.15)',
+                              color: '#f87171',
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                            }}
+                          >
+                            <UserX className="w-3 h-3" />
+                            Désactivé
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1 mt-2 text-xs text-slate-500">
                         <Calendar className="h-3 w-3" />
@@ -566,17 +759,30 @@ export default function ManagerTeamPage() {
                       </div>
                     </div>
 
-                    {/* Bouton supprimer */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setMemberToRemove(member)
-                      }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/40"
-                      title="Retirer de l'équipe"
-                    >
-                      <UserMinus className="h-4 w-4" />
-                    </button>
+                    {/* Bouton action */}
+                    {member.is_active ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setMemberToRemove(member)
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/40"
+                        title="Retirer de l'équipe"
+                      >
+                        <UserMinus className="h-4 w-4" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setMemberToReactivate(member)
+                        }}
+                        className="p-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20 hover:border-green-500/40 transition-all"
+                        title="Réactiver ce membre"
+                      >
+                        <UserCheck className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               )
@@ -645,8 +851,8 @@ export default function ManagerTeamPage() {
               <p className="text-sm text-red-300 flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
                 <span>
-                  Cette personne sera <strong>immédiatement déconnectée</strong> de l'établissement 
-                  et ne pourra plus y accéder. Elle devra être ré-invitée pour rejoindre à nouveau l'équipe.
+                  Cette personne sera <strong>immédiatement déconnectée</strong> et ne pourra plus accéder à l'application. 
+                  Vous pourrez la réactiver plus tard depuis l'onglet "Anciens membres".
                 </span>
               </p>
             </div>
@@ -685,6 +891,303 @@ export default function ManagerTeamPage() {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmation de réactivation */}
+      {memberToReactivate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Overlay */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => !isReactivating && setMemberToReactivate(null)}
+          />
+          
+          {/* Modal */}
+          <div 
+            className="relative w-full max-w-md rounded-2xl p-6 animate-in zoom-in-95 duration-200"
+            style={{
+              background: 'linear-gradient(145deg, rgba(20, 27, 45, 0.98) 0%, rgba(15, 20, 35, 0.99) 100%)',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5), 0 0 100px rgba(34, 197, 94, 0.1)',
+            }}
+          >
+            {/* Bouton fermer */}
+            <button
+              onClick={() => !isReactivating && setMemberToReactivate(null)}
+              disabled={isReactivating}
+              className="absolute top-4 right-4 p-2 rounded-lg bg-slate-800/50 border border-white/10 text-slate-400 hover:text-white hover:bg-slate-800 transition-all disabled:opacity-50"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            {/* Icône */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center">
+                <UserCheck className="h-8 w-8 text-green-400" />
+              </div>
+            </div>
+
+            {/* Titre */}
+            <h3 className="text-xl font-bold text-white text-center mb-2">
+              Réactiver ce membre ?
+            </h3>
+
+            {/* Description */}
+            <p className="text-slate-400 text-center mb-4">
+              Vous êtes sur le point de réactiver{' '}
+              <span className="text-white font-semibold">
+                {memberToReactivate.first_name} {memberToReactivate.last_name}
+              </span>{' '}
+              dans votre établissement.
+            </p>
+
+            {/* Info */}
+            <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 mb-6">
+              <p className="text-sm text-green-300 flex items-start gap-2">
+                <UserCheck className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>
+                  Cette personne pourra <strong>immédiatement se reconnecter</strong> et accéder à l'application 
+                  avec son compte existant.
+                </span>
+              </p>
+            </div>
+
+            {/* Erreur */}
+            {reactivateError && (
+              <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/30 mb-4">
+                <p className="text-sm text-red-400">{reactivateError}</p>
+              </div>
+            )}
+
+            {/* Boutons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setMemberToReactivate(null)}
+                disabled={isReactivating}
+                className="flex-1 py-3 px-4 rounded-xl bg-slate-800/50 border border-white/10 text-slate-300 font-medium hover:bg-slate-800 transition-all disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleReactivateMember}
+                disabled={isReactivating}
+                className="flex-1 py-3 px-4 rounded-xl bg-green-500 text-white font-semibold hover:bg-green-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isReactivating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Réactivation...
+                  </>
+                ) : (
+                  <>
+                    <UserCheck className="h-4 w-4" />
+                    Réactiver
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de recherche par email */}
+      {showSearchModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Overlay */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => {
+              if (!isSearching && !isReactivating) {
+                setShowSearchModal(false)
+                setSearchEmail("")
+                setFoundMember(null)
+                setSearchError(null)
+              }
+            }}
+          />
+          
+          {/* Modal */}
+          <div 
+            className="relative w-full max-w-md rounded-2xl p-6 animate-in zoom-in-95 duration-200"
+            style={{
+              background: 'linear-gradient(145deg, rgba(20, 27, 45, 0.98) 0%, rgba(15, 20, 35, 0.99) 100%)',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5), 0 0 100px rgba(34, 197, 94, 0.1)',
+            }}
+          >
+            {/* Bouton fermer */}
+            <button
+              onClick={() => {
+                setShowSearchModal(false)
+                setSearchEmail("")
+                setFoundMember(null)
+                setSearchError(null)
+              }}
+              disabled={isSearching || isReactivating}
+              className="absolute top-4 right-4 p-2 rounded-lg bg-slate-800/50 border border-white/10 text-slate-400 hover:text-white hover:bg-slate-800 transition-all disabled:opacity-50"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            {/* Icône */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center">
+                <Mail className="h-8 w-8 text-green-400" />
+              </div>
+            </div>
+
+            {/* Titre */}
+            <h3 className="text-xl font-bold text-white text-center mb-2">
+              Rechercher un ancien membre
+            </h3>
+
+            {/* Description */}
+            <p className="text-slate-400 text-center mb-6 text-sm">
+              Entrez l'email d'un ancien membre pour le retrouver et le réactiver dans votre équipe.
+            </p>
+
+            {/* Champ de recherche */}
+            <div className="mb-4">
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                <input
+                  type="email"
+                  placeholder="email@exemple.com"
+                  value={searchEmail}
+                  onChange={(e) => setSearchEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearchByEmail()}
+                  className="w-full pl-11 pr-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-green-500/50 focus:ring-1 focus:ring-green-500/30 transition-all"
+                  disabled={isSearching || isReactivating}
+                />
+              </div>
+            </div>
+
+            {/* Bouton de recherche */}
+            {!foundMember && (
+              <button
+                onClick={handleSearchByEmail}
+                disabled={isSearching || !searchEmail.trim()}
+                className="w-full py-3 px-4 rounded-xl bg-green-500 text-white font-semibold hover:bg-green-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+              >
+                {isSearching ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Recherche en cours...
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-4 w-4" />
+                    Rechercher
+                  </>
+                )}
+              </button>
+            )}
+
+            {/* Erreur */}
+            {searchError && (
+              <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/30 mb-4">
+                <p className="text-sm text-red-400">{searchError}</p>
+              </div>
+            )}
+
+            {/* Membre trouvé */}
+            {foundMember && (
+              <div className="mb-4">
+                <div 
+                  className="p-4 rounded-xl"
+                  style={{
+                    background: 'linear-gradient(145deg, rgba(34, 197, 94, 0.1) 0%, rgba(20, 27, 45, 0.8) 100%)',
+                    border: '1px solid rgba(34, 197, 94, 0.3)',
+                  }}
+                >
+                  <div className="flex items-center gap-4">
+                    {/* Avatar */}
+                    <div 
+                      className="h-14 w-14 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.4) 0%, rgba(22, 163, 74, 0.3) 100%)',
+                        border: '2px solid rgba(34, 197, 94, 0.4)',
+                      }}
+                    >
+                      {getInitials(foundMember.first_name, foundMember.last_name)}
+                    </div>
+                    
+                    {/* Infos */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-white truncate">
+                        {foundMember.first_name} {foundMember.last_name}
+                      </p>
+                      <p className="text-sm text-slate-400 truncate">
+                        {foundMember.email}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span 
+                          className="text-xs font-medium px-2 py-0.5 rounded-full"
+                          style={{
+                            background: foundMember.role === 'employee' 
+                              ? 'rgba(59, 130, 246, 0.15)' 
+                              : 'rgba(168, 85, 247, 0.15)',
+                            color: foundMember.role === 'employee' ? '#60a5fa' : '#a78bfa',
+                            border: foundMember.role === 'employee'
+                              ? '1px solid rgba(59, 130, 246, 0.3)'
+                              : '1px solid rgba(168, 85, 247, 0.3)',
+                          }}
+                        >
+                          {foundMember.role === 'employee' ? 'Employé' : 'Manager'}
+                        </span>
+                        {!foundMember.is_active && (
+                          <span 
+                            className="text-xs font-medium px-2 py-0.5 rounded-full"
+                            style={{
+                              background: 'rgba(239, 68, 68, 0.15)',
+                              color: '#f87171',
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                            }}
+                          >
+                            Désactivé
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Boutons d'action */}
+                <div className="flex gap-3 mt-4">
+                  <button
+                    onClick={() => {
+                      setFoundMember(null)
+                      setSearchEmail("")
+                    }}
+                    disabled={isReactivating}
+                    className="flex-1 py-3 px-4 rounded-xl bg-slate-800/50 border border-white/10 text-slate-300 font-medium hover:bg-slate-800 transition-all disabled:opacity-50"
+                  >
+                    Nouvelle recherche
+                  </button>
+                  {foundMember.canReactivate && (
+                    <button
+                      onClick={handleReactivateFoundMember}
+                      disabled={isReactivating}
+                      className="flex-1 py-3 px-4 rounded-xl bg-green-500 text-white font-semibold hover:bg-green-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {isReactivating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Réactivation...
+                        </>
+                      ) : (
+                        <>
+                          <UserCheck className="h-4 w-4" />
+                          Réactiver
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

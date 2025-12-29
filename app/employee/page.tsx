@@ -22,7 +22,7 @@ import {
 import Link from "next/link"
 import Image from "next/image"
 import { createClient } from "@/utils/supabase/client"
-import { useAlerts } from "@/lib/hooks/use-alerts"
+import { useNotifications } from "@/lib/hooks/use-notifications"
 
 interface TaskStatus {
   checkInDone: boolean
@@ -275,7 +275,7 @@ const modules = [
 
 export default function EmployeePage() {
   const supabase = createClient()
-  const { unreadCount } = useAlerts()
+  const { unreadCount } = useNotifications()
   const [status, setStatus] = useState<TaskStatus>({
     checkInDone: false,
     stockUpdated: false,

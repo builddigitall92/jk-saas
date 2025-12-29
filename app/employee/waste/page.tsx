@@ -1,9 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Check, ChevronLeft, Loader2, Package, Trash2, AlertCircle, X, History } from "lucide-react"
+import { Check, ChevronLeft, Loader2, Package, Trash2, AlertCircle, X, History, Plus, Minus, TrendingDown, Euro, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { useStock, type StockWithProduct } from "@/lib/hooks/use-stock"
 import { createClient } from "@/utils/supabase/client"
@@ -20,6 +18,42 @@ interface WasteLog {
     name: string
     icon: string | null
   } | null
+}
+
+// Composant GlassTile
+function GlassTile({ 
+  children, 
+  className = "", 
+  onClick,
+  active = false,
+}: { 
+  children: React.ReactNode
+  className?: string
+  onClick?: () => void
+  active?: boolean
+}) {
+  const baseClass = `
+    relative rounded-2xl p-4 transition-all duration-300
+    ${active 
+      ? 'bg-gradient-to-br from-red-500/20 to-orange-500/10 border-red-500/40 shadow-lg shadow-red-500/10' 
+      : 'bg-gradient-to-br from-slate-800/50 to-slate-900/50 border-slate-700/30 hover:border-slate-600/50'
+    }
+    border backdrop-blur-sm
+  `
+
+  if (onClick) {
+    return (
+      <button onClick={onClick} className={`${baseClass} w-full text-left ${className}`}>
+        {children}
+      </button>
+    )
+  }
+
+  return (
+    <div className={`${baseClass} ${className}`}>
+      {children}
+    </div>
+  )
 }
 
 export default function WastePage() {
@@ -114,7 +148,6 @@ export default function WastePage() {
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'waste_logs' },
         () => { 
-          console.log('Changement détecté dans waste_logs, rechargement...')
           fetchWasteLogs() 
         }
       )
@@ -127,11 +160,10 @@ export default function WastePage() {
 
   // Supprimer un gaspillage et restaurer le stock
   const handleDeleteWaste = async (wasteLog: WasteLog) => {
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer ce gaspillage ? Le stock sera restauré.`)) {
+    if (!confirm(`Supprimer ce gaspillage ? Le stock sera restauré.`)) {
       return
     }
 
-    // Mettre à jour le state local immédiatement pour un feedback visuel
     setWasteLogs(prev => prev.filter(w => w.id !== wasteLog.id))
 
     try {
@@ -139,7 +171,6 @@ export default function WastePage() {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) throw new Error('Non authentifié')
 
-      // Récupérer le profil pour avoir l'establishment_id
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: profile } = await (supabase as any)
         .from('profiles')
@@ -149,7 +180,6 @@ export default function WastePage() {
 
       if (!profile?.establishment_id) throw new Error('Pas d\'établissement associé')
 
-      // 1. Trouver le stock correspondant au produit (requête directe pour avoir les données à jour)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: stockData } = await (supabase as any)
         .from('stock')
@@ -163,9 +193,7 @@ export default function WastePage() {
       const stock = stockData as StockWithProduct | null
 
       if (!stock) {
-        // Si le stock n'existe plus, on crée une nouvelle entrée de stock
         if (profile?.establishment_id) {
-          // Récupérer le prix unitaire depuis le gaspillage (estimated_cost / quantity)
           const unitPrice = wasteLog.estimated_cost > 0 && wasteLog.quantity > 0
             ? wasteLog.estimated_cost / wasteLog.quantity
             : 0
@@ -182,50 +210,28 @@ export default function WastePage() {
             })
         }
       } else {
-        // 2. Restaurer le stock (ajouter la quantité gaspillée)
         const newQuantity = Number(stock.quantity) + wasteLog.quantity
         await updateQuantity(stock.id, newQuantity)
       }
 
-      // 3. Supprimer l'entrée de gaspillage
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: deleteError, data: deleteData } = await (supabase as any)
+      const { error: deleteError } = await (supabase as any)
         .from('waste_logs')
         .delete()
         .eq('id', wasteLog.id)
         .eq('establishment_id', profile.establishment_id)
-        .select()
 
       if (deleteError) {
-        console.error('Erreur lors de la suppression:', deleteError)
-        alert(`Erreur lors de la suppression: ${deleteError.message}`)
-        // Recharger les données en cas d'erreur
         await fetchWasteLogs()
         throw deleteError
       }
 
-      if (!deleteData || deleteData.length === 0) {
-        console.error('Aucune ligne supprimée - vérifier les permissions RLS')
-        alert('La suppression a échoué. Vérifiez que vous avez les permissions nécessaires.')
-        // Recharger pour restaurer l'état
-        await fetchWasteLogs()
-        return
-      }
-
-      console.log('Gaspillage supprimé avec succès:', deleteData)
-
-      // 4. Recharger les données de stock
       await fetchStocks()
-      
-      // 5. Recharger immédiatement l'historique des gaspillages
-      // La suppression est confirmée par deleteData, donc on peut recharger directement
       await fetchWasteLogs()
 
     } catch (error) {
       console.error('Erreur lors de la suppression du gaspillage:', error)
-      // Recharger les données en cas d'erreur pour restaurer l'état
       await fetchWasteLogs()
-      alert('Erreur lors de la suppression. Veuillez réessayer.')
     }
   }
 
@@ -235,13 +241,12 @@ export default function WastePage() {
     const currentQty = Number(stock.quantity)
     
     if (unit === 'kg') {
-      return ['0.1', '0.2', '0.5', '1', '2'].filter(q => parseFloat(q) <= currentQty)
+      return ['0.1', '0.25', '0.5', '1', '2'].filter(q => parseFloat(q) <= currentQty)
     } else if (unit === 'g') {
       return ['50', '100', '200', '500'].filter(q => parseFloat(q) <= currentQty)
     } else if (unit === 'L') {
       return ['0.25', '0.5', '1', '2'].filter(q => parseFloat(q) <= currentQty)
     } else {
-      // unités, pièces
       return ['1', '2', '3', '5', '10'].filter(q => parseFloat(q) <= currentQty)
     }
   }
@@ -256,8 +261,6 @@ export default function WastePage() {
     
     try {
       const supabase = createClient()
-      
-      // Récupérer l'utilisateur et son établissement
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) throw new Error('Non authentifié')
       
@@ -270,7 +273,6 @@ export default function WastePage() {
       
       if (!profile?.establishment_id) throw new Error('Pas d\'établissement')
       
-      // 1. Enregistrer le gaspillage dans la table waste_logs
       const estimatedCost = qty * Number(selectedStock.unit_price || 0)
       
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -286,14 +288,11 @@ export default function WastePage() {
           logged_by: userData.user.id
         })
       
-      // 2. Mettre à jour le stock (soustraire la quantité gaspillée)
       const newQuantity = Number(selectedStock.quantity) - qty
       await updateQuantity(selectedStock.id, Math.max(0, newQuantity))
       
-      // Recharger les données
       await fetchStocks()
       
-      // Afficher le succès
       setShowSuccess(true)
       setTimeout(() => {
         setShowSuccess(false)
@@ -309,10 +308,23 @@ export default function WastePage() {
     setIsSubmitting(false)
   }
 
+  // Calculs pour les stats
+  const totalWasteCost = wasteLogs.reduce((sum, w) => sum + w.estimated_cost, 0)
+  const todayWaste = wasteLogs.filter(w => {
+    const today = new Date().toDateString()
+    return new Date(w.created_at).toDateString() === today
+  })
+  const todayWasteCost = todayWaste.reduce((sum, w) => sum + w.estimated_cost, 0)
+
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-red-400" />
+          </div>
+          <p className="text-slate-400 text-sm">Chargement...</p>
+        </div>
       </div>
     )
   }
@@ -320,12 +332,12 @@ export default function WastePage() {
   if (showSuccess) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center px-4">
-        <div className="text-center animate-success-pop">
-          <div className="h-24 w-24 rounded-full bg-accent/20 mx-auto mb-6 flex items-center justify-center">
-            <Check className="h-12 w-12 text-accent" />
+        <div className="text-center">
+          <div className="h-20 w-20 rounded-2xl bg-red-500/20 border border-red-500/30 mx-auto mb-6 flex items-center justify-center animate-pulse">
+            <Check className="h-10 w-10 text-red-400" />
           </div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">Enregistré !</h2>
-          <p className="text-muted-foreground">Le stock a été mis à jour</p>
+          <h2 className="text-2xl font-bold text-white mb-2">Enregistré !</h2>
+          <p className="text-slate-400">Le gaspillage a été enregistré et le stock mis à jour</p>
         </div>
       </div>
     )
@@ -335,78 +347,134 @@ export default function WastePage() {
   const availableStocks = stocks.filter(s => Number(s.quantity) > 0)
 
   return (
-    <div className="px-4 py-6">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="mb-6 animate-fade-up">
-        <Link href="/employee" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4">
+      <div>
+        <Link href="/employee" className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-4 transition-colors">
           <ChevronLeft className="h-5 w-5" />
           <span>Retour</span>
         </Link>
-        <h1 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
-          <Trash2 className="h-5 w-5 text-destructive" />
-          Gaspillage
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Enregistrez un gaspillage ou consultez l'historique
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center">
+                <Trash2 className="h-5 w-5 text-red-400" />
+              </div>
+              Gaspillage
+            </h1>
+            <p className="text-slate-400 mt-1">Déclarer les pertes et suivre le gâchis</p>
+          </div>
+          <button
+            onClick={() => { fetchWasteLogs(); fetchStocks(); }}
+            className="p-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-slate-400 hover:text-orange-400 hover:border-orange-500/30 hover:bg-orange-500/10 transition-all"
+            title="Actualiser"
+          >
+            <RefreshCw className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <GlassTile>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center">
+              <TrendingDown className="h-5 w-5 text-red-400" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide">Aujourd'hui</p>
+              <p className="text-xl font-bold text-red-400">{todayWaste.length}</p>
+            </div>
+          </div>
+        </GlassTile>
+        <GlassTile>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center">
+              <Euro className="h-5 w-5 text-orange-400" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide">Perte du jour</p>
+              <p className="text-xl font-bold text-orange-400">{todayWasteCost.toFixed(2)}€</p>
+            </div>
+          </div>
+        </GlassTile>
+        <GlassTile>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+              <History className="h-5 w-5 text-amber-400" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide">Ce mois</p>
+              <p className="text-xl font-bold text-amber-400">{wasteLogs.length}</p>
+            </div>
+          </div>
+        </GlassTile>
+        <GlassTile>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-slate-500/20 border border-slate-500/30 flex items-center justify-center">
+              <Euro className="h-5 w-5 text-slate-400" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide">Perte totale</p>
+              <p className="text-xl font-bold text-white">{totalWasteCost.toFixed(2)}€</p>
+            </div>
+          </div>
+        </GlassTile>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 animate-fade-up delay-1">
+      <div className="flex gap-2">
         <button
           onClick={() => setActiveTab('new')}
-          className={`flex-1 p-3 rounded-xl font-medium transition-all ${
+          className={`flex-1 p-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
             activeTab === 'new'
-              ? 'bg-primary text-primary-foreground'
-              : 'banking-card hover:border-primary/50'
+              ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30'
+              : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:border-slate-600/50'
           }`}
         >
-          <Trash2 className="h-4 w-4 inline mr-2" />
+          <Plus className="h-5 w-5" />
           Nouveau gaspillage
         </button>
         <button
           onClick={() => setActiveTab('history')}
-          className={`flex-1 p-3 rounded-xl font-medium transition-all ${
+          className={`flex-1 p-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
             activeTab === 'history'
-              ? 'bg-primary text-primary-foreground'
-              : 'banking-card hover:border-primary/50'
+              ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30'
+              : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:border-slate-600/50'
           }`}
         >
-          <History className="h-4 w-4 inline mr-2" />
+          <History className="h-5 w-5" />
           Historique ({wasteLogs.length})
         </button>
       </div>
 
       {/* Tab: Historique */}
       {activeTab === 'history' && (
-        <div className="space-y-3 animate-fade-up delay-2">
+        <div className="space-y-3">
           {loadingWasteLogs ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader2 className="h-8 w-8 animate-spin text-red-400" />
             </div>
           ) : wasteLogs.length === 0 ? (
-            <div className="banking-card p-12 text-center">
-              <Trash2 className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-              <p className="text-muted-foreground mb-2">Aucun gaspillage enregistré</p>
-              <p className="text-sm text-muted-foreground">Les gaspillages des 30 derniers jours apparaîtront ici</p>
-            </div>
+            <GlassTile className="text-center py-12">
+              <Trash2 className="h-12 w-12 text-slate-600 mx-auto mb-4" />
+              <p className="text-slate-400 mb-2 font-medium">Aucun gaspillage enregistré</p>
+              <p className="text-sm text-slate-500">Les gaspillages des 30 derniers jours apparaîtront ici</p>
+            </GlassTile>
           ) : (
-            wasteLogs.map((waste) => (
-              <div
-                key={waste.id}
-                className="banking-card p-4 animate-fade-up"
-              >
+            wasteLogs.map((waste, index) => (
+              <GlassTile key={waste.id} className="hover:scale-[1.01]" style={{ animationDelay: `${index * 0.05}s` }}>
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-destructive/10 flex items-center justify-center text-2xl">
-                    {waste.product?.icon || <Package className="h-6 w-6 text-destructive" />}
+                  <div className="h-12 w-12 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center text-2xl">
+                    {waste.product?.icon || <Package className="h-6 w-6 text-red-400" />}
                   </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-foreground">{waste.product?.name || 'Produit inconnu'}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {waste.quantity} {waste.unit}
-                      {waste.reason && ` • ${waste.reason}`}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-white truncate">{waste.product?.name || 'Produit inconnu'}</p>
+                    <p className="text-sm text-slate-400">
+                      -{waste.quantity} {waste.unit}
+                      {waste.reason && <span className="text-slate-500"> • {waste.reason}</span>}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       {new Date(waste.created_at).toLocaleDateString('fr-FR', {
                         day: 'numeric',
                         month: 'short',
@@ -416,18 +484,18 @@ export default function WastePage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Perte</p>
-                    <p className="font-bold text-destructive">{waste.estimated_cost.toFixed(2)}€</p>
+                    <p className="text-sm text-slate-500">Perte</p>
+                    <p className="font-bold text-red-400">{waste.estimated_cost.toFixed(2)}€</p>
                   </div>
                   <button
                     onClick={() => handleDeleteWaste(waste)}
-                    className="p-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+                    className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/40 transition-all"
                     title="Supprimer et restaurer le stock"
                   >
                     <X className="h-5 w-5" />
                   </button>
                 </div>
-              </div>
+              </GlassTile>
             ))
           )}
         </div>
@@ -437,177 +505,185 @@ export default function WastePage() {
       {activeTab === 'new' && (
         <>
           {!selectedStock ? (
-        <>
-          {availableStocks.length > 0 ? (
-            <div className="space-y-3 animate-fade-up delay-1">
-              {availableStocks.map((stock) => (
-                <button
-                  key={stock.id}
-                  onClick={() => setSelectedStock(stock)}
-                  className="w-full banking-card p-4 text-left transition-all hover:border-destructive/50"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl">
-                      {stock.product?.icon || <Package className="h-6 w-6 text-primary" />}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-foreground">{stock.product?.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        En stock: <span className="text-primary font-medium">{Number(stock.quantity)} {stock.product?.unit}</span>
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground">Valeur</p>
-                      <p className="font-semibold text-foreground">{Number(stock.total_value || 0).toFixed(2)}€</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
+            <>
+              {availableStocks.length > 0 ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-slate-400 mb-2">Sélectionnez le produit gaspillé :</p>
+                  {availableStocks.map((stock, index) => (
+                    <GlassTile
+                      key={stock.id}
+                      onClick={() => setSelectedStock(stock)}
+                      className="hover:border-red-500/40 hover:scale-[1.01]"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-xl bg-slate-700/50 border border-slate-600/50 flex items-center justify-center text-2xl">
+                          {stock.product?.icon || <Package className="h-6 w-6 text-slate-400" />}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-white">{stock.product?.name}</p>
+                          <p className="text-sm text-slate-400">
+                            En stock: <span className="text-orange-400 font-medium">{Number(stock.quantity)} {stock.product?.unit}</span>
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-slate-500">Valeur</p>
+                          <p className="font-semibold text-white">{Number(stock.total_value || 0).toFixed(2)}€</p>
+                        </div>
+                      </div>
+                    </GlassTile>
+                  ))}
+                </div>
+              ) : (
+                <GlassTile className="text-center py-12">
+                  <Package className="h-12 w-12 text-slate-600 mx-auto mb-4" />
+                  <p className="text-slate-400 mb-2 font-medium">Aucun produit en stock</p>
+                  <p className="text-sm text-slate-500 mb-4">Ajoutez d'abord du stock pour pouvoir enregistrer du gaspillage</p>
+                  <Link 
+                    href="/employee/stock"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500/20 text-orange-400 font-medium hover:bg-orange-500/30 transition-all"
+                  >
+                    Aller aux stocks
+                  </Link>
+                </GlassTile>
+              )}
+            </>
           ) : (
-            <div className="banking-card p-12 text-center animate-fade-up delay-1">
-              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-              <p className="text-muted-foreground mb-2">Aucun produit en stock</p>
-              <p className="text-sm text-muted-foreground">Ajoutez d'abord du stock pour pouvoir enregistrer du gaspillage</p>
-              <Link href="/employee/stock-update">
-                <Button className="mt-4" variant="outline">
-                  Aller aux stocks
-                </Button>
-              </Link>
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="space-y-5 animate-slide-right">
-          {/* Selected Product */}
-          <div className="banking-card-glow p-4">
-            <div className="flex items-center gap-4">
-              <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center text-3xl">
-                {selectedStock.product?.icon || <Package className="h-7 w-7 text-primary" />}
-              </div>
-              <div className="flex-1">
-                <p className="font-bold text-foreground">{selectedStock.product?.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  En stock: <span className="text-primary font-medium">{Number(selectedStock.quantity)} {selectedStock.product?.unit}</span>
-                </p>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => setSelectedStock(null)} className="text-muted-foreground">
-                Changer
-              </Button>
-            </div>
-          </div>
-
-          {/* Quantity Options */}
-          <div>
-            <p className="text-sm text-muted-foreground mb-3">Quantité gaspillée</p>
-            <div className="grid grid-cols-3 gap-3 mb-3">
-              {getQuantityOptions(selectedStock).map((qty) => (
-                <button
-                  key={qty}
-                  onClick={() => setWasteQuantity(qty)}
-                  className={`p-4 rounded-xl font-semibold transition-all ${
-                    wasteQuantity === qty
-                      ? "bg-destructive text-white"
-                      : "banking-card hover:border-destructive/50"
-                  }`}
-                >
-                  {qty} {selectedStock.product?.unit}
-                </button>
-              ))}
-            </div>
-            
-            {/* Custom quantity input */}
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                max={Number(selectedStock.quantity)}
-                placeholder="Autre quantité..."
-                value={wasteQuantity}
-                onChange={(e) => setWasteQuantity(e.target.value)}
-                className="flex-1"
-              />
-              <span className="text-muted-foreground">{selectedStock.product?.unit}</span>
-            </div>
-            
-            {/* Warning if quantity too high */}
-            {parseFloat(wasteQuantity) > Number(selectedStock.quantity) && (
-              <p className="text-destructive text-sm mt-2 flex items-center gap-1">
-                <AlertCircle className="h-4 w-4" />
-                Quantité supérieure au stock disponible
-              </p>
-            )}
-          </div>
-
-          {/* Reason (optional) */}
-          <div>
-            <p className="text-sm text-muted-foreground mb-2">Raison (optionnel)</p>
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              {['Périmé', 'Tombé', 'Mauvaise qualité', 'Erreur préparation'].map((reason) => (
-                <button
-                  key={reason}
-                  onClick={() => setWasteReason(reason)}
-                  className={`p-3 rounded-xl text-sm font-medium transition-all ${
-                    wasteReason === reason
-                      ? "bg-secondary text-foreground border-2 border-primary"
-                      : "banking-card hover:border-primary/50"
-                  }`}
-                >
-                  {reason}
-                </button>
-              ))}
-            </div>
-            <Input
-              type="text"
-              placeholder="Autre raison..."
-              value={wasteReason}
-              onChange={(e) => setWasteReason(e.target.value)}
-            />
-          </div>
-
-          {/* Summary & Save Button */}
-          {wasteQuantity && parseFloat(wasteQuantity) > 0 && parseFloat(wasteQuantity) <= Number(selectedStock.quantity) && (
-            <div className="pt-4 animate-fade-up">
-              <div className="banking-card p-4 mb-4 border-destructive/30">
+            <div className="space-y-5">
+              {/* Selected Product */}
+              <GlassTile active>
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-destructive/10 flex items-center justify-center text-2xl">
-                    {selectedStock.product?.icon || "📦"}
+                  <div className="h-14 w-14 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center text-3xl">
+                    {selectedStock.product?.icon || <Package className="h-7 w-7 text-red-400" />}
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold text-foreground">{selectedStock.product?.name}</p>
-                    <p className="text-destructive font-medium">
-                      -{wasteQuantity} {selectedStock.product?.unit}
-                    </p>
-                    {wasteReason && (
-                      <p className="text-xs text-muted-foreground">Raison: {wasteReason}</p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Perte estimée</p>
-                    <p className="font-bold text-destructive">
-                      {(parseFloat(wasteQuantity) * Number(selectedStock.unit_price || 0)).toFixed(2)}€
+                    <p className="font-bold text-white">{selectedStock.product?.name}</p>
+                    <p className="text-sm text-slate-400">
+                      En stock: <span className="text-orange-400 font-medium">{Number(selectedStock.quantity)} {selectedStock.product?.unit}</span>
                     </p>
                   </div>
+                  <button 
+                    onClick={() => { setSelectedStock(null); setWasteQuantity(""); setWasteReason(""); }}
+                    className="px-4 py-2 rounded-xl bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 transition-all text-sm font-medium"
+                  >
+                    Changer
+                  </button>
                 </div>
-              </div>
-              <Button 
-                onClick={handleSave} 
-                disabled={isSubmitting}
-                className="w-full h-14 text-lg bg-destructive hover:bg-red-600 text-white"
-              >
-                {isSubmitting ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <>
-                    <Check className="h-5 w-5 mr-2" />
-                    Enregistrer le gaspillage
-                  </>
+              </GlassTile>
+
+              {/* Quantity Options */}
+              <div>
+                <p className="text-sm text-slate-400 mb-3 font-medium">Quantité gaspillée</p>
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                  {getQuantityOptions(selectedStock).map((qty) => (
+                    <button
+                      key={qty}
+                      onClick={() => setWasteQuantity(qty)}
+                      className={`p-4 rounded-xl font-semibold transition-all ${
+                        wasteQuantity === qty
+                          ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30"
+                          : "bg-slate-800/50 border border-slate-700/50 text-slate-300 hover:border-red-500/40"
+                      }`}
+                    >
+                      {qty} {selectedStock.product?.unit}
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Custom quantity input */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 relative">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max={Number(selectedStock.quantity)}
+                      placeholder="Autre quantité..."
+                      value={wasteQuantity}
+                      onChange={(e) => setWasteQuantity(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30 transition-all"
+                    />
+                  </div>
+                  <span className="text-slate-400 font-medium">{selectedStock.product?.unit}</span>
+                </div>
+                
+                {/* Warning if quantity too high */}
+                {parseFloat(wasteQuantity) > Number(selectedStock.quantity) && (
+                  <p className="text-red-400 text-sm mt-2 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    Quantité supérieure au stock disponible
+                  </p>
                 )}
-              </Button>
+              </div>
+
+              {/* Reason */}
+              <div>
+                <p className="text-sm text-slate-400 mb-3 font-medium">Raison (optionnel)</p>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  {['Périmé', 'Tombé', 'Mauvaise qualité', 'Erreur préparation'].map((reason) => (
+                    <button
+                      key={reason}
+                      onClick={() => setWasteReason(reason)}
+                      className={`p-3 rounded-xl text-sm font-medium transition-all ${
+                        wasteReason === reason
+                          ? "bg-orange-500/20 text-orange-400 border-2 border-orange-500/50"
+                          : "bg-slate-800/50 border border-slate-700/50 text-slate-300 hover:border-orange-500/30"
+                      }`}
+                    >
+                      {reason}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  placeholder="Autre raison..."
+                  value={wasteReason}
+                  onChange={(e) => setWasteReason(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/30 transition-all"
+                />
+              </div>
+
+              {/* Summary & Save Button */}
+              {wasteQuantity && parseFloat(wasteQuantity) > 0 && parseFloat(wasteQuantity) <= Number(selectedStock.quantity) && (
+                <div className="pt-4">
+                  <GlassTile className="border-red-500/30 mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center text-2xl">
+                        {selectedStock.product?.icon || <Trash2 className="h-6 w-6 text-red-400" />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-white">{selectedStock.product?.name}</p>
+                        <p className="text-red-400 font-medium">
+                          -{wasteQuantity} {selectedStock.product?.unit}
+                        </p>
+                        {wasteReason && (
+                          <p className="text-xs text-slate-500">Raison: {wasteReason}</p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-slate-500">Perte estimée</p>
+                        <p className="font-bold text-red-400 text-lg">
+                          {(parseFloat(wasteQuantity) * Number(selectedStock.unit_price || 0)).toFixed(2)}€
+                        </p>
+                      </div>
+                    </div>
+                  </GlassTile>
+                  <button 
+                    onClick={handleSave} 
+                    disabled={isSubmitting}
+                    className="w-full py-4 rounded-xl text-white font-bold bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 transition-all shadow-lg shadow-red-500/30 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Check className="h-5 w-5" />
+                        Enregistrer le gaspillage
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
           )}
         </>
       )}
