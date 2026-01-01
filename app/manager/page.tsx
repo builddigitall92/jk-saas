@@ -214,11 +214,11 @@ function BusinessHealthSection({
 
   return (
     <section className="animate-section" style={{ animationDelay: '0.1s' }}>
-      <h2 className="text-lg font-semibold text-slate-200 mb-8 flex items-center gap-2">
+      <h2 className="text-lg font-semibold text-slate-200 mb-4 md:mb-8 flex items-center gap-2">
         <Target className="w-5 h-5 text-blue-400" />
         Santé du Business
       </h2>
-      <div className="grid grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
         {kpis.map((kpi, index) => {
           const IconComponent = businessHealthIcons[kpi.type];
           const styles = businessHealthStyles[kpi.type];
@@ -449,7 +449,7 @@ function AttentionSection({
         <AlertCircle className="w-5 h-5 text-amber-400" />
         Ce qui demande votre attention
       </h2>
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {alerts.map((alert, index) => (
           <AttentionCard
             key={alert.id}
@@ -580,9 +580,9 @@ function TrendsAndActionsSection({ chartData, hasData, caJour, caMois }: { chart
 
   return (
     <section className="animate-section" style={{ animationDelay: '0.3s' }}>
-      <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
         {/* Graphique Business Trends - Reduced width from right */}
-        <div className="business-trends-card flex-1 max-w-[72%]">
+        <div className="business-trends-card flex-1 lg:max-w-[72%]">
           {/* Ellipse lumineuse en haut gauche */}
           <div className="business-trends-ellipse" />
 
@@ -749,7 +749,7 @@ function TrendsAndActionsSection({ chartData, hasData, caJour, caMois }: { chart
         </div>
 
         {/* Actions Rapides - Redesigned with colored cards */}
-        <div className="quick-actions-panel w-[320px] flex-shrink-0">
+        <div className="quick-actions-panel w-full lg:w-[320px] flex-shrink-0">
           <h3 className="quick-actions-title">Actions Rapides</h3>
           <div className="quick-actions-list">
             {quickActions.map((action, index) => (
@@ -2485,7 +2485,7 @@ export default function ManagerDashboard() {
         }
       `}</style>
 
-      <div className="p-6 space-y-8 max-w-[1600px] mx-auto">
+      <div className="p-4 md:p-6 space-y-6 md:space-y-8 max-w-[1600px] mx-auto">
         {/* Section 1 - Santé du Business */}
         <BusinessHealthSection
           caJour={Math.round(caJour)}

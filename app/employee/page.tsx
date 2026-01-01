@@ -465,7 +465,7 @@ export default function EmployeePage() {
         </div>
       )}
       
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-4 md:space-y-6">
         {/* Header Section */}
         <div className="mb-2">
           <h1 className="text-2xl font-semibold text-slate-100 mb-1 tracking-tight">
@@ -475,7 +475,7 @@ export default function EmployeePage() {
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           <GlassTile animationDelay={0}>
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/10 border border-orange-500/30 flex items-center justify-center">
@@ -528,11 +528,11 @@ export default function EmployeePage() {
         </div>
 
         {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Modules Section */}
           <div className="lg:col-span-2">
             <h2 className="text-lg font-semibold text-white mb-4">Modules</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
               {modules.map((module, index) => {
                 const Icon = module.icon
                 const isCompleted = (module.id === "checkin" && status.checkInDone) || (module.id === "stock" && status.stockUpdated)

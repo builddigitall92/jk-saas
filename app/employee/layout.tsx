@@ -22,6 +22,9 @@ import {
   Shield,
   HelpCircle,
   ChefHat,
+  Menu,
+  X,
+  ShoppingBag,
 } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useNotifications } from "@/lib/hooks/use-notifications"
@@ -57,6 +60,16 @@ export default function EmployeeLayout({
   const [theme, setTheme] = useState<"dark" | "light">("dark")
   const [tooltip, setTooltip] = useState<{ text: string; top: number } | null>(null)
   const [noEstablishment, setNoEstablishment] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  // Items pour la navigation mobile (bottom bar)
+  const mobileNavItems = [
+    { name: "Home", href: "/employee", icon: LayoutDashboard },
+    { name: "Ventes", href: "/employee/ventes", icon: ShoppingBag },
+    { name: "Stock", href: "/employee/stock", icon: Package },
+    { name: "Alertes", href: "/employee/alerts", icon: AlertTriangle },
+    { name: "Plus", href: "#more", icon: Menu, isMenu: true },
+  ]
 
   // Fonction de vérification directe depuis la base de données
   const checkEmployeeAccess = async () => {
@@ -291,8 +304,8 @@ export default function EmployeeLayout({
         </div>
       )}
 
-      {/* Icon-Only Glassmorphism Sidebar */}
-      <aside className={`w-[72px] min-w-[72px] h-full flex flex-col items-center py-4 relative z-[9999] ${
+      {/* Icon-Only Glassmorphism Sidebar - Hidden on mobile */}
+      <aside className={`hidden lg:flex w-[72px] min-w-[72px] h-full flex-col items-center py-4 relative z-[9999] ${
         theme === "dark" 
           ? "glass-sidebar" 
           : "bg-white border-r border-gray-200"
@@ -428,8 +441,8 @@ export default function EmployeeLayout({
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Header Bar */}
-        <header className={`h-16 px-6 flex items-center justify-between backdrop-blur-xl relative z-50 ${
+        {/* Top Header Bar - Hidden on mobile */}
+        <header className={`hidden lg:flex h-16 px-6 items-center justify-between backdrop-blur-xl relative z-50 ${
           theme === "dark" 
             ? "border-b border-white/[0.06] bg-slate-900/30" 
             : "border-b border-gray-200 bg-white/80"
@@ -670,10 +683,183 @@ export default function EmployeeLayout({
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pt-[calc(var(--mobile-header-height,56px)+8px)] pb-[calc(var(--mobile-nav-height,70px)+16px)] lg:pt-0 lg:pb-0">
           {children}
         </main>
       </div>
+
+      {/* Mobile Header */}
+      <div className="mobile-header lg:hidden">
+        <div className="mobile-header-content">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 via-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-orange-500/40">
+              <Shield className="w-4 h-4 text-white" />
+            </div>
+            <span className="mobile-header-title">
+              {pathname === "/employee" ? "Dashboard" :
+                pathname.includes("/ventes") ? "Ventes" :
+                pathname.includes("/stock") ? "Stock" :
+                pathname.includes("/menu") ? "Menu" :
+                  pathname.includes("/waste") ? "Gaspillage" :
+                    pathname.includes("/service-check") ? "Check-in" :
+                      pathname.includes("/alerts") ? "Alertes" :
+                        pathname.includes("/settings") ? "Paramètres" : "StockGuard"}
+            </span>
+          </div>
+          <div className="mobile-header-actions">
+            <button 
+              onClick={() => {
+                setIsNotificationsOpen(!isNotificationsOpen)
+                setIsMobileMenuOpen(false)
+              }}
+              className="mobile-menu-btn relative"
+            >
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+            <button 
+              onClick={() => {
+                setIsMobileMenuOpen(!isMobileMenuOpen)
+                setIsNotificationsOpen(false)
+              }}
+              className="mobile-menu-btn"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="mobile-sidebar-overlay active lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile Sidebar */}
+      <div className={`mobile-sidebar lg:hidden ${isMobileMenuOpen ? 'open' : ''}`}>
+        {/* User Profile */}
+        <div className="flex items-center gap-3 mb-6 p-3 rounded-xl bg-slate-800/50 border border-white/[0.06]">
+          <div className="w-12 h-12 rounded-xl overflow-hidden ring-2 ring-orange-400/20">
+            {profile?.avatar_url ? (
+              <Image
+                src={profile.avatar_url}
+                alt="Avatar"
+                width={48}
+                height={48}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-orange-500 via-red-500 to-rose-600 flex items-center justify-center text-white font-black text-lg">
+                {userName.substring(0, 2).toUpperCase()}
+              </div>
+            )}
+          </div>
+          <div>
+            <p className="text-white font-semibold">{userName}</p>
+            <p className="text-xs text-slate-400">Employé</p>
+          </div>
+        </div>
+
+        {/* Navigation Links */}
+        <nav className="space-y-1">
+          {mainNavItems.map((item) => {
+            const isActive = pathname === item.href || (item.href !== "/employee" && pathname.startsWith(item.href))
+            const Icon = item.icon
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                  isActive 
+                    ? 'bg-gradient-to-r from-orange-500/20 to-red-500/10 text-white border border-orange-500/30' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? 'text-orange-400' : ''}`} />
+                <span className="font-medium">{item.name}</span>
+                {item.hasBadge && unreadCount > 0 && (
+                  <span className="ml-auto w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </Link>
+            )
+          })}
+        </nav>
+
+        {/* Separator */}
+        <div className="h-px bg-white/10 my-4" />
+
+        {/* Bottom Links */}
+        <div className="space-y-1">
+          <Link
+            href="/employee/settings"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all"
+          >
+            <Settings className="w-5 h-5" />
+            <span className="font-medium">Paramètres</span>
+          </Link>
+        </div>
+
+        {/* Theme Toggle & Logout */}
+        <div className="mt-auto pt-4 space-y-2">
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all"
+          >
+            {theme === "dark" ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5" />}
+            <span className="font-medium">{theme === "dark" ? "Mode Clair" : "Mode Sombre"}</span>
+          </button>
+          <button
+            onClick={handleSignOut}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="font-medium">Déconnexion</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="mobile-bottom-nav lg:hidden">
+        <div className="mobile-bottom-nav-items">
+          {mobileNavItems.map((item) => {
+            const Icon = item.icon
+            if (item.isMenu) {
+              return (
+                <button
+                  key={item.name}
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  className="mobile-nav-item"
+                >
+                  <Icon />
+                  <span>{item.name}</span>
+                </button>
+              )
+            }
+            const isActive = pathname === item.href || (item.href !== "/employee" && pathname.startsWith(item.href))
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`mobile-nav-item ${isActive ? 'mobile-nav-item-active' : ''}`}
+              >
+                <Icon />
+                <span>{item.name}</span>
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
     </div>
   )
 }

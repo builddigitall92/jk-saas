@@ -27,6 +27,8 @@ import {
   CreditCard,
   ChefHat,
   Receipt,
+  Menu,
+  X,
 } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useSubscription } from "@/lib/hooks/use-subscription"
@@ -68,6 +70,16 @@ export default function ManagerLayout({
   const [isLoading, setIsLoading] = useState(true)
   const [theme, setTheme] = useState<"dark" | "light">("dark")
   const [tooltip, setTooltip] = useState<{ text: string; top: number } | null>(null)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  // Items pour la navigation mobile (bottom bar)
+  const mobileNavItems = [
+    { name: "Dashboard", href: "/manager", icon: LayoutDashboard },
+    { name: "Menu", href: "/manager/menu", icon: ChefHat },
+    { name: "Stocks", href: "/manager/stock", icon: Package },
+    { name: "Ventes", href: "/manager/ventes", icon: Receipt },
+    { name: "Plus", href: "#more", icon: Menu, isMenu: true },
+  ]
 
   // Charger le thème depuis localStorage au démarrage
   useEffect(() => {
@@ -239,8 +251,8 @@ export default function ManagerLayout({
         </div>
       )}
 
-      {/* Icon-Only Glassmorphism Sidebar */}
-      <aside className={`w-[72px] min-w-[72px] h-full flex flex-col items-center py-4 relative z-[9999] ${theme === "dark"
+      {/* Icon-Only Glassmorphism Sidebar - Hidden on mobile */}
+      <aside className={`hidden lg:flex w-[72px] min-w-[72px] h-full flex-col items-center py-4 relative z-[9999] ${theme === "dark"
           ? "glass-sidebar"
           : "bg-white border-r border-gray-200"
         }`}>
@@ -378,8 +390,8 @@ export default function ManagerLayout({
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Header Bar */}
-        <header className={`h-16 px-6 flex items-center justify-between backdrop-blur-xl relative z-50 ${theme === "dark"
+        {/* Top Header Bar - Hidden on mobile */}
+        <header className={`hidden lg:flex h-16 px-6 items-center justify-between backdrop-blur-xl relative z-50 ${theme === "dark"
             ? "border-b border-white/[0.06] bg-slate-900/30"
             : "border-b border-gray-200 bg-white/80"
           }`}>
@@ -682,10 +694,197 @@ export default function ManagerLayout({
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pt-[calc(var(--mobile-header-height,56px)+8px)] pb-[calc(var(--mobile-nav-height,70px)+16px)] lg:pt-0 lg:pb-0">
           {children}
         </main>
       </div>
+
+      {/* Mobile Header */}
+      <div className="mobile-header lg:hidden">
+        <div className="mobile-header-content">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/40">
+              <Shield className="w-4 h-4 text-white" />
+            </div>
+            <span className="mobile-header-title">
+              {pathname === "/manager" ? "Dashboard" :
+                pathname.includes("/menu") ? "Menu" :
+                pathname.includes("/stock") ? "Stocks" :
+                  pathname.includes("/ventes") ? "Ventes" :
+                  pathname.includes("/suppliers") ? "Fournisseurs" :
+                    pathname.includes("/forecasts") ? "Prévisions" :
+                      pathname.includes("/reports") ? "Rapports" :
+                        pathname.includes("/calculator") ? "Calculateur" :
+                          pathname.includes("/team") ? "Équipe" :
+                          pathname.includes("/feedback") ? "Feedbacks" :
+                            pathname.includes("/settings") ? "Paramètres" : "StockGuard"}
+            </span>
+          </div>
+          <div className="mobile-header-actions">
+            <button 
+              onClick={() => {
+                setIsNotificationsOpen(!isNotificationsOpen)
+                setIsMobileMenuOpen(false)
+              }}
+              className="mobile-menu-btn relative"
+            >
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+            <button 
+              onClick={() => {
+                setIsMobileMenuOpen(!isMobileMenuOpen)
+                setIsNotificationsOpen(false)
+              }}
+              className="mobile-menu-btn"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="mobile-sidebar-overlay active lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile Sidebar */}
+      <div className={`mobile-sidebar lg:hidden ${isMobileMenuOpen ? 'open' : ''}`}>
+        {/* User Profile */}
+        <div className="flex items-center gap-3 mb-6 p-3 rounded-xl bg-slate-800/50 border border-white/[0.06]">
+          <div className="w-12 h-12 rounded-xl overflow-hidden ring-2 ring-cyan-400/20">
+            {profile?.avatar_url ? (
+              <Image
+                src={profile.avatar_url}
+                alt="Avatar"
+                width={48}
+                height={48}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-cyan-500 via-blue-500 to-purple-600 flex items-center justify-center text-white font-black text-lg">
+                {userName.substring(0, 2).toUpperCase()}
+              </div>
+            )}
+          </div>
+          <div>
+            <p className="text-white font-semibold">{userName}</p>
+            <p className="text-xs text-slate-400">Manager</p>
+          </div>
+        </div>
+
+        {/* Navigation Links */}
+        <nav className="space-y-1">
+          {mainNavItems.map((item) => {
+            const isActive = pathname === item.href || (item.href !== "/manager" && pathname.startsWith(item.href))
+            const Icon = item.icon
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                  isActive 
+                    ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-white border border-cyan-500/30' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? 'text-cyan-400' : ''}`} />
+                <span className="font-medium">{item.name}</span>
+              </Link>
+            )
+          })}
+        </nav>
+
+        {/* Separator */}
+        <div className="h-px bg-white/10 my-4" />
+
+        {/* Bottom Links */}
+        <div className="space-y-1">
+          <Link
+            href="/manager/account"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all"
+          >
+            <User className="w-5 h-5" />
+            <span className="font-medium">Mon Profil</span>
+          </Link>
+          <Link
+            href="/manager/settings"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all"
+          >
+            <Settings className="w-5 h-5" />
+            <span className="font-medium">Paramètres</span>
+          </Link>
+          <Link
+            href="/manager/help"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all"
+          >
+            <HelpCircle className="w-5 h-5" />
+            <span className="font-medium">Aide</span>
+          </Link>
+        </div>
+
+        {/* Theme Toggle & Logout */}
+        <div className="mt-auto pt-4 space-y-2">
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all"
+          >
+            {theme === "dark" ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5" />}
+            <span className="font-medium">{theme === "dark" ? "Mode Clair" : "Mode Sombre"}</span>
+          </button>
+          <button
+            onClick={handleSignOut}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="font-medium">Déconnexion</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="mobile-bottom-nav lg:hidden">
+        <div className="mobile-bottom-nav-items">
+          {mobileNavItems.map((item) => {
+            const Icon = item.icon
+            if (item.isMenu) {
+              return (
+                <button
+                  key={item.name}
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  className="mobile-nav-item"
+                >
+                  <Icon />
+                  <span>{item.name}</span>
+                </button>
+              )
+            }
+            const isActive = pathname === item.href || (item.href !== "/manager" && pathname.startsWith(item.href))
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`mobile-nav-item ${isActive ? 'mobile-nav-item-active' : ''}`}
+              >
+                <Icon />
+                <span>{item.name}</span>
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
     </div>
   )
 }

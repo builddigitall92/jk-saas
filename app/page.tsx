@@ -316,13 +316,13 @@ export default function LandingPage() {
 
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-[#0a0a0a]/80 border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                <Shield className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              <span className="text-xl font-black tracking-tight">STOCKGUARD</span>
+              <span className="text-base sm:text-xl font-black tracking-tight">STOCKGUARD</span>
             </div>
             <div className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Fonctionnalités</a>
@@ -330,14 +330,14 @@ export default function LandingPage() {
               <a href="#testimonials" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Témoignages</a>
               <a href="#faq" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">FAQ</a>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Link href="/login">
-                <Button variant="ghost" className="text-gray-400 hover:text-white hover:bg-white/5">
+                <Button variant="ghost" className="text-gray-400 hover:text-white hover:bg-white/5 px-2 sm:px-4 text-sm sm:text-base">
                   Connexion
                 </Button>
               </Link>
               <Link href="/login">
-                <Button className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 shadow-lg shadow-emerald-500/20">
+                <Button className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 sm:px-6 text-sm sm:text-base shadow-lg shadow-emerald-500/20 whitespace-nowrap">
                   Essai gratuit
                 </Button>
               </Link>
@@ -347,22 +347,22 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section - HackerRank Style */}
-      <section className="relative pt-32 pb-24 px-6">
+      <section className="relative pt-24 sm:pt-32 pb-16 sm:pb-24 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-10 lg:gap-16 items-center">
             {/* Left Column - Content */}
             <div className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 mb-6">
-                <Fingerprint className="h-4 w-4 text-emerald-400" />
-                <span className="text-sm font-medium text-emerald-400">La tour de contrôle de ton stock</span>
+              <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 mb-4 sm:mb-6">
+                <Fingerprint className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-400" />
+                <span className="text-xs sm:text-sm font-medium text-emerald-400">La tour de contrôle de ton stock</span>
               </div>
 
               {/* Headline */}
-              <h1 className="text-5xl lg:text-6xl font-black leading-[1.1] mb-6">
-                <span className="text-gray-300">Ton stock mérite</span>
-                <br />
-                <span className="text-gray-300">mieux qu'un</span>
+              <h1 className="text-7xl sm:text-6xl md:text-7xl lg:text-8xl font-black leading-[1.05] mb-6 w-full">
+                <span className="text-gray-300">
+                  Ton stock mérite mieux qu'un
+                </span>
                 <br />
                 <span className="relative">
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-300">Excel fatigué</span>
@@ -371,22 +371,22 @@ export default function LandingPage() {
               </h1>
 
               {/* Sub-headline */}
-              <p className="text-xl text-gray-400 mb-8 leading-relaxed max-w-xl">
+              <p className="text-base sm:text-lg text-gray-400 mb-8 leading-relaxed w-full lg:max-w-2xl">
                 StockGuard surveille tes niveaux, anticipe tes ruptures et protège tes marges 
                 <span className="text-white font-medium"> pendant que tu t'occupes du service</span>.
               </p>
 
               {/* CTAs */}
-              <div className="flex flex-wrap gap-4 mb-8">
-                <Link href="/login">
-                  <Button className="h-14 px-8 text-lg font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl shadow-2xl shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all duration-300 hover:-translate-y-1">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8">
+                <Link href="/login" className="w-full sm:w-auto">
+                  <Button className="w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 text-base sm:text-lg font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl shadow-2xl shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all duration-300 hover:-translate-y-1">
                     Commencer maintenant
-                    <ArrowRight className="w-5 h-5 ml-2" />
+                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
                   </Button>
                 </Link>
-                <Link href="#contact">
-                  <Button variant="outline" className="h-14 px-8 text-lg font-semibold border-white/20 hover:bg-white/5 text-white rounded-xl">
-                    <MessageCircle className="w-5 h-5 mr-2" />
+                <Link href="#contact" className="w-full sm:w-auto">
+                  <Button variant="outline" className="w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 text-base sm:text-lg font-semibold border-white/20 hover:bg-white/5 text-white rounded-xl">
+                    <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     Nous contacter
                   </Button>
                 </Link>

@@ -303,9 +303,9 @@ export default function ManagerStockPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between glass-animate-fade-up">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-animate-fade-up">
         <div>
           <h1 className="text-2xl font-semibold text-slate-100 tracking-tight">Stocks</h1>
           <p className="text-sm text-slate-400">Gestion des produits et ingrédients</p>
@@ -716,7 +716,7 @@ export default function ManagerStockPage() {
       {activeSection === 'stock' && (
         <>
           {/* Stats Row */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
             {tabs.map((tab, index) => {
               const Icon = tab.icon
               const count = getByCategory(tab.id).length
@@ -758,7 +758,7 @@ export default function ManagerStockPage() {
           </div>
 
           {/* Products Grid */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             {categoryStocks.map((stock, index) => (
               <div
                 key={stock.id}
@@ -1003,7 +1003,7 @@ export default function ManagerStockPage() {
           </div>
 
           {/* Statistiques historique */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
             <div className="glass-stat-card">
               <div className="flex items-center gap-2 mb-2">
                 <Package className="h-4 w-4 text-blue-400" />
