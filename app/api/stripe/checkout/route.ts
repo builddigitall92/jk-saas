@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe, PLANS, PlanId, isStripeConfigured } from '@/lib/stripe'
+import { stripe, PLANS, PlanId, BillingType, getPriceIdForPlan, isStripeConfigured } from '@/lib/stripe'
 import { createClient } from '@/utils/supabase/server'
 
 export async function POST(request: NextRequest) {
@@ -8,16 +8,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Stripe non configuré' }, { status: 500 })
     }
 
-    const { planId } = await request.json()
+    const { planId, billingType = 'monthly' } = await request.json()
     
     if (!planId || !PLANS[planId as PlanId]) {
       return NextResponse.json({ error: 'Plan invalide' }, { status: 400 })
     }
 
+    if (billingType !== 'monthly' && billingType !== 'annual' && billingType !== 'lifetime') {
+      return NextResponse.json({ error: 'Type de facturation invalide (monthly, annual ou lifetime)' }, { status: 400 })
+    }
+
     const plan = PLANS[planId as PlanId]
+    const priceId = getPriceIdForPlan(planId as PlanId, billingType as BillingType)
     
-    if (!plan.priceId) {
-      return NextResponse.json({ error: 'Ce plan n\'a pas de prix configuré' }, { status: 400 })
+    if (!priceId) {
+      return NextResponse.json({ error: 'Ce plan n\'a pas de prix configuré pour ce type de facturation' }, { status: 400 })
     }
 
     const supabase = await createClient()
@@ -51,6 +56,28 @@ export async function POST(request: NextRequest) {
 
     let customerId = establishment.stripe_customer_id
 
+    // Vérifier si le customer existe dans Stripe, sinon le créer
+    if (customerId) {
+      try {
+        // Vérifier que le customer existe bien dans Stripe
+        await stripe.customers.retrieve(customerId)
+      } catch (error: any) {
+        // Si le customer n'existe pas (erreur 404 ou "No such customer")
+        if (error?.code === 'resource_missing' || error?.message?.includes('No such customer')) {
+          console.log(`Customer ${customerId} n'existe pas dans Stripe, création d'un nouveau`)
+          // Supprimer le customer ID invalide de la base de données
+          await supabase
+            .from('establishments')
+            .update({ stripe_customer_id: null })
+            .eq('id', establishment.id)
+          customerId = null // Forcer la création d'un nouveau customer
+        } else {
+          // Autre erreur, la propager
+          throw error
+        }
+      }
+    }
+
     // Créer un customer Stripe si n'existe pas
     if (!customerId) {
       const customer = await stripe.customers.create({
@@ -70,36 +97,60 @@ export async function POST(request: NextRequest) {
         .eq('id', establishment.id)
     }
 
+    // Déterminer le mode de checkout selon le type de facturation
+    // Lifetime = paiement unique, Monthly/Annual = abonnement récurrent
+    const isLifetime = billingType === 'lifetime'
+    const mode = isLifetime ? 'payment' : 'subscription'
+
     // Créer la session de checkout
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig: any = {
       customer: customerId,
-      mode: 'subscription',
+      mode: mode,
       payment_method_types: ['card'],
       line_items: [
         {
-          price: plan.priceId,
+          price: priceId,
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/manager/settings?success=true&plan=${planId}`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/manager/settings?success=true&plan=${planId}&billing=${billingType}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing?canceled=true`,
-      subscription_data: {
-        metadata: {
-          establishment_id: establishment.id,
-          plan_id: planId,
-        },
-        trial_period_days: 14, // 14 jours d'essai gratuit
-      },
       allow_promotion_codes: true,
       billing_address_collection: 'required',
       locale: 'fr',
-    })
+      metadata: {
+        establishment_id: establishment.id,
+        plan_id: planId,
+        billing_type: billingType,
+      },
+    }
+
+    // Ajouter les données spécifiques aux abonnements (pas pour les paiements à vie)
+    if (!isLifetime) {
+      sessionConfig.subscription_data = {
+        metadata: {
+          establishment_id: establishment.id,
+          plan_id: planId,
+          billing_type: billingType,
+        },
+        trial_period_days: 14, // 14 jours d'essai gratuit pour les abonnements
+      }
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig)
 
     return NextResponse.json({ sessionId: session.id, url: session.url })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erreur création checkout:', error)
+    const errorMessage = error?.message || 'Erreur lors de la création du paiement'
+    const errorDetails = error?.type ? `Type: ${error.type}` : ''
+    
     return NextResponse.json(
-      { error: 'Erreur lors de la création du paiement' },
+      { 
+        error: errorMessage,
+        details: errorDetails,
+        fullError: process.env.NODE_ENV === 'development' ? error : undefined
+      },
       { status: 500 }
     )
   }

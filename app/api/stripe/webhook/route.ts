@@ -97,6 +97,7 @@ export async function POST(request: NextRequest) {
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session, supabaseAdmin: ReturnType<typeof getSupabaseAdmin>) {
   const customerId = session.customer as string
   const subscriptionId = session.subscription as string
+  const isLifetime = session.mode === 'payment' // Paiement à vie
 
   // Trouver l'établissement par customer ID
   const { data: establishment } = await supabaseAdmin
@@ -110,14 +111,53 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session, supabas
     return
   }
 
-  // Mettre à jour avec l'ID de souscription
-  await supabaseAdmin
-    .from('establishments')
-    .update({
-      stripe_subscription_id: subscriptionId,
-      subscription_status: 'active',
-    })
-    .eq('id', establishment.id)
+  // Récupérer le plan depuis les métadonnées de la session ou de la subscription
+  let planId = 'free'
+  const billingType = session.metadata?.billing_type || 'monthly'
+
+  if (isLifetime) {
+    // Pour les paiements à vie, récupérer le plan depuis les métadonnées
+    planId = (session.metadata?.plan_id || 'free').toLowerCase()
+    
+    // Mettre à jour avec le plan à vie (pas d'abonnement)
+    await supabaseAdmin
+      .from('establishments')
+      .update({
+        subscription_plan: planId,
+        subscription_status: 'active', // Actif à vie
+        stripe_subscription_id: null, // Pas d'abonnement pour les paiements à vie
+        subscription_period_end: null, // Pas de date de fin pour les paiements à vie
+        trial_ends_at: null,
+      })
+      .eq('id', establishment.id)
+  } else {
+    // Pour les abonnements, récupérer le plan depuis la subscription
+    if (session.subscription && stripe) {
+      try {
+        const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+        const priceId = subscription.items.data[0]?.price.id
+        if (priceId) {
+          planId = getPlanFromPriceId(priceId).toLowerCase()
+        }
+      } catch (error) {
+        console.error('Erreur récupération subscription:', error)
+        // Fallback sur les métadonnées de la session
+        planId = (session.metadata?.plan_id || 'free').toLowerCase()
+      }
+    } else {
+      planId = (session.metadata?.plan_id || 'free').toLowerCase()
+    }
+
+    // Mettre à jour avec l'ID de souscription
+    await supabaseAdmin
+      .from('establishments')
+      .update({
+        stripe_subscription_id: subscriptionId,
+        subscription_status: 'trialing', // En période d'essai si applicable
+        subscription_plan: planId,
+      })
+      .eq('id', establishment.id)
+  }
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription, supabaseAdmin: ReturnType<typeof getSupabaseAdmin>) {

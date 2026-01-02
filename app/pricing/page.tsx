@@ -6,128 +6,71 @@ import {
   Check, 
   Sparkles, 
   Building2, 
-  Users, 
   Zap,
   Crown,
   Loader2,
-  ArrowRight
+  ArrowRight,
+  Shield,
+  Brain,
+  ShieldCheck,
+  HelpCircle,
+  ChevronDown
 } from "lucide-react"
 import Link from "next/link"
 import { getStripe } from "@/lib/stripe-client"
+import { PRICING_PLANS, type BillingPeriod } from "@/lib/pricing-config"
 
-const plans = [
-  {
-    id: 'FREE',
-    name: 'Gratuit',
-    description: 'Pour découvrir StockGuard',
-    price: 0,
-    period: '',
-    icon: Sparkles,
-    color: 'text-muted-foreground',
-    bgColor: 'bg-secondary',
-    features: [
-      '1 établissement',
-      '2 employés max',
-      'Gestion de stock basique',
-      'Alertes par email',
-    ],
-    cta: 'Commencer gratuitement',
-    popular: false,
-  },
-  {
-    id: 'STARTER',
-    name: 'Starter',
-    description: 'Pour les petits établissements',
-    price: 20,
-    period: '/mois',
-    icon: Building2,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-500/10',
-    features: [
-      '1 établissement',
-      '5 employés',
-      'Gestion de stock complète',
-      'Alertes temps réel',
-      'Rapports mensuels',
-      'Support email',
-    ],
-    cta: 'Essai gratuit 14 jours',
-    popular: false,
-  },
-  {
-    id: 'PRO',
-    name: 'Pro',
-    description: 'Pour les établissements en croissance',
-    price: 80,
-    period: '/mois',
-    icon: Zap,
-    color: 'text-orange-500',
-    bgColor: 'bg-orange-500/10',
-    features: [
-      '3 établissements',
-      '15 employés',
-      'Toutes les fonctionnalités',
-      'Prévisions IA',
-      'Rapports avancés',
-      'Support prioritaire',
-      'Export données',
-    ],
-    cta: 'Essai gratuit 14 jours',
-    popular: true,
-  },
-  {
-    id: 'PREMIUM',
-    name: 'Premium',
-    description: 'Pour les chaînes de restaurants',
-    price: 110,
-    period: '/mois',
-    icon: Crown,
-    color: 'text-purple-500',
-    bgColor: 'bg-purple-500/10',
-    features: [
-      'Établissements illimités',
-      'Employés illimités',
-      'Toutes les fonctionnalités',
-      'API personnalisée',
-      'Intégrations sur mesure',
-      'Account manager dédié',
-      'SLA garanti',
-    ],
-    cta: 'Essai gratuit 14 jours',
-    popular: false,
-  },
-]
+// FAQ Item Component
+function FAQItem({ question, answer, isOpen, onClick }: {
+  question: string; answer: string; isOpen: boolean; onClick: () => void
+}) {
+  return (
+    <div className="border border-white/10 rounded-2xl overflow-hidden bg-white/[0.02] backdrop-blur-sm">
+      <button
+        onClick={onClick}
+        className="w-full p-6 text-left flex items-center justify-between gap-4 hover:bg-white/5 transition-colors"
+      >
+        <span className="text-lg font-semibold text-white">{question}</span>
+        <ChevronDown className={`h-5 w-5 text-gray-400 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-96' : 'max-h-0'}`}>
+        <p className="px-6 pb-6 text-gray-400 leading-relaxed">{answer}</p>
+      </div>
+    </div>
+  )
+}
 
 export default function PricingPage() {
   const [loading, setLoading] = useState<string | null>(null)
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("annual")
+  const [openFAQ, setOpenFAQ] = useState<number | null>(null)
 
   const handleSubscribe = async (planId: string) => {
-    if (planId === 'FREE') {
-      window.location.href = '/login'
-      return
-    }
-
     setLoading(planId)
+
+    // Convertir planId en majuscules pour l'API (STARTER, PRO, PREMIUM)
+    const apiPlanId = planId.toUpperCase()
 
     try {
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId }),
+        body: JSON.stringify({ planId: apiPlanId, billingType: billingPeriod }),
       })
 
       const data = await response.json()
 
       if (data.error) {
-        // Si pas authentifié, rediriger vers login
         if (response.status === 401) {
           window.location.href = `/login?redirect=/pricing&plan=${planId}`
           return
         }
-        throw new Error(data.error)
+        const errorMessage = data.error || 'Une erreur est survenue lors de la création du paiement'
+        alert(errorMessage)
+        console.error('Erreur checkout:', data)
+        return
       }
 
-      // Rediriger vers Stripe Checkout
       if (data.url) {
         window.location.href = data.url
       } else {
@@ -144,170 +87,388 @@ export default function PricingPage() {
     }
   }
 
+  const faqs = [
+    {
+      question: "Puis-je changer de plan à tout moment ?",
+      answer: "Oui, vous pouvez upgrader ou downgrader votre plan à tout moment. Les changements prennent effet immédiatement et sont proratisés."
+    },
+    {
+      question: "Comment fonctionne l'essai gratuit ?",
+      answer: "Vous avez 14 jours pour tester toutes les fonctionnalités du plan choisi. Aucune carte bancaire requise pour commencer. Vous ne serez facturé qu'à la fin de l'essai."
+    },
+    {
+      question: "Quels moyens de paiement acceptez-vous ?",
+      answer: "Nous acceptons les cartes Visa, Mastercard, American Express, ainsi que les prélèvements SEPA pour les entreprises européennes."
+    },
+    {
+      question: "Puis-je annuler mon abonnement ?",
+      answer: "Oui, vous pouvez annuler à tout moment depuis votre espace client. Vous conservez l'accès jusqu'à la fin de votre période de facturation."
+    },
+    {
+      question: "Y a-t-il un engagement ?",
+      answer: "Non, aucun engagement. L'abonnement annuel offre simplement une réduction. Vous pouvez annuler quand vous voulez, sans frais cachés."
+    }
+  ]
+
+  const planOrder = ['starter', 'pro', 'premium'] as const
+  const planIcons = {
+    starter: Building2,
+    pro: Zap,
+    premium: Crown
+  }
+  const planColors = {
+    starter: { text: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30', glow: 'shadow-blue-500/20' },
+    pro: { text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', glow: 'shadow-emerald-500/20' },
+    premium: { text: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', glow: 'shadow-amber-500/20' }
+  }
+
   return (
-    <div className="min-h-screen banking-bg">
+    <div className="min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
+      {/* Background Effects */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
+        <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-emerald-600/10 rounded-full blur-[150px]" />
+        <div className="absolute top-1/2 right-0 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[120px]" />
+      </div>
+
       {/* Header */}
-      <header className="border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
-              <span className="text-white font-bold text-lg">S</span>
+      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-[#0a0a0a]/80 border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-black tracking-tight">STOCKGUARD</span>
+            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/login">
+                <Button variant="ghost" className="text-gray-400 hover:text-white hover:bg-white/5">
+                  Connexion
+                </Button>
+              </Link>
+              <Link href="/login">
+                <Button className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-lg shadow-emerald-500/20">
+                  Essai gratuit
+                </Button>
+              </Link>
             </div>
-            <span className="text-xl font-bold text-foreground">StockGuard</span>
-          </Link>
-          <Link href="/login">
-            <Button variant="outline">Se connecter</Button>
-          </Link>
+          </div>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="py-16 text-center">
-        <div className="container mx-auto px-4">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Tarifs simples et transparents
+      <section className="relative pt-32 pb-12 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 mb-6">
+            <Sparkles className="h-4 w-4 text-emerald-400" />
+            <span className="text-sm font-medium text-emerald-400">14 jours d'essai gratuit</span>
+          </div>
+          
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black mb-6">
+            <span className="text-white">Tarifs </span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-300">simples et transparents</span>
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Commencez gratuitement, évoluez selon vos besoins. 
-            <span className="text-orange-500 font-medium"> 14 jours d'essai gratuit</span> sur tous les plans payants.
+          
+          <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-10">
+            Commencez votre essai gratuit, évoluez selon vos besoins. 
+            Sans engagement, annulable à tout moment.
           </p>
+
+          {/* Billing Toggle */}
+          <div className="inline-flex items-center gap-4 p-2 rounded-full bg-white/5 border border-white/10">
+            <button
+              onClick={() => setBillingPeriod("monthly")}
+              className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all ${
+                billingPeriod === "monthly" 
+                  ? "bg-white text-black" 
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              Mensuel
+            </button>
+            <button
+              onClick={() => setBillingPeriod("annual")}
+              className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${
+                billingPeriod === "annual" 
+                  ? "bg-white text-black" 
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              Annuel
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                billingPeriod === "annual"
+                  ? "bg-emerald-500 text-white"
+                  : "bg-emerald-500/80 text-white"
+              }`}>
+                -20%
+              </span>
+            </button>
+          </div>
+
+          {billingPeriod === "annual" && (
+            <p className="text-sm text-emerald-400 mt-4 font-medium">
+              💰 Économisez jusqu'à 3 mois en passant à l'annuel
+            </p>
+          )}
         </div>
       </section>
 
       {/* Plans */}
-      <section className="pb-20">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-            {plans.map((plan) => {
-              const Icon = plan.icon
+      <section className="relative pb-20 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8 items-start">
+            {planOrder.map((planKey) => {
+              const plan = PRICING_PLANS[planKey]
+              const Icon = planIcons[planKey]
+              const colors = planColors[planKey]
+              const pricing = billingPeriod === "monthly" ? plan.monthly : plan.annual
+              const isPro = planKey === 'pro'
+
               return (
                 <div 
-                  key={plan.id}
-                  className={`relative banking-card p-6 flex flex-col ${
-                    plan.popular ? 'border-orange-500 ring-2 ring-orange-500/20' : ''
+                  key={planKey}
+                  className={`relative rounded-3xl transition-all duration-300 ${
+                    isPro ? 'scale-105 z-10' : ''
                   }`}
                 >
-                  {plan.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                        POPULAIRE
-                      </span>
-                    </div>
+                  {/* Glow effect for Pro */}
+                  {isPro && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-amber-500/10 blur-xl rounded-3xl" />
                   )}
+                  
+                  <div className={`relative p-8 rounded-3xl ${
+                    isPro 
+                      ? 'bg-gradient-to-br from-gray-900 to-gray-950 border-2 border-emerald-500/50 shadow-2xl shadow-emerald-500/20' 
+                      : 'bg-white/[0.02] border border-white/10 hover:border-white/20'
+                  }`}>
+                    {/* Popular badge */}
+                    {isPro && (
+                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-10">
+                        <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-emerald-500/30">
+                          <Crown className="h-4 w-4" />
+                          Recommandé
+                        </div>
+                      </div>
+                    )}
 
-                  {/* Header */}
-                  <div className="mb-6">
-                    <div className={`h-12 w-12 rounded-xl ${plan.bgColor} flex items-center justify-center mb-4`}>
-                      <Icon className={`h-6 w-6 ${plan.color}`} />
-                    </div>
-                    <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
-                    <p className="text-sm text-muted-foreground">{plan.description}</p>
-                  </div>
+                    {/* Annual savings badge */}
+                    {billingPeriod === "annual" && pricing.discount && (
+                      <div className="absolute -top-3 right-4">
+                        <div className={`bg-gradient-to-r ${
+                          isPro ? 'from-emerald-600 to-emerald-500' : planKey === 'premium' ? 'from-amber-600 to-amber-500' : 'from-blue-600 to-blue-500'
+                        } text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg`}>
+                          {pricing.discount}
+                        </div>
+                      </div>
+                    )}
 
-                  {/* Price */}
-                  <div className="mb-6">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-bold text-foreground">
-                        {plan.price === 0 ? 'Gratuit' : `${plan.price}€`}
+                    {/* Header */}
+                    <div className={`mb-6 ${isPro ? 'pt-2' : ''}`}>
+                      <div className={`h-14 w-14 rounded-2xl ${colors.bg} flex items-center justify-center mb-4`}>
+                        <Icon className={`h-7 w-7 ${colors.text}`} />
+                      </div>
+                      <span className={`text-xs font-semibold uppercase tracking-wider ${isPro ? 'text-emerald-400' : planKey === 'premium' ? 'text-amber-400' : 'text-gray-500'}`}>
+                        {plan.tagline}
                       </span>
-                      {plan.period && (
-                        <span className="text-muted-foreground">{plan.period}</span>
+                      <h3 className="text-2xl font-bold text-white mt-2">{plan.name}</h3>
+                      <p className="text-xs text-gray-500 mt-1">{plan.target}</p>
+                    </div>
+
+                    {/* Price */}
+                    <div className="mb-6">
+                      <div className="flex items-baseline gap-2">
+                        {billingPeriod === "annual" && pricing.originalPrice && (
+                          <span className="text-xl font-medium text-gray-500 line-through">
+                            {pricing.originalPrice}€
+                          </span>
+                        )}
+                        <span className={`text-5xl font-black ${isPro ? 'text-emerald-400' : planKey === 'premium' ? 'text-amber-400' : 'text-white'}`}>
+                          {pricing.price}€
+                        </span>
+                        <span className="text-gray-500">{pricing.period}</span>
+                      </div>
+                      {billingPeriod === "annual" && pricing.savings && (
+                        <p className={`text-sm font-semibold mt-1 ${isPro ? 'text-emerald-400' : planKey === 'premium' ? 'text-amber-400' : 'text-blue-400'}`}>
+                          Économisez {pricing.savings}
+                        </p>
+                      )}
+                      {billingPeriod === "monthly" && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          ou {plan.annual.price}€/an
+                        </p>
                       )}
                     </div>
+
+                    {/* Limits */}
+                    <div className="flex gap-4 mb-6 pb-6 border-b border-white/10">
+                      <div className={`flex-1 p-3 rounded-xl ${colors.bg}`}>
+                        <p className="text-2xl font-bold text-white">
+                          {plan.limits.establishments === 'unlimited' ? '∞' : plan.limits.establishments}
+                        </p>
+                        <p className="text-xs text-gray-400">établissement{plan.limits.establishments !== 1 && plan.limits.establishments !== 'unlimited' ? 's' : ''}</p>
+                      </div>
+                      <div className={`flex-1 p-3 rounded-xl ${colors.bg}`}>
+                        <p className="text-2xl font-bold text-white">
+                          {plan.limits.users === 'unlimited' ? '∞' : plan.limits.users}
+                        </p>
+                        <p className="text-xs text-gray-400">utilisateur{typeof plan.limits.users === 'number' && plan.limits.users > 1 ? 's' : ''}</p>
+                      </div>
+                    </div>
+
+                    {/* Features */}
+                    <ul className="space-y-2.5 mb-4">
+                      {plan.features.slice(0, 6).map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-3">
+                          <Check className={`h-4 w-4 shrink-0 mt-0.5 ${isPro ? 'text-emerald-400' : colors.text}`} />
+                          <span className={`text-sm ${isPro ? 'text-white' : 'text-gray-300'}`}>{feature}</span>
+                        </li>
+                      ))}
+                      {plan.features.length > 6 && (
+                        <li className="text-xs text-gray-500 pl-7">
+                          + {plan.features.length - 6} autres fonctionnalités
+                        </li>
+                      )}
+                    </ul>
+
+                    {/* AI Features */}
+                    <div className={`mb-6 p-4 rounded-xl bg-gradient-to-br ${
+                      isPro 
+                        ? 'from-purple-500/15 to-blue-500/15 border border-purple-500/30' 
+                        : 'from-purple-500/10 to-blue-500/10 border border-purple-500/20'
+                    }`}>
+                      <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <Brain className="h-3.5 w-3.5" />
+                        IA {planKey === 'starter' ? 'Light' : planKey === 'pro' ? 'avancée' : 'étendue'}
+                      </p>
+                      <ul className="space-y-2">
+                        {plan.aiFeatures.slice(0, 3).map((feature, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <Sparkles className="h-3.5 w-3.5 text-purple-400 shrink-0 mt-0.5" />
+                            <span className={`text-xs ${isPro ? 'text-white' : 'text-gray-300'}`}>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* CTA */}
+                    <Button
+                      onClick={() => handleSubscribe(planKey)}
+                      disabled={loading === planKey}
+                      className={`w-full h-12 font-bold shadow-lg transition-all ${
+                        isPro 
+                          ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-emerald-500/30' 
+                          : planKey === 'premium'
+                            ? 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-amber-500/30'
+                            : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                      }`}
+                    >
+                      {loading === planKey ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <>
+                          Essai gratuit 14 jours
+                          <ArrowRight className="h-4 w-4 ml-2" />
+                        </>
+                      )}
+                    </Button>
                   </div>
-
-                  {/* Features */}
-                  <ul className="space-y-3 mb-8 flex-1">
-                    {plan.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-center gap-2 text-sm">
-                        <Check className={`h-4 w-4 ${plan.color}`} />
-                        <span className="text-foreground">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {/* CTA */}
-                  <Button
-                    onClick={() => handleSubscribe(plan.id)}
-                    disabled={loading === plan.id}
-                    className={`w-full ${
-                      plan.popular 
-                        ? 'bg-orange-500 hover:bg-orange-600 text-white' 
-                        : ''
-                    }`}
-                    variant={plan.popular ? 'default' : 'outline'}
-                  >
-                    {loading === plan.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>
-                        {plan.cta}
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                      </>
-                    )}
-                  </Button>
                 </div>
               )
             })}
+          </div>
+
+          {/* Guarantee */}
+          <div className="mt-12 text-center">
+            <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+              <ShieldCheck className="h-6 w-6 text-emerald-400" />
+              <span className="text-white font-medium">
+                Garantie 30 jours satisfait ou remboursé
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Comparison note */}
+      <section className="py-16 px-4 sm:px-6 border-t border-white/5">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">
+            Tous les plans incluent
+          </h2>
+          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+            {[
+              { icon: Shield, text: "Données sécurisées" },
+              { icon: Zap, text: "Mises à jour gratuites" },
+              { icon: HelpCircle, text: "Support inclus" },
+              { icon: ShieldCheck, text: "Sans engagement" }
+            ].map((item, i) => (
+              <div key={i} className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                <item.icon className="h-6 w-6 text-emerald-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-300">{item.text}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="py-16 border-t border-border">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <h2 className="text-2xl font-bold text-foreground text-center mb-8">
-            Questions fréquentes
-          </h2>
+      <section className="py-20 px-4 sm:px-6">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-6">
+              <HelpCircle className="h-4 w-4 text-emerald-400" />
+              <span className="text-sm font-medium text-emerald-400">Questions fréquentes</span>
+            </div>
+            <h2 className="text-3xl font-bold text-white">
+              Des questions ?
+            </h2>
+          </div>
           
           <div className="space-y-4">
-            <div className="banking-card p-5">
-              <h3 className="font-semibold text-foreground mb-2">
-                Puis-je changer de plan à tout moment ?
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Oui, vous pouvez upgrader ou downgrader votre plan à tout moment. 
-                Les changements prennent effet immédiatement et sont proratisés.
-              </p>
-            </div>
-            
-            <div className="banking-card p-5">
-              <h3 className="font-semibold text-foreground mb-2">
-                Comment fonctionne l'essai gratuit ?
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Vous avez 14 jours pour tester toutes les fonctionnalités du plan choisi. 
-                Aucune carte bancaire requise pour commencer. Vous ne serez facturé qu'à la fin de l'essai.
-              </p>
-            </div>
-            
-            <div className="banking-card p-5">
-              <h3 className="font-semibold text-foreground mb-2">
-                Quels moyens de paiement acceptez-vous ?
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Nous acceptons les cartes Visa, Mastercard, American Express, ainsi que les prélèvements SEPA 
-                pour les entreprises européennes.
-              </p>
-            </div>
-            
-            <div className="banking-card p-5">
-              <h3 className="font-semibold text-foreground mb-2">
-                Puis-je annuler mon abonnement ?
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Oui, vous pouvez annuler à tout moment depuis votre espace client. 
-                Vous conservez l'accès jusqu'à la fin de votre période de facturation.
-              </p>
-            </div>
+            {faqs.map((faq, i) => (
+              <FAQItem
+                key={i}
+                question={faq.question}
+                answer={faq.answer}
+                isOpen={openFAQ === i}
+                onClick={() => setOpenFAQ(openFAQ === i ? null : i)}
+              />
+            ))}
           </div>
         </div>
       </section>
 
+      {/* Final CTA */}
+      <section className="py-20 px-4 sm:px-6 border-t border-white/5">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-black mb-6">
+            Prêt à reprendre le <span className="text-emerald-400">contrôle</span> ?
+          </h2>
+          <p className="text-xl text-gray-400 mb-8">
+            Commencez gratuitement pendant 14 jours. Sans carte bancaire.
+          </p>
+          <Link href="/login">
+            <Button className="h-14 px-10 text-lg font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl shadow-2xl shadow-emerald-500/30">
+              Commencer maintenant
+              <ArrowRight className="h-5 w-5 ml-2" />
+            </Button>
+          </Link>
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="py-8 border-t border-border">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>© 2024 StockGuard. Tous droits réservés.</p>
+      <footer className="py-8 px-4 sm:px-6 border-t border-white/5">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+              <Shield className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-bold">STOCKGUARD</span>
+          </div>
+          <p className="text-sm text-gray-500">
+            © {new Date().getFullYear()} StockGuard. Tous droits réservés.
+          </p>
         </div>
       </footer>
     </div>

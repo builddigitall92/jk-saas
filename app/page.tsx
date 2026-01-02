@@ -44,6 +44,7 @@ import {
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { Switch } from "@/components/ui/switch"
+import { PRICING_PLANS } from "@/lib/pricing-config"
 
 // Animated counter
 function AnimatedCounter({ value, suffix = "", prefix = "", duration = 2000 }: { 
@@ -114,7 +115,7 @@ function FAQItem({ question, answer, isOpen, onClick }: {
 }
 
 export default function LandingPage() {
-  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "lifetime">("lifetime")
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("annual")
   const [openFAQ, setOpenFAQ] = useState<number | null>(null)
   const [isVisible, setIsVisible] = useState(false)
 
@@ -203,103 +204,11 @@ export default function LandingPage() {
     }
   ]
 
-  // Prix officiels (source unique de vérité)
+  // Utiliser les données de pricing-config.ts (source unique de vérité)
   const plans = {
-    starter: {
-      name: "Starter",
-      tagline: "Premiers pas vers la maîtrise du stock",
-      target: "Petits restos, snacks, food trucks",
-      monthlyPrice: 60,
-      lifetimePrice: 580,
-      lifetimeOriginal: 720,
-      lifetimeSavings: "Économie à vie",
-      features: [
-        "1 établissement",
-        "Jusqu'à 3 utilisateurs",
-        "Gestion Stock de base : articles, catégories, mouvements, valeur de stock",
-        "Menu & recettes : création manuelle avec calcul automatique du coût matière",
-        "Rapports essentiels : valeur de stock, top 5 produits, alertes basiques",
-      ],
-      aiFeatures: [
-        "🤖 IA intégrée (version Light)",
-        "Assistant texte dans Stock, Menu et Calculateur",
-        "Création de produits, recettes et estimations de marge",
-      ],
-      bullets: [
-        "Arrête les Excel qui cassent en plein service",
-        "Tu sais enfin ce que tu as en stock",
-        "L'IA t'aide même dans la version de base",
-      ],
-      cta: "Commencer avec Starter",
-      highlighted: false
-    },
-    pro: {
-      name: "Pro",
-      tagline: "Le choix des équipes sérieuses",
-      target: "Restaurants établis, brasseries",
-      monthlyPrice: 120,
-      lifetimePrice: 1199,
-      lifetimeOriginal: 1440,
-      lifetimeSavings: "Économie à vie",
-      features: [
-        "1 établissement",
-        "Jusqu'à 10 utilisateurs",
-        "Tout Starter inclus",
-        "Stock avancé : historique complet, upload factures fournisseurs",
-        "Recettes complètes, coûts matière multi-ingrédients",
-        "Calculateur de marges avancé : marges par plat/catégorie, simulation",
-        "Prévisions intelligentes + export CSV",
-        "Rapports détaillés : bénéfices, pertes, gaspillage",
-        "Gestion équipe & feedbacks",
-        "Support email prioritaire",
-      ],
-      aiFeatures: [
-        "🤖 IA avancée (quota élargi)",
-        "Flux guidé : produit → recette → prix → marge",
-        "Recommandations d'ajustement de prix",
-      ],
-      bullets: [
-        "Automatise les commandes avant la rupture",
-        "Réduis les pertes sans embaucher quelqu'un de plus",
-        "L'IA pilote tes marges en continu",
-      ],
-      cta: "Commencer avec Pro",
-      highlighted: true
-    },
-    premium: {
-      name: "Premium",
-      tagline: "Pour les opérations à grande échelle",
-      target: "Groupes, dark kitchens, chaînes",
-      monthlyPrice: 200,
-      lifetimePrice: 1799,
-      lifetimeOriginal: 2400,
-      lifetimeSavings: "Économie à vie",
-      features: [
-        "Établissements illimités",
-        "Utilisateurs illimités",
-        "Tout Pro inclus",
-        "Multi-sites : gestion centralisée, recettes partagées avec prix localisés",
-        "Automatisations : alertes marge, surstock, ruptures",
-        "Suggestions de commandes fournisseurs",
-        "Intégrations externes (POS, compta…)",
-        "Support prioritaire 24/7",
-        "Onboarding personnalisé",
-        "Account manager dédié",
-      ],
-      aiFeatures: [
-        "🤖 IA étendue (quasi-illimitée)",
-        "Recommandations d'achats automatiques",
-        "Détection d'anomalies de marges",
-        "Menu engineering avancé",
-      ],
-      bullets: [
-        "Standards d'enseigne, pas de restaurant isolé",
-        "Pilotage multi-sites en temps réel",
-        "L'IA optimise tout ton réseau",
-      ],
-      cta: "Commencer avec Premium",
-      highlighted: false
-    }
+    starter: PRICING_PLANS.starter,
+    pro: PRICING_PLANS.pro,
+    premium: PRICING_PLANS.premium
   }
 
   return (
@@ -669,11 +578,11 @@ export default function LandingPage() {
         
         <div className="max-w-7xl mx-auto relative">
           <div className="text-center mb-12">
-            {/* Badge à vie */}
-            {billingPeriod === "lifetime" && (
+            {/* Badge annuel */}
+            {billingPeriod === "annual" && (
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 mb-6 animate-pulse">
                 <Sparkles className="h-4 w-4 text-emerald-400" />
-                <span className="text-sm font-semibold text-emerald-400">Paiement unique, accès à vie</span>
+                <span className="text-sm font-semibold text-emerald-400">Économisez jusqu'à 3 mois avec l'abonnement annuel</span>
               </div>
             )}
             
@@ -690,20 +599,20 @@ export default function LandingPage() {
                 Mensuel
               </button>
               <button
-                onClick={() => setBillingPeriod("lifetime")}
+                onClick={() => setBillingPeriod("annual")}
                 className={`px-6 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${
-                  billingPeriod === "lifetime" 
+                  billingPeriod === "annual" 
                     ? "bg-white text-black" 
                     : "text-gray-400 hover:text-white"
                 }`}
               >
-                À vie
+                Annuel
                 <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                  billingPeriod === "lifetime"
+                  billingPeriod === "annual"
                     ? "bg-emerald-500 text-white"
                     : "bg-emerald-500/80 text-white"
                 }`}>
-                  Économise
+                  -20%
                 </span>
               </button>
             </div>
@@ -716,11 +625,11 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-6 lg:gap-8 items-start">
             {/* Starter */}
             <div className="group relative rounded-3xl bg-white/[0.02] border border-white/10 p-8 hover:border-white/20 transition-all duration-300">
-              {/* Promo badge - lifetime only */}
-              {billingPeriod === "lifetime" && (
+              {/* Promo badge - annual only */}
+              {billingPeriod === "annual" && plans.starter.annual.discount && (
                 <div className="absolute -top-3 right-4">
-                  <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-emerald-500/30">
-                    {plans.starter.lifetimeSavings}
+                  <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-blue-500/30">
+                    {plans.starter.annual.discount}
                   </div>
                 </div>
               )}
@@ -733,19 +642,19 @@ export default function LandingPage() {
 
               <div className="mb-6">
                 <div className="flex items-baseline gap-2">
-                  {billingPeriod === "lifetime" && plans.starter.lifetimeOriginal && (
+                  {billingPeriod === "annual" && plans.starter.annual.originalPrice && (
                     <span className="text-xl font-medium text-gray-500 line-through">
-                      {plans.starter.lifetimeOriginal}€
+                      {plans.starter.annual.originalPrice}€
                     </span>
                   )}
                   <span className="text-5xl font-black text-white">
-                    {billingPeriod === "monthly" ? plans.starter.monthlyPrice : plans.starter.lifetimePrice}€
+                    {billingPeriod === "monthly" ? plans.starter.monthly.price : plans.starter.annual.price}€
                   </span>
-                  <span className="text-gray-500">{billingPeriod === "monthly" ? "/mois" : " à vie"}</span>
+                  <span className="text-gray-500">{billingPeriod === "monthly" ? "/mois" : "/an"}</span>
                 </div>
-                {billingPeriod === "lifetime" && plans.starter.lifetimeOriginal && (
-                  <p className="text-sm text-emerald-400 font-semibold mt-1">
-                    Économise {plans.starter.lifetimeOriginal - plans.starter.lifetimePrice}€
+                {billingPeriod === "annual" && plans.starter.annual.savings && (
+                  <p className="text-sm text-blue-400 font-semibold mt-1">
+                    Économisez {plans.starter.annual.savings}
                   </p>
                 )}
               </div>
@@ -803,11 +712,11 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* Promo badge - lifetime only */}
-                {billingPeriod === "lifetime" && (
+                {/* Promo badge - annual only */}
+                {billingPeriod === "annual" && plans.pro.annual.discount && (
                   <div className="absolute -top-3 right-4 z-10">
                     <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-[10px] px-2.5 py-0.5 rounded-full font-bold shadow-lg shadow-emerald-500/30">
-                      {plans.pro.lifetimeSavings}
+                      {plans.pro.annual.discount}
                     </div>
                   </div>
                 )}
@@ -820,19 +729,19 @@ export default function LandingPage() {
 
                 <div className="mb-6">
                   <div className="flex items-baseline gap-2">
-                    {billingPeriod === "lifetime" && plans.pro.lifetimeOriginal && (
+                    {billingPeriod === "annual" && plans.pro.annual.originalPrice && (
                       <span className="text-xl font-medium text-gray-500 line-through">
-                        {plans.pro.lifetimeOriginal}€
+                        {plans.pro.annual.originalPrice}€
                       </span>
                     )}
                     <span className="text-5xl font-black text-emerald-400">
-                      {billingPeriod === "monthly" ? plans.pro.monthlyPrice : plans.pro.lifetimePrice}€
+                      {billingPeriod === "monthly" ? plans.pro.monthly.price : plans.pro.annual.price}€
                     </span>
-                    <span className="text-gray-500">{billingPeriod === "monthly" ? "/mois" : " à vie"}</span>
+                    <span className="text-gray-500">{billingPeriod === "monthly" ? "/mois" : "/an"}</span>
                   </div>
-                  {billingPeriod === "lifetime" && plans.pro.lifetimeOriginal && (
+                  {billingPeriod === "annual" && plans.pro.annual.savings && (
                     <p className="text-sm text-emerald-400 font-semibold mt-1">
-                      Économise {plans.pro.lifetimeOriginal - plans.pro.lifetimePrice}€
+                      Économisez {plans.pro.annual.savings}
                     </p>
                   )}
                 </div>
@@ -880,11 +789,11 @@ export default function LandingPage() {
 
             {/* Premium */}
             <div className="group relative rounded-3xl bg-white/[0.02] border border-white/10 p-8 hover:border-amber-500/30 transition-all duration-300">
-              {/* Promo badge - lifetime only */}
-              {billingPeriod === "lifetime" && (
+              {/* Promo badge - annual only */}
+              {billingPeriod === "annual" && plans.premium.annual.discount && (
                 <div className="absolute -top-3 right-4">
                   <div className="bg-gradient-to-r from-amber-600 to-amber-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-amber-500/30">
-                    {plans.premium.lifetimeSavings}
+                    {plans.premium.annual.discount}
                   </div>
                 </div>
               )}
@@ -897,19 +806,19 @@ export default function LandingPage() {
 
               <div className="mb-6">
                 <div className="flex items-baseline gap-2">
-                  {billingPeriod === "lifetime" && plans.premium.lifetimeOriginal && (
+                  {billingPeriod === "annual" && plans.premium.annual.originalPrice && (
                     <span className="text-xl font-medium text-gray-500 line-through">
-                      {plans.premium.lifetimeOriginal}€
+                      {plans.premium.annual.originalPrice}€
                     </span>
                   )}
                   <span className="text-5xl font-black text-amber-400">
-                    {billingPeriod === "monthly" ? plans.premium.monthlyPrice : plans.premium.lifetimePrice}€
+                    {billingPeriod === "monthly" ? plans.premium.monthly.price : plans.premium.annual.price}€
                   </span>
-                  <span className="text-gray-500">{billingPeriod === "monthly" ? "/mois" : " à vie"}</span>
+                  <span className="text-gray-500">{billingPeriod === "monthly" ? "/mois" : "/an"}</span>
                 </div>
-                {billingPeriod === "lifetime" && plans.premium.lifetimeOriginal && (
+                {billingPeriod === "annual" && plans.premium.annual.savings && (
                   <p className="text-sm text-amber-400 font-semibold mt-1">
-                    Économise {plans.premium.lifetimeOriginal - plans.premium.lifetimePrice}€
+                    Économisez {plans.premium.annual.savings}
                   </p>
                 )}
               </div>

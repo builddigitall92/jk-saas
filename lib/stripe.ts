@@ -6,13 +6,22 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY
 // Créer l'instance Stripe seulement si la clé est définie
 export const stripe = stripeSecretKey 
   ? new Stripe(stripeSecretKey, {
-      apiVersion: '2025-05-28.basil',
+      apiVersion: '2025-12-15.clover',
       typescript: true,
     })
   : null
 
 // Helper pour vérifier si Stripe est configuré
 export const isStripeConfigured = () => !!stripeSecretKey
+
+// Type de facturation
+export type BillingType = 'monthly' | 'annual' | 'lifetime'
+
+// Helper pour obtenir le Price ID selon le type de facturation
+function getPriceId(planKey: string, billingType: BillingType): string | null {
+  const envKey = `STRIPE_${planKey}_PRICE_ID_${billingType.toUpperCase()}`
+  return process.env[envKey] || null
+}
 
 // Plans d'abonnement
 export const PLANS = {
@@ -21,7 +30,8 @@ export const PLANS = {
     name: 'Gratuit',
     description: 'Pour découvrir StockGuard',
     price: 0,
-    priceId: null,
+    priceIdMonthly: null,
+    priceIdLifetime: null,
     features: [
       '1 établissement',
       '2 employés max',
@@ -39,7 +49,9 @@ export const PLANS = {
     name: 'Starter',
     description: 'Pour les petits établissements',
     price: 20,
-    priceId: process.env.STRIPE_STARTER_PRICE_ID || 'price_1SgN5HCF3gPATsYiLda8sBcz',
+    priceIdMonthly: getPriceId('STARTER', 'monthly') || 'price_1SkrloCF3gPATsYiVAYHP0Tp',
+    priceIdAnnual: getPriceId('STARTER', 'annual') || 'price_1SlD5Q2EccmTZDWQW0TLg6el',
+    priceIdLifetime: getPriceId('STARTER', 'lifetime') || 'price_1SkrphCF3gPATsYiv6fjVt7P',
     features: [
       '1 établissement',
       '5 employés',
@@ -59,7 +71,9 @@ export const PLANS = {
     name: 'Pro',
     description: 'Pour les établissements en croissance',
     price: 80,
-    priceId: process.env.STRIPE_PRO_PRICE_ID || 'price_1SgN5WCF3gPATsYiRnTOv9fz',
+    priceIdMonthly: getPriceId('PRO', 'monthly') || 'price_1SkrnmCF3gPATsYizbk82ioU',
+    priceIdAnnual: getPriceId('PRO', 'annual') || 'price_1SlD5d2EccmTZDWQX6L7wZwz',
+    priceIdLifetime: getPriceId('PRO', 'lifetime') || 'price_1SkrpLCF3gPATsYi4dTrUVB8',
     features: [
       '3 établissements',
       '15 employés',
@@ -80,7 +94,9 @@ export const PLANS = {
     name: 'Premium',
     description: 'Pour les chaînes de restaurants',
     price: 110,
-    priceId: process.env.STRIPE_PREMIUM_PRICE_ID || 'price_1SgN7VCF3gPATsYi1yMMN3Op',
+    priceIdMonthly: getPriceId('PREMIUM', 'monthly') || 'price_1Skro7CF3gPATsYiYfarUPwH',
+    priceIdAnnual: getPriceId('PREMIUM', 'annual') || 'price_1SlD5r2EccmTZDWQj8XNefir',
+    priceIdLifetime: getPriceId('PREMIUM', 'lifetime') || 'price_1SkrovCF3gPATsYivmiVD5er',
     features: [
       'Établissements illimités',
       'Employés illimités',
@@ -103,11 +119,25 @@ export type PlanId = keyof typeof PLANS
 // Récupérer le plan à partir du price ID Stripe
 export function getPlanFromPriceId(priceId: string): PlanId {
   for (const [planId, plan] of Object.entries(PLANS)) {
-    if (plan.priceId === priceId) {
+    if (plan.priceIdMonthly === priceId || plan.priceIdAnnual === priceId || plan.priceIdLifetime === priceId) {
       return planId as PlanId
     }
   }
   return 'FREE'
+}
+
+// Récupérer le Price ID selon le plan et le type de facturation
+export function getPriceIdForPlan(planId: PlanId, billingType: BillingType): string | null {
+  const plan = PLANS[planId]
+  if (!plan) return null
+  
+  if (billingType === 'monthly') {
+    return plan.priceIdMonthly
+  } else if (billingType === 'annual') {
+    return plan.priceIdAnnual
+  } else {
+    return plan.priceIdLifetime
+  }
 }
 
 // Vérifier si un plan a accès à une fonctionnalité

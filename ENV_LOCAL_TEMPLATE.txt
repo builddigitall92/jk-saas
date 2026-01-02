@@ -1,0 +1,44 @@
+# =============================================
+# Variables d'environnement - StockGuard
+# Copiez ce contenu dans un fichier .env.local
+# =============================================
+
+# =============================================
+# SUPABASE
+# =============================================
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+
+# =============================================
+# STRIPE
+# =============================================
+# Clé publique Stripe (commence par pk_test_... ou pk_live_...)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+
+# Clé secrète Stripe (commence par sk_test_... ou sk_live_...)
+# ⚠️ À AJOUTER MANUELLEMENT - NE PAS COMMITER
+STRIPE_SECRET_KEY=
+
+# Secret du webhook Stripe (commence par whsec_...)
+STRIPE_WEBHOOK_SECRET=
+
+# =============================================
+# STRIPE PRICE IDs - Mensuel
+# =============================================
+STRIPE_STARTER_PRICE_ID_MONTHLY=price_1SkrloCF3gPATsYiVAYHP0Tp
+STRIPE_PRO_PRICE_ID_MONTHLY=price_1SkrnmCF3gPATsYizbk82ioU
+STRIPE_PREMIUM_PRICE_ID_MONTHLY=price_1Skro7CF3gPATsYiYfarUPwH
+
+# =============================================
+# STRIPE PRICE IDs - À vie (One-time)
+# =============================================
+STRIPE_STARTER_PRICE_ID_LIFETIME=price_1SkrphCF3gPATsYiv6fjVt7P
+STRIPE_PRO_PRICE_ID_LIFETIME=price_1SkrpLCF3gPATsYi4dTrUVB8
+STRIPE_PREMIUM_PRICE_ID_LIFETIME=price_1SkrovCF3gPATsYivmiVD5er
+
+# =============================================
+# APPLICATION
+# =============================================
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
