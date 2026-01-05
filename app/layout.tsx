@@ -1,11 +1,32 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+
+// ✅ Viewport Mobile-First (PRD Responsive)
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#faf9f7' },
+    { media: '(prefers-color-scheme: dark)', color: '#0d0b09' },
+  ],
+}
 
 export const metadata: Metadata = {
   title: 'StockGuard - Gestion des Stocks',
   description: 'Système de gestion des stocks pour restaurants rapides',
   generator: 'v0.app',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'StockGuard',
+  },
+  formatDetection: {
+    telephone: false,
+  },
   icons: {
     icon: [
       {
@@ -31,8 +52,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="fr" className="dark">
-      <body className="antialiased" style={{ fontFamily: "var(--font-sf-pro)" }}>
+    <html lang="fr" className="dark" suppressHydrationWarning>
+      <body 
+        className="antialiased app-container" 
+        style={{ fontFamily: "var(--font-sf-pro)" }}
+      >
         {children}
         <Analytics />
       </body>

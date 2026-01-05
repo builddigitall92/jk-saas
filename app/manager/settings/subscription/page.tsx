@@ -11,7 +11,6 @@ import {
   Loader2, 
   Sparkles, 
   Shield, 
-  Zap, 
   Brain,
   Calendar,
   Building2,
@@ -67,56 +66,6 @@ export default function SubscriptionPage() {
         "Alertes automatiques",
         "Rapports détaillés",
       ],
-    },
-    {
-      id: PRICING_PLANS.starter.id,
-      name: PRICING_PLANS.starter.name,
-      description: PRICING_PLANS.starter.description,
-      target: PRICING_PLANS.starter.target,
-      price: billingPeriod === "monthly" 
-        ? PRICING_PLANS.starter.monthly.price 
-        : PRICING_PLANS.starter.annual.price,
-      originalPrice: billingPeriod === "annual" 
-        ? PRICING_PLANS.starter.annual.originalPrice 
-        : undefined,
-      period: billingPeriod === "monthly" ? "/mois" : "/an",
-      discount: billingPeriod === "annual" 
-        ? PRICING_PLANS.starter.annual.discount 
-        : undefined,
-      priceId: billingPeriod === "monthly" 
-        ? PRICING_PLANS.starter.monthly.priceId 
-        : PRICING_PLANS.starter.annual.priceId,
-      icon: Zap,
-      color: "blue",
-      limits: PRICING_PLANS.starter.limits,
-      features: PRICING_PLANS.starter.features,
-      aiFeatures: PRICING_PLANS.starter.aiFeatures,
-      excludedFeatures: PRICING_PLANS.starter.excludedFeatures,
-    },
-    {
-      id: PRICING_PLANS.pro.id,
-      name: PRICING_PLANS.pro.name,
-      description: PRICING_PLANS.pro.description,
-      target: PRICING_PLANS.pro.target,
-      price: billingPeriod === "monthly" 
-        ? PRICING_PLANS.pro.monthly.price 
-        : PRICING_PLANS.pro.annual.price,
-      originalPrice: billingPeriod === "annual" 
-        ? PRICING_PLANS.pro.annual.originalPrice 
-        : undefined,
-      period: billingPeriod === "monthly" ? "/mois" : "/an",
-      discount: billingPeriod === "annual" 
-        ? PRICING_PLANS.pro.annual.discount 
-        : undefined,
-      priceId: billingPeriod === "monthly" 
-        ? PRICING_PLANS.pro.monthly.priceId 
-        : PRICING_PLANS.pro.annual.priceId,
-      icon: Crown,
-      color: "purple",
-      popular: true,
-      limits: PRICING_PLANS.pro.limits,
-      features: PRICING_PLANS.pro.features,
-      aiFeatures: PRICING_PLANS.pro.aiFeatures,
     },
     {
       id: PRICING_PLANS.premium.id,
@@ -219,9 +168,7 @@ export default function SubscriptionPage() {
   }
 
   const getAnnualSavings = (planId: string) => {
-    if (planId === 'starter') return 71
-    if (planId === 'pro') return 241
-    if (planId === 'premium') return 601
+    if (planId === 'premium') return 995
     return 0
   }
 
@@ -399,7 +346,7 @@ export default function SubscriptionPage() {
         </div>
 
         {/* Plans Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {plans.map((plan) => {
             const isCurrent = plan.id === currentPlan
             const colors = getColorClasses(plan.color)

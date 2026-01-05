@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { 
   Check, 
   Sparkles, 
-  Building2, 
   Zap,
   Crown,
   Loader2,
@@ -110,15 +109,11 @@ export default function PricingPage() {
     }
   ]
 
-  const planOrder = ['starter', 'pro', 'premium'] as const
+  const planOrder = ['premium'] as const
   const planIcons = {
-    starter: Building2,
-    pro: Zap,
     premium: Crown
   }
   const planColors = {
-    starter: { text: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30', glow: 'shadow-blue-500/20' },
-    pro: { text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', glow: 'shadow-emerald-500/20' },
     premium: { text: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', glow: 'shadow-amber-500/20' }
   }
 
@@ -215,167 +210,150 @@ export default function PricingPage() {
       </section>
 
       {/* Plans */}
-      <section className="relative pb-20 px-4 sm:px-6">
+      <section id="pricing" className="relative pb-20 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8 items-start">
-            {planOrder.map((planKey) => {
-              const plan = PRICING_PLANS[planKey]
-              const Icon = planIcons[planKey]
-              const colors = planColors[planKey]
-              const pricing = billingPeriod === "monthly" ? plan.monthly : plan.annual
-              const isPro = planKey === 'pro'
+          <div className="flex justify-center">
+            <div className="max-w-md w-full">
+              {planOrder.map((planKey) => {
+                const plan = PRICING_PLANS[planKey]
+                const Icon = planIcons[planKey]
+                const colors = planColors[planKey]
+                const pricing = billingPeriod === "monthly" ? plan.monthly : plan.annual
 
-              return (
-                <div 
-                  key={planKey}
-                  className={`relative rounded-3xl transition-all duration-300 ${
-                    isPro ? 'scale-105 z-10' : ''
-                  }`}
-                >
-                  {/* Glow effect for Pro */}
-                  {isPro && (
-                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-amber-500/10 blur-xl rounded-3xl" />
-                  )}
-                  
-                  <div className={`relative p-8 rounded-3xl ${
-                    isPro 
-                      ? 'bg-gradient-to-br from-gray-900 to-gray-950 border-2 border-emerald-500/50 shadow-2xl shadow-emerald-500/20' 
-                      : 'bg-white/[0.02] border border-white/10 hover:border-white/20'
-                  }`}>
-                    {/* Popular badge */}
-                    {isPro && (
+                return (
+                  <div 
+                    key={planKey}
+                    className="relative rounded-3xl transition-all duration-300 premium-card-glow"
+                  >
+                    {/* Premium glow effects */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-500/15 to-amber-500/8 blur-2xl rounded-3xl animate-pulse-slow" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-400/10 to-orange-500/5 blur-xl rounded-3xl" />
+                    <div className="absolute inset-0 rounded-3xl overflow-hidden">
+                      <div className="absolute inset-0 premium-shimmer" />
+                    </div>
+
+                    <div className="relative p-8 rounded-3xl bg-gradient-to-br from-gray-900 to-gray-950 border-2 border-amber-500/50 shadow-2xl shadow-amber-500/20 premium-card-flicker">
+                      {/* Premium badge */}
                       <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-10">
-                        <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-emerald-500/30">
+                        <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-amber-500/50 premium-badge-flicker">
                           <Crown className="h-4 w-4" />
-                          Recommandé
+                          Plan Premium
                         </div>
                       </div>
-                    )}
 
-                    {/* Annual savings badge */}
-                    {billingPeriod === "annual" && pricing.discount && (
-                      <div className="absolute -top-3 right-4">
-                        <div className={`bg-gradient-to-r ${
-                          isPro ? 'from-emerald-600 to-emerald-500' : planKey === 'premium' ? 'from-amber-600 to-amber-500' : 'from-blue-600 to-blue-500'
-                        } text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg`}>
-                          {pricing.discount}
+                      {/* Annual savings badge */}
+                      {billingPeriod === "annual" && pricing.discount && (
+                        <div className="absolute -top-3 right-4">
+                          <div className="bg-gradient-to-r from-amber-600 to-amber-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg">
+                            {pricing.discount}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Header */}
-                    <div className={`mb-6 ${isPro ? 'pt-2' : ''}`}>
-                      <div className={`h-14 w-14 rounded-2xl ${colors.bg} flex items-center justify-center mb-4`}>
-                        <Icon className={`h-7 w-7 ${colors.text}`} />
-                      </div>
-                      <span className={`text-xs font-semibold uppercase tracking-wider ${isPro ? 'text-emerald-400' : planKey === 'premium' ? 'text-amber-400' : 'text-gray-500'}`}>
-                        {plan.tagline}
-                      </span>
-                      <h3 className="text-2xl font-bold text-white mt-2">{plan.name}</h3>
-                      <p className="text-xs text-gray-500 mt-1">{plan.target}</p>
-                    </div>
-
-                    {/* Price */}
-                    <div className="mb-6">
-                      <div className="flex items-baseline gap-2">
-                        {billingPeriod === "annual" && pricing.originalPrice && (
-                          <span className="text-xl font-medium text-gray-500 line-through">
-                            {pricing.originalPrice}€
-                          </span>
-                        )}
-                        <span className={`text-5xl font-black ${isPro ? 'text-emerald-400' : planKey === 'premium' ? 'text-amber-400' : 'text-white'}`}>
-                          {pricing.price}€
+                      {/* Header */}
+                      <div className="mb-6 pt-2">
+                        <div className="h-14 w-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-4">
+                          <Icon className="h-7 w-7 text-amber-400" />
+                        </div>
+                        <span className="text-xs font-semibold uppercase tracking-wider text-amber-400">
+                          {plan.tagline}
                         </span>
-                        <span className="text-gray-500">{pricing.period}</span>
+                        <h3 className="text-2xl font-bold text-white mt-2">{plan.name}</h3>
+                        <p className="text-xs text-gray-500 mt-1">{plan.target}</p>
                       </div>
-                      {billingPeriod === "annual" && pricing.savings && (
-                        <p className={`text-sm font-semibold mt-1 ${isPro ? 'text-emerald-400' : planKey === 'premium' ? 'text-amber-400' : 'text-blue-400'}`}>
-                          Économisez {pricing.savings}
-                        </p>
-                      )}
-                      {billingPeriod === "monthly" && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          ou {plan.annual.price}€/an
-                        </p>
-                      )}
-                    </div>
 
-                    {/* Limits */}
-                    <div className="flex gap-4 mb-6 pb-6 border-b border-white/10">
-                      <div className={`flex-1 p-3 rounded-xl ${colors.bg}`}>
-                        <p className="text-2xl font-bold text-white">
-                          {plan.limits.establishments === 'unlimited' ? '∞' : plan.limits.establishments}
-                        </p>
-                        <p className="text-xs text-gray-400">établissement{plan.limits.establishments !== 1 && plan.limits.establishments !== 'unlimited' ? 's' : ''}</p>
+                      {/* Price */}
+                      <div className="mb-6">
+                        <div className="flex items-baseline gap-2">
+                          {billingPeriod === "annual" && pricing.originalPrice && (
+                            <span className="text-xl font-medium text-gray-500 line-through">
+                              {pricing.originalPrice}€
+                            </span>
+                          )}
+                          <span className="text-5xl font-black text-amber-400">
+                            {pricing.price}€
+                          </span>
+                          <span className="text-gray-500">{pricing.period}</span>
+                        </div>
+                        {billingPeriod === "annual" && pricing.savings && (
+                          <p className="text-sm font-semibold mt-1 text-amber-400">
+                            Économisez {pricing.savings}
+                          </p>
+                        )}
+                        {billingPeriod === "monthly" && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            ou {plan.annual.price}€/an
+                          </p>
+                        )}
                       </div>
-                      <div className={`flex-1 p-3 rounded-xl ${colors.bg}`}>
-                        <p className="text-2xl font-bold text-white">
-                          {plan.limits.users === 'unlimited' ? '∞' : plan.limits.users}
-                        </p>
-                        <p className="text-xs text-gray-400">utilisateur{typeof plan.limits.users === 'number' && plan.limits.users > 1 ? 's' : ''}</p>
+
+                      {/* Limits */}
+                      <div className="flex gap-4 mb-6 pb-6 border-b border-white/10">
+                        <div className="flex-1 p-3 rounded-xl bg-amber-500/10">
+                          <p className="text-2xl font-bold text-white">
+                            {plan.limits.establishments === 'unlimited' ? '∞' : plan.limits.establishments}
+                          </p>
+                          <p className="text-xs text-gray-400">établissement{plan.limits.establishments !== 1 && plan.limits.establishments !== 'unlimited' ? 's' : ''}</p>
+                        </div>
+                        <div className="flex-1 p-3 rounded-xl bg-amber-500/10">
+                          <p className="text-2xl font-bold text-white">
+                            {plan.limits.users === 'unlimited' ? '∞' : plan.limits.users}
+                          </p>
+                          <p className="text-xs text-gray-400">utilisateur{typeof plan.limits.users === 'number' && plan.limits.users > 1 ? 's' : ''}</p>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Features */}
-                    <ul className="space-y-2.5 mb-4">
-                      {plan.features.slice(0, 6).map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-3">
-                          <Check className={`h-4 w-4 shrink-0 mt-0.5 ${isPro ? 'text-emerald-400' : colors.text}`} />
-                          <span className={`text-sm ${isPro ? 'text-white' : 'text-gray-300'}`}>{feature}</span>
-                        </li>
-                      ))}
-                      {plan.features.length > 6 && (
-                        <li className="text-xs text-gray-500 pl-7">
-                          + {plan.features.length - 6} autres fonctionnalités
-                        </li>
-                      )}
-                    </ul>
-
-                    {/* AI Features */}
-                    <div className={`mb-6 p-4 rounded-xl bg-gradient-to-br ${
-                      isPro 
-                        ? 'from-purple-500/15 to-blue-500/15 border border-purple-500/30' 
-                        : 'from-purple-500/10 to-blue-500/10 border border-purple-500/20'
-                    }`}>
-                      <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                        <Brain className="h-3.5 w-3.5" />
-                        IA {planKey === 'starter' ? 'Light' : planKey === 'pro' ? 'avancée' : 'étendue'}
-                      </p>
-                      <ul className="space-y-2">
-                        {plan.aiFeatures.slice(0, 3).map((feature, idx) => (
-                          <li key={idx} className="flex items-start gap-2">
-                            <Sparkles className="h-3.5 w-3.5 text-purple-400 shrink-0 mt-0.5" />
-                            <span className={`text-xs ${isPro ? 'text-white' : 'text-gray-300'}`}>{feature}</span>
+                      {/* Features */}
+                      <ul className="space-y-2.5 mb-4">
+                        {plan.features.slice(0, 6).map((feature, idx) => (
+                          <li key={idx} className="flex items-start gap-3">
+                            <Check className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
+                            <span className="text-sm text-white">{feature}</span>
                           </li>
                         ))}
+                        {plan.features.length > 6 && (
+                          <li className="text-xs text-gray-500 pl-7">
+                            + {plan.features.length - 6} autres fonctionnalités
+                          </li>
+                        )}
                       </ul>
-                    </div>
 
-                    {/* CTA */}
-                    <Button
-                      onClick={() => handleSubscribe(planKey)}
-                      disabled={loading === planKey}
-                      className={`w-full h-12 font-bold shadow-lg transition-all ${
-                        isPro 
-                          ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-emerald-500/30' 
-                          : planKey === 'premium'
-                            ? 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-amber-500/30'
-                            : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
-                      }`}
-                    >
-                      {loading === planKey ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <>
-                          Essai gratuit 14 jours
-                          <ArrowRight className="h-4 w-4 ml-2" />
-                        </>
-                      )}
-                    </Button>
+                      {/* AI Features */}
+                      <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-purple-500/15 to-blue-500/15 border border-purple-500/30">
+                        <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                          <Brain className="h-3.5 w-3.5" />
+                          IA étendue
+                        </p>
+                        <ul className="space-y-2">
+                          {plan.aiFeatures.slice(0, 3).map((feature, idx) => (
+                            <li key={idx} className="flex items-start gap-2">
+                              <Sparkles className="h-3.5 w-3.5 text-purple-400 shrink-0 mt-0.5" />
+                              <span className="text-xs text-white">{feature}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      {/* CTA */}
+                      <Button
+                        onClick={() => handleSubscribe(planKey)}
+                        disabled={loading === planKey}
+                        className="w-full h-12 font-bold shadow-lg transition-all bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-amber-500/30"
+                      >
+                        {loading === planKey ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <>
+                            Essai gratuit 14 jours
+                            <ArrowRight className="h-4 w-4 ml-2" />
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
 
           {/* Guarantee */}
@@ -471,6 +449,107 @@ export default function PricingPage() {
           </p>
         </div>
       </footer>
+
+      {/* Premium Card Animations */}
+      <style jsx>{`
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
+        }
+        
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%) translateY(-100%) rotate(45deg);
+          }
+          100% {
+            transform: translateX(200%) translateY(200%) rotate(45deg);
+          }
+        }
+        
+        @keyframes flicker {
+          0%, 100% { opacity: 1; filter: brightness(1); }
+          25% { opacity: 0.95; filter: brightness(1.1); }
+          50% { opacity: 1; filter: brightness(1.2); }
+          75% { opacity: 0.98; filter: brightness(1.1); }
+        }
+        
+        @keyframes price-flicker {
+          0%, 100% { 
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.5),
+                         0 0 20px rgba(251, 191, 36, 0.3),
+                         0 0 30px rgba(251, 191, 36, 0.2);
+            filter: brightness(1);
+          }
+          25% { 
+            text-shadow: 0 0 15px rgba(251, 191, 36, 0.7),
+                         0 0 25px rgba(251, 191, 36, 0.5),
+                         0 0 35px rgba(251, 191, 36, 0.3);
+            filter: brightness(1.2);
+          }
+          50% { 
+            text-shadow: 0 0 20px rgba(251, 191, 36, 0.8),
+                         0 0 30px rgba(251, 191, 36, 0.6),
+                         0 0 40px rgba(251, 191, 36, 0.4);
+            filter: brightness(1.3);
+          }
+          75% { 
+            text-shadow: 0 0 15px rgba(251, 191, 36, 0.7),
+                         0 0 25px rgba(251, 191, 36, 0.5),
+                         0 0 35px rgba(251, 191, 36, 0.3);
+            filter: brightness(1.2);
+          }
+        }
+        
+        .animate-pulse-slow {
+          animation: pulse-slow 3s ease-in-out infinite;
+        }
+        
+        .premium-shimmer {
+          background: linear-gradient(
+            45deg,
+            transparent 30%,
+            rgba(251, 191, 36, 0.1) 50%,
+            transparent 70%
+          );
+          width: 200%;
+          height: 200%;
+          animation: shimmer 3s ease-in-out infinite;
+        }
+        
+        .premium-card-flicker {
+          animation: flicker 2s ease-in-out infinite;
+        }
+        
+        .premium-price-flicker {
+          animation: price-flicker 2.5s ease-in-out infinite;
+        }
+        
+        .premium-card-glow:hover {
+          transform: scale(1.02);
+        }
+        
+        .premium-card-glow:hover .premium-shimmer {
+          animation-duration: 1.5s;
+        }
+        
+        @keyframes badge-flicker {
+          0%, 100% { 
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.5),
+                        0 0 20px rgba(251, 191, 36, 0.3);
+            filter: brightness(1);
+          }
+          50% { 
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.8),
+                        0 0 25px rgba(251, 191, 36, 0.6),
+                        0 0 35px rgba(251, 191, 36, 0.4);
+            filter: brightness(1.3);
+          }
+        }
+        
+        .premium-badge-flicker {
+          animation: badge-flicker 2s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   )
 }

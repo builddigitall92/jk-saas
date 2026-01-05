@@ -261,7 +261,7 @@ export default function EmployeeLayout({
   }
 
   return (
-    <div className={`flex h-screen overflow-hidden ${theme === "dark" ? "glass-bg bg-[#0a0a0a]" : "bg-gray-50"}`}>
+    <div className={`flex h-screen lg:overflow-hidden overflow-y-auto overflow-x-hidden ${theme === "dark" ? "glass-bg bg-[#0a0a0a]" : "bg-gray-50"}`}>
       {/* Animated Orbs */}
       <div className="glass-orb glass-orb-1" />
       <div className="glass-orb glass-orb-2" />
@@ -440,7 +440,7 @@ export default function EmployeeLayout({
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col lg:overflow-hidden overflow-y-auto overflow-x-hidden">
         {/* Top Header Bar - Hidden on mobile */}
         <header className={`hidden lg:flex h-16 px-6 items-center justify-between backdrop-blur-xl relative z-50 ${
           theme === "dark" 

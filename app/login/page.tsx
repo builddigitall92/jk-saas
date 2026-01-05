@@ -134,27 +134,27 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0f0a] flex items-center justify-center p-4 lg:p-8 overflow-hidden">
-      {/* Background effects */}
+    <div className="min-h-[100dvh] bg-[#0a0f0a] flex items-center justify-center p-3 sm:p-4 lg:p-8 overflow-x-hidden overflow-y-auto">
+      {/* Background effects - optimisés mobile */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[150px] -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px] translate-x-1/3 translate-y-1/3" />
-        {/* Large background text */}
-        <div className="absolute inset-0 flex items-center justify-center overflow-hidden opacity-[0.02]">
+        <div className="absolute top-0 left-0 w-[300px] sm:w-[600px] h-[300px] sm:h-[600px] bg-emerald-600/10 rounded-full blur-[100px] sm:blur-[150px] -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-[250px] sm:w-[500px] h-[250px] sm:h-[500px] bg-emerald-500/5 rounded-full blur-[80px] sm:blur-[120px] translate-x-1/3 translate-y-1/3" />
+        {/* Large background text - caché sur mobile */}
+        <div className="hidden sm:flex absolute inset-0 items-center justify-center overflow-hidden opacity-[0.02]">
           <span className="text-[25vw] font-black text-white tracking-tighter select-none">
             STOCK
           </span>
         </div>
       </div>
 
-      {/* Main container */}
+      {/* Main container - 100% responsive */}
       <div 
-        className="relative w-full max-w-6xl bg-gradient-to-br from-gray-900/80 via-gray-900/60 to-gray-950/80 rounded-3xl overflow-hidden border border-white/5 backdrop-blur-xl shadow-2xl shadow-black/50 animate-fadeIn"
+        className="relative w-full max-w-[100%] sm:max-w-[95%] lg:max-w-6xl bg-gradient-to-br from-gray-900/80 via-gray-900/60 to-gray-950/80 rounded-2xl sm:rounded-3xl overflow-hidden border border-white/5 backdrop-blur-xl shadow-2xl shadow-black/50 animate-fadeIn"
       >
-        <div className="flex flex-col lg:flex-row min-h-[700px]">
+        <div className="flex flex-col lg:flex-row min-h-[auto] lg:min-h-[700px]">
           
-          {/* Left Panel - Storytelling */}
-          <div className="lg:w-[48%] relative overflow-hidden">
+          {/* Left Panel - Storytelling (Hidden on mobile, visible on lg+) */}
+          <div className="hidden lg:block lg:w-[48%] relative overflow-hidden">
             {/* Green gradient background */}
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/90 via-emerald-700/80 to-gray-900/95" />
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(16,185,129,0.3)_0%,transparent_50%)]" />
@@ -245,14 +245,25 @@ function LoginForm() {
             </div>
           </div>
 
-          {/* Right Panel - Form */}
-          <div className="lg:w-[52%] p-8 lg:p-12 flex flex-col justify-center">
+          {/* Right Panel - Form - 100% width on mobile */}
+          <div className="w-full lg:w-[52%] p-5 sm:p-8 lg:p-12 flex flex-col justify-center">
+            {/* Mobile Logo - visible only on mobile */}
+            <div className="flex lg:hidden items-center justify-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 backdrop-blur-xl border border-emerald-500/30 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div>
+                <span className="text-lg font-black text-white tracking-tight">STOCKGUARD</span>
+                <span className="ml-2 text-xs text-emerald-400/70 font-medium">PRO</span>
+              </div>
+            </div>
+
             {/* Header */}
-            <div className="mb-8">
-              <h2 className="text-3xl font-black text-white mb-2 tracking-tight">
+            <div className="mb-6 sm:mb-8 text-center lg:text-left">
+              <h2 className="text-2xl sm:text-3xl font-black text-white mb-2 tracking-tight">
                 {isSignup ? "Créer un compte" : "Se connecter"}
               </h2>
-              <p className="text-gray-400">
+              <p className="text-gray-400 text-sm sm:text-base">
                 {isSignup 
                   ? "Créez votre compte pour sécuriser vos stocks." 
                   : "Entrez vos identifiants pour accéder à votre espace."
@@ -267,10 +278,10 @@ function LoginForm() {
               </div>
             )}
 
-            {/* Form fields */}
-            <div className="space-y-5">
+            {/* Form fields - Touch-friendly inputs */}
+            <div className="space-y-4 sm:space-y-5">
               {isSignup && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName" className="text-sm font-medium text-gray-400">
                       Prénom
@@ -281,7 +292,7 @@ function LoginForm() {
                       value={formData.firstName}
                       onChange={(e) => handleInputChange("firstName", e.target.value)}
                       placeholder="Jean"
-                      className="h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-600 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20"
+                      className="h-12 sm:h-12 min-h-[48px] bg-white/5 border-white/10 text-white placeholder:text-gray-600 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20 text-base"
                     />
                   </div>
                   <div className="space-y-2">
@@ -294,7 +305,7 @@ function LoginForm() {
                       value={formData.lastName}
                       onChange={(e) => handleInputChange("lastName", e.target.value)}
                       placeholder="Dupont"
-                      className="h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-600 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20"
+                      className="h-12 sm:h-12 min-h-[48px] bg-white/5 border-white/10 text-white placeholder:text-gray-600 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20 text-base"
                     />
                   </div>
                 </div>
@@ -310,7 +321,7 @@ function LoginForm() {
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   placeholder="vous@entreprise.fr"
-                  className="h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-600 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20"
+                  className="h-12 sm:h-12 min-h-[48px] bg-white/5 border-white/10 text-white placeholder:text-gray-600 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20 text-base"
                 />
               </div>
 
@@ -325,12 +336,12 @@ function LoginForm() {
                     value={formData.password}
                     onChange={(e) => handleInputChange("password", e.target.value)}
                     placeholder="••••••••"
-                    className="h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-600 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20 pr-12"
+                    className="h-12 sm:h-12 min-h-[48px] bg-white/5 border-white/10 text-white placeholder:text-gray-600 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20 pr-12 text-base"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors p-2 -mr-2"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -348,7 +359,7 @@ function LoginForm() {
                     value={formData.confirmPassword}
                     onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                     placeholder="••••••••"
-                    className="h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-600 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20"
+                    className="h-12 sm:h-12 min-h-[48px] bg-white/5 border-white/10 text-white placeholder:text-gray-600 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20 text-base"
                   />
                 </div>
               )}
@@ -387,12 +398,12 @@ function LoginForm() {
               )}
             </div>
 
-            {/* Submit Button */}
-            <div className="mt-8">
+            {/* Submit Button - Touch-friendly */}
+            <div className="mt-6 sm:mt-8">
               <Button
                 onClick={handleSubmit}
                 disabled={isLoading}
-                className="w-full h-14 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-base rounded-xl shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-14 min-h-[56px] bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-base rounded-xl shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-transform"
               >
                 {isLoading ? (
                   <>
@@ -409,7 +420,7 @@ function LoginForm() {
             </div>
 
             {/* Toggle sign up / sign in */}
-            <div className="mt-6 text-center">
+            <div className="mt-5 sm:mt-6 text-center">
               <span className="text-gray-500 text-sm">
                 {isSignup ? "Vous avez déjà un compte ?" : "Vous n'avez pas de compte ?"}
               </span>
@@ -432,10 +443,10 @@ function LoginForm() {
             </div>
 
             {/* Back to home */}
-            <div className="mt-6 text-center">
+            <div className="mt-4 sm:mt-6 text-center pb-4 sm:pb-0">
               <Link 
                 href="/" 
-                className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
+                className="text-xs text-gray-600 hover:text-gray-400 transition-colors inline-flex items-center gap-1 py-2 px-4"
               >
                 ← Retour à l'accueil
               </Link>
@@ -477,7 +488,7 @@ function LoginForm() {
 
 function LoginLoading() {
   return (
-    <div className="min-h-screen bg-[#0a0f0a] flex items-center justify-center">
+    <div className="min-h-[100dvh] bg-[#0a0f0a] flex items-center justify-center p-4">
       <div className="text-center">
         <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mx-auto mb-4" />
         <p className="text-gray-500 text-sm">Chargement sécurisé...</p>

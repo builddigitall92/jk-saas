@@ -409,16 +409,16 @@ export default function EmployeePage() {
         }
       `}</style>
 
-      {/* Popup de bienvenue - uniquement à la connexion */}
+      {/* Popup de bienvenue - uniquement à la connexion - 100% responsive */}
       {showWelcome && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-md">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 sm:p-6">
           <div 
-            className="relative max-w-md mx-4 text-center overflow-hidden"
+            className="relative w-full max-w-[calc(100vw-32px)] sm:max-w-md mx-auto text-center overflow-hidden"
             style={{
               background: "linear-gradient(145deg, rgba(20, 27, 45, 0.98) 0%, rgba(15, 20, 35, 0.99) 100%)",
               border: "1px solid rgba(251, 146, 60, 0.2)",
-              borderRadius: "24px",
-              padding: "32px",
+              borderRadius: "20px",
+              padding: "clamp(20px, 5vw, 32px)",
               boxShadow: "0 25px 50px rgba(0, 0, 0, 0.5), 0 0 40px rgba(251, 146, 60, 0.1)",
             }}
           >
@@ -452,7 +452,7 @@ export default function EmployeePage() {
               
               <button
                 onClick={() => setShowWelcome(false)}
-                className="w-full py-3 rounded-xl text-white font-bold hover:scale-[1.02] transition-all duration-300"
+                className="w-full py-3.5 sm:py-3 rounded-xl text-white font-bold hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 min-h-[48px] text-base"
                 style={{
                   background: "linear-gradient(135deg, #fb923c 0%, #ea580c 50%, #dc2626 100%)",
                   boxShadow: "0 4px 20px rgba(251, 146, 60, 0.4)",

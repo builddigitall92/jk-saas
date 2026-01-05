@@ -17,8 +17,6 @@ import {
   Users,
   LogOut,
   ChevronRight,
-  Moon,
-  Sun,
   Bell,
   Search,
   ChevronDown,
@@ -68,7 +66,6 @@ export default function ManagerLayout({
   const [searchQuery, setSearchQuery] = useState("")
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [theme, setTheme] = useState<"dark" | "light">("dark")
   const [tooltip, setTooltip] = useState<{ text: string; top: number } | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
@@ -81,23 +78,12 @@ export default function ManagerLayout({
     { name: "Plus", href: "#more", icon: Menu, isMenu: true },
   ]
 
-  // Charger le thème depuis localStorage au démarrage
+  // Forcer le mode sombre uniquement
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") as "dark" | "light" | null
-    const initialTheme = savedTheme || "dark"
-    setTheme(initialTheme)
-    document.documentElement.classList.toggle("light", initialTheme === "light")
-    document.documentElement.classList.toggle("dark", initialTheme === "dark")
+    document.documentElement.classList.add("dark")
+    document.documentElement.classList.remove("light")
+    localStorage.setItem("theme", "dark")
   }, [])
-
-  // Toggle du thème
-  const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark"
-    setTheme(newTheme)
-    localStorage.setItem("theme", newTheme)
-    document.documentElement.classList.toggle("light", newTheme === "light")
-    document.documentElement.classList.toggle("dark", newTheme === "dark")
-  }
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 1800)
@@ -221,7 +207,7 @@ export default function ManagerLayout({
   }
 
   return (
-    <div className={`flex h-screen overflow-hidden ${theme === "dark" ? "glass-bg bg-[#0a0a0a]" : "bg-gray-50"}`}>
+    <div className="flex h-screen lg:overflow-hidden overflow-y-auto overflow-x-hidden glass-bg bg-[#0a0a0a]">
       {/* Animated Orbs */}
       <div className="glass-orb glass-orb-1" />
       <div className="glass-orb glass-orb-2" />
@@ -252,10 +238,7 @@ export default function ManagerLayout({
       )}
 
       {/* Icon-Only Glassmorphism Sidebar - Hidden on mobile */}
-      <aside className={`hidden lg:flex w-[72px] min-w-[72px] h-full flex-col items-center py-4 relative z-[9999] ${theme === "dark"
-          ? "glass-sidebar"
-          : "bg-white border-r border-gray-200"
-        }`}>
+      <aside className="hidden lg:flex w-[72px] min-w-[72px] h-full flex-col items-center py-4 relative z-[9999] glass-sidebar">
         {/* Logo */}
         <div className="mb-4">
           <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/40 animate-pulse-slow">
@@ -369,34 +352,14 @@ export default function ManagerLayout({
           </button>
         </div>
 
-        {/* Theme Toggle */}
-        <div className="mt-3 mb-2">
-          <button
-            onClick={toggleTheme}
-            className="icon-sidebar-item"
-            onMouseEnter={(e) => showTooltip(e, theme === "dark" ? "Mode Clair" : "Mode Sombre")}
-            onMouseLeave={hideTooltip}
-          >
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-cyan-500/10 to-purple-500/10 border border-cyan-500/20 transition-all duration-300 hover:border-cyan-500/40">
-              {theme === "dark" ? (
-                <Sun className="w-[18px] h-[18px] text-amber-400" />
-              ) : (
-                <Moon className="w-[18px] h-[18px] text-cyan-400" />
-              )}
-            </div>
-          </button>
-        </div>
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col lg:overflow-hidden overflow-y-auto overflow-x-hidden">
         {/* Top Header Bar - Hidden on mobile */}
-        <header className={`hidden lg:flex h-16 px-6 items-center justify-between backdrop-blur-xl relative z-50 ${theme === "dark"
-            ? "border-b border-white/[0.06] bg-slate-900/30"
-            : "border-b border-gray-200 bg-white/80"
-          }`}>
+        <header className="hidden lg:flex h-16 px-6 items-center justify-between backdrop-blur-xl relative z-50 border-b border-white/[0.06] bg-slate-900/30">
           {/* Page Title */}
-          <h2 className={`glass-title ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+          <h2 className="glass-title text-white">
             {pathname === "/manager" ? "Dashboard" :
               pathname.includes("/stock") ? "Stocks" :
                 pathname.includes("/suppliers") ? "Fournisseurs" :
@@ -413,8 +376,7 @@ export default function ManagerLayout({
           <div className="flex items-center gap-3">
             {/* Search */}
             <div className="relative search-dropdown z-[999997]">
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10 ${theme === "dark" ? "text-slate-500" : "text-gray-400"
-                }`} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10 text-slate-500" />
               <input
                 type="text"
                 placeholder="Rechercher... (Ctrl+K)"
@@ -425,10 +387,7 @@ export default function ManagerLayout({
                   setIsNotificationsOpen(false)
                   setIsProfileOpen(false)
                 }}
-                className={`search-input pl-10 pr-4 w-64 ${theme === "dark"
-                    ? "glass-input"
-                    : "bg-white border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  }`}
+                className="search-input pl-10 pr-4 w-64 glass-input"
               />
 
               {/* Search Results Dropdown */}
@@ -835,15 +794,8 @@ export default function ManagerLayout({
           </Link>
         </div>
 
-        {/* Theme Toggle & Logout */}
+        {/* Logout */}
         <div className="mt-auto pt-4 space-y-2">
-          <button
-            onClick={toggleTheme}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all"
-          >
-            {theme === "dark" ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5" />}
-            <span className="font-medium">{theme === "dark" ? "Mode Clair" : "Mode Sombre"}</span>
-          </button>
           <button
             onClick={handleSignOut}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all"

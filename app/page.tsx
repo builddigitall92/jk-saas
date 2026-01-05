@@ -268,7 +268,7 @@ export default function LandingPage() {
               </div>
 
               {/* Headline */}
-              <h1 className="text-7xl sm:text-6xl md:text-7xl lg:text-8xl font-black leading-[1.05] mb-6 w-full">
+              <h1 className="text-6xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.05] mb-6 w-full">
                 <span className="text-gray-300">
                   Ton stock mérite mieux qu'un
                 </span>
@@ -621,245 +621,103 @@ export default function LandingPage() {
             <p className="text-sm text-gray-500 mt-4">Prix par établissement</p>
           </div>
 
-          {/* Pricing Cards */}
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8 items-start">
-            {/* Starter */}
-            <div className="group relative rounded-3xl bg-white/[0.02] border border-white/10 p-8 hover:border-white/20 transition-all duration-300">
-              {/* Promo badge - annual only */}
-              {billingPeriod === "annual" && plans.starter.annual.discount && (
-                <div className="absolute -top-3 right-4">
-                  <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-blue-500/30">
-                    {plans.starter.annual.discount}
-                  </div>
+          {/* Pricing Card - Premium Only */}
+          <div className="flex justify-center">
+            <div className="max-w-md w-full">
+              <div className="group relative rounded-3xl p-8 transition-all duration-300 premium-card-glow">
+                {/* Multi-layer Glow effects - Réduit */}
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/15 to-amber-500/8 blur-2xl rounded-3xl animate-pulse-slow" />
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-400/10 to-orange-500/5 blur-xl rounded-3xl" />
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-amber-500/5 blur-xl rounded-3xl" />
+                
+                {/* Shimmer effect overlay */}
+                <div className="absolute inset-0 rounded-3xl overflow-hidden">
+                  <div className="absolute inset-0 premium-shimmer" />
                 </div>
-              )}
-              
-              <div className="mb-6">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{plans.starter.tagline}</span>
-                <h3 className="text-2xl font-bold text-white mt-2">{plans.starter.name}</h3>
-                <p className="text-xs text-gray-500 mt-1">{plans.starter.target}</p>
-              </div>
-
-              <div className="mb-6">
-                <div className="flex items-baseline gap-2">
-                  {billingPeriod === "annual" && plans.starter.annual.originalPrice && (
-                    <span className="text-xl font-medium text-gray-500 line-through">
-                      {plans.starter.annual.originalPrice}€
-                    </span>
-                  )}
-                  <span className="text-5xl font-black text-white">
-                    {billingPeriod === "monthly" ? plans.starter.monthly.price : plans.starter.annual.price}€
-                  </span>
-                  <span className="text-gray-500">{billingPeriod === "monthly" ? "/mois" : "/an"}</span>
-                </div>
-                {billingPeriod === "annual" && plans.starter.annual.savings && (
-                  <p className="text-sm text-blue-400 font-semibold mt-1">
-                    Économisez {plans.starter.annual.savings}
-                  </p>
-                )}
-              </div>
-
-              {/* Psychological bullets */}
-              <div className="space-y-3 mb-6 pb-6 border-b border-white/10">
-                {plans.starter.bullets.map((bullet, i) => (
-                  <p key={i} className="text-sm text-gray-400 italic">"{bullet}"</p>
-                ))}
-              </div>
-
-              <ul className="space-y-2.5 mb-4">
-                {plans.starter.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <Check className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <span className="text-gray-300 text-sm">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {/* AI Features - Highlighted */}
-              <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20">
-                <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Brain className="h-3.5 w-3.5" />
-                  IA incluse
-                </p>
-                <ul className="space-y-2">
-                  {plans.starter.aiFeatures.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <Sparkles className="h-3.5 w-3.5 text-purple-400 shrink-0 mt-0.5" />
-                      <span className="text-gray-300 text-xs">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <Link href="/login" className="block">
-                <Button className="w-full h-12 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold shadow-lg shadow-emerald-500/30">
-                  {plans.starter.cta}
-                </Button>
-              </Link>
-            </div>
-
-            {/* Pro - Highlighted */}
-            <div className="group relative rounded-3xl p-8 transition-all duration-300 scale-105 z-10">
-              {/* Glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-amber-500/10 blur-xl rounded-3xl" />
-              
-              <div className="relative bg-gradient-to-br from-gray-900 to-gray-950 rounded-3xl border-2 border-emerald-500/50 p-8 shadow-2xl shadow-emerald-500/20">
-                {/* Popular badge */}
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-10">
-                  <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-emerald-500/30">
-                    <Crown className="h-4 w-4" />
-                    Recommandé
-                  </div>
-                </div>
-
-                {/* Promo badge - annual only */}
-                {billingPeriod === "annual" && plans.pro.annual.discount && (
-                  <div className="absolute -top-3 right-4 z-10">
-                    <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-[10px] px-2.5 py-0.5 rounded-full font-bold shadow-lg shadow-emerald-500/30">
-                      {plans.pro.annual.discount}
+                
+                <div className="relative bg-gradient-to-br from-gray-900 to-gray-950 rounded-3xl border-2 border-amber-500/50 p-8 shadow-2xl shadow-amber-500/20 premium-card-flicker">
+                  {/* Premium badge */}
+                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-10">
+                    <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-amber-500/50 premium-badge-flicker">
+                      <Crown className="h-4 w-4" />
+                      Plan Premium
                     </div>
                   </div>
-                )}
 
-                <div className="mb-6 pt-2">
-                  <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">{plans.pro.tagline}</span>
-                  <h3 className="text-2xl font-bold text-white mt-2">{plans.pro.name}</h3>
-                  <p className="text-xs text-gray-500 mt-1">{plans.pro.target}</p>
-                </div>
-
-                <div className="mb-6">
-                  <div className="flex items-baseline gap-2">
-                    {billingPeriod === "annual" && plans.pro.annual.originalPrice && (
-                      <span className="text-xl font-medium text-gray-500 line-through">
-                        {plans.pro.annual.originalPrice}€
-                      </span>
-                    )}
-                    <span className="text-5xl font-black text-emerald-400">
-                      {billingPeriod === "monthly" ? plans.pro.monthly.price : plans.pro.annual.price}€
-                    </span>
-                    <span className="text-gray-500">{billingPeriod === "monthly" ? "/mois" : "/an"}</span>
-                  </div>
-                  {billingPeriod === "annual" && plans.pro.annual.savings && (
-                    <p className="text-sm text-emerald-400 font-semibold mt-1">
-                      Économisez {plans.pro.annual.savings}
-                    </p>
+                  {/* Promo badge - annual only */}
+                  {billingPeriod === "annual" && plans.premium.annual.discount && (
+                    <div className="absolute -top-3 right-4 z-10">
+                      <div className="bg-gradient-to-r from-amber-600 to-amber-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-amber-500/30">
+                        {plans.premium.annual.discount}
+                      </div>
+                    </div>
                   )}
-                </div>
+                  
+                  <div className="mb-6 pt-2">
+                    <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">{plans.premium.tagline}</span>
+                    <h3 className="text-2xl font-bold text-white mt-2">{plans.premium.name}</h3>
+                    <p className="text-xs text-gray-500 mt-1">{plans.premium.target}</p>
+                  </div>
 
-                {/* Psychological bullets */}
-                <div className="space-y-3 mb-6 pb-6 border-b border-emerald-500/20">
-                  {plans.pro.bullets.map((bullet, i) => (
-                    <p key={i} className="text-sm text-emerald-300/80 italic">"{bullet}"</p>
-                  ))}
-                </div>
+                  <div className="mb-6">
+                    <div className="flex items-baseline gap-2">
+                      {billingPeriod === "annual" && plans.premium.annual.originalPrice && (
+                        <span className="text-xl font-medium text-gray-500 line-through">
+                          {plans.premium.annual.originalPrice}€
+                        </span>
+                      )}
+                      <span className="text-5xl font-black text-amber-400">
+                        {billingPeriod === "monthly" ? plans.premium.monthly.price : plans.premium.annual.price}€
+                      </span>
+                      <span className="text-gray-500">{billingPeriod === "monthly" ? "/mois" : "/an"}</span>
+                    </div>
+                    {billingPeriod === "annual" && plans.premium.annual.savings && (
+                      <p className="text-sm text-amber-400 font-semibold mt-1">
+                        Économisez {plans.premium.annual.savings}
+                      </p>
+                    )}
+                  </div>
 
-                <ul className="space-y-2.5 mb-4">
-                  {plans.pro.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                      <span className="text-white text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
+                  {/* Psychological bullets */}
+                  <div className="space-y-3 mb-6 pb-6 border-b border-amber-500/20">
+                    {plans.premium.bullets.map((bullet, i) => (
+                      <p key={i} className="text-sm text-amber-300/80 italic">"{bullet}"</p>
+                    ))}
+                  </div>
 
-                {/* AI Features - Highlighted */}
-                <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-purple-500/15 to-blue-500/15 border border-purple-500/30">
-                  <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <Brain className="h-3.5 w-3.5" />
-                    IA avancée
-                  </p>
-                  <ul className="space-y-2">
-                    {plans.pro.aiFeatures.map((feature, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <Sparkles className="h-3.5 w-3.5 text-purple-400 shrink-0 mt-0.5" />
-                        <span className="text-white text-xs">{feature}</span>
+                  <ul className="space-y-2.5 mb-4">
+                    {plans.premium.features.map((feature, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <Check className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                        <span className="text-white text-sm">{feature}</span>
                       </li>
                     ))}
                   </ul>
-                </div>
 
-                <Link href="/login" className="block">
-                  <Button className="w-full h-12 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold shadow-lg shadow-emerald-500/30">
-                    {plans.pro.cta}
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-
-            {/* Premium */}
-            <div className="group relative rounded-3xl bg-white/[0.02] border border-white/10 p-8 hover:border-amber-500/30 transition-all duration-300">
-              {/* Promo badge - annual only */}
-              {billingPeriod === "annual" && plans.premium.annual.discount && (
-                <div className="absolute -top-3 right-4">
-                  <div className="bg-gradient-to-r from-amber-600 to-amber-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-amber-500/30">
-                    {plans.premium.annual.discount}
+                  {/* AI Features - Highlighted */}
+                  <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-purple-500/15 to-blue-500/15 border border-purple-500/30">
+                    <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <Brain className="h-3.5 w-3.5" />
+                      IA étendue
+                    </p>
+                    <ul className="space-y-2">
+                      {plans.premium.aiFeatures.map((feature, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <Sparkles className="h-3.5 w-3.5 text-purple-400 shrink-0 mt-0.5" />
+                          <span className="text-white text-xs">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
+
+                  <Link href="/login" className="block">
+                    <Button className="w-full h-12 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold shadow-lg shadow-amber-500/30">
+                      {plans.premium.cta}
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
                 </div>
-              )}
-              
-              <div className="mb-6">
-                <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">{plans.premium.tagline}</span>
-                <h3 className="text-2xl font-bold text-white mt-2">{plans.premium.name}</h3>
-                <p className="text-xs text-gray-500 mt-1">{plans.premium.target}</p>
               </div>
-
-              <div className="mb-6">
-                <div className="flex items-baseline gap-2">
-                  {billingPeriod === "annual" && plans.premium.annual.originalPrice && (
-                    <span className="text-xl font-medium text-gray-500 line-through">
-                      {plans.premium.annual.originalPrice}€
-                    </span>
-                  )}
-                  <span className="text-5xl font-black text-amber-400">
-                    {billingPeriod === "monthly" ? plans.premium.monthly.price : plans.premium.annual.price}€
-                  </span>
-                  <span className="text-gray-500">{billingPeriod === "monthly" ? "/mois" : "/an"}</span>
-                </div>
-                {billingPeriod === "annual" && plans.premium.annual.savings && (
-                  <p className="text-sm text-amber-400 font-semibold mt-1">
-                    Économisez {plans.premium.annual.savings}
-                  </p>
-                )}
-              </div>
-
-              {/* Psychological bullets */}
-              <div className="space-y-3 mb-6 pb-6 border-b border-white/10">
-                {plans.premium.bullets.map((bullet, i) => (
-                  <p key={i} className="text-sm text-amber-300/70 italic">"{bullet}"</p>
-                ))}
-              </div>
-
-              <ul className="space-y-2.5 mb-4">
-                {plans.premium.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <Check className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-                    <span className="text-gray-300 text-sm">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {/* AI Features - Highlighted */}
-              <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20">
-                <p className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Brain className="h-3.5 w-3.5" />
-                  IA étendue
-                </p>
-                <ul className="space-y-2">
-                  {plans.premium.aiFeatures.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5" />
-                      <span className="text-gray-300 text-xs">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <Link href="/login" className="block">
-                <Button className="w-full h-12 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold shadow-lg shadow-amber-500/30">
-                  {plans.premium.cta}
-                </Button>
-              </Link>
             </div>
           </div>
 
@@ -1039,6 +897,107 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Premium Card Animations */}
+      <style jsx>{`
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
+        }
+        
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%) translateY(-100%) rotate(45deg);
+          }
+          100% {
+            transform: translateX(200%) translateY(200%) rotate(45deg);
+          }
+        }
+        
+        @keyframes flicker {
+          0%, 100% { opacity: 1; filter: brightness(1); }
+          25% { opacity: 0.95; filter: brightness(1.1); }
+          50% { opacity: 1; filter: brightness(1.2); }
+          75% { opacity: 0.98; filter: brightness(1.1); }
+        }
+        
+        @keyframes price-flicker {
+          0%, 100% { 
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.5),
+                         0 0 20px rgba(251, 191, 36, 0.3),
+                         0 0 30px rgba(251, 191, 36, 0.2);
+            filter: brightness(1);
+          }
+          25% { 
+            text-shadow: 0 0 15px rgba(251, 191, 36, 0.7),
+                         0 0 25px rgba(251, 191, 36, 0.5),
+                         0 0 35px rgba(251, 191, 36, 0.3);
+            filter: brightness(1.2);
+          }
+          50% { 
+            text-shadow: 0 0 20px rgba(251, 191, 36, 0.8),
+                         0 0 30px rgba(251, 191, 36, 0.6),
+                         0 0 40px rgba(251, 191, 36, 0.4);
+            filter: brightness(1.3);
+          }
+          75% { 
+            text-shadow: 0 0 15px rgba(251, 191, 36, 0.7),
+                         0 0 25px rgba(251, 191, 36, 0.5),
+                         0 0 35px rgba(251, 191, 36, 0.3);
+            filter: brightness(1.2);
+          }
+        }
+        
+        .animate-pulse-slow {
+          animation: pulse-slow 3s ease-in-out infinite;
+        }
+        
+        .premium-shimmer {
+          background: linear-gradient(
+            45deg,
+            transparent 30%,
+            rgba(251, 191, 36, 0.1) 50%,
+            transparent 70%
+          );
+          width: 200%;
+          height: 200%;
+          animation: shimmer 3s ease-in-out infinite;
+        }
+        
+        .premium-card-flicker {
+          animation: flicker 2s ease-in-out infinite;
+        }
+        
+        .premium-price-flicker {
+          animation: price-flicker 2.5s ease-in-out infinite;
+        }
+        
+        .premium-card-glow:hover {
+          transform: scale(1.02);
+        }
+        
+        .premium-card-glow:hover .premium-shimmer {
+          animation-duration: 1.5s;
+        }
+        
+        @keyframes badge-flicker {
+          0%, 100% { 
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.5),
+                        0 0 20px rgba(251, 191, 36, 0.3);
+            filter: brightness(1);
+          }
+          50% { 
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.8),
+                        0 0 25px rgba(251, 191, 36, 0.6),
+                        0 0 35px rgba(251, 191, 36, 0.4);
+            filter: brightness(1.3);
+          }
+        }
+        
+        .premium-badge-flicker {
+          animation: badge-flicker 2s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   )
 }

@@ -3,6 +3,393 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ============================================
+   🎯 MOBILE-FIRST RESPONSIVE SYSTEM (PRD StockGuard)
+   Breakpoints: XS:320px | SM:480px | MD:768px | LG:1024px | XL:1440px+
+   ============================================ */
+
+/* Reset Mobile-First */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* ✅ Fix iOS swipe down / bounce / coupure - BASE */
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile */
+  overflow-x: hidden; /* NO HORIZONTAL SCROLL */
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+
+/* ============================================
+   📱 MOBILE ONLY SCROLL FIX (< 1024px)
+   Ces règles ne s'appliquent PAS au desktop
+   ============================================ */
+@media (max-width: 1023px) {
+  html {
+    height: auto;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body {
+    height: auto !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: auto;
+  }
+
+  /* Fix layout principal - scroll forcé - MOBILE ONLY */
+  #__next, main, .page-container {
+    min-height: 100vh;
+    min-height: 100dvh;
+    width: 100%;
+    max-width: 100vw;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* Force scroll sur main content - MOBILE ONLY */
+  main.flex-1.overflow-y-auto {
+    overflow-y: auto !important;
+    height: auto !important;
+    min-height: calc(100vh - 80px);
+    padding-bottom: 100px;
+  }
+}
+
+/* Conteneur principal avec safe-area */
+.app-container {
+  max-width: 100vw;
+  min-height: 100dvh;
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* ============================================
+   GRILLE RESPONSIVE UNIVERSELLE
+   ============================================ */
+.grid-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  padding: 1rem;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Mobile: Stack vertical (XS/SM) */
+@media (min-width: 480px) {
+  .grid-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Tablet (MD) */
+@media (min-width: 768px) {
+  .grid-container {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    padding: 1.5rem;
+  }
+}
+
+/* Desktop (LG+) */
+@media (min-width: 1024px) {
+  .grid-container {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    padding: 2rem;
+  }
+}
+
+/* ============================================
+   TYPOGRAPHY RESPONSIVE (clamp)
+   ============================================ */
+.text-responsive-h1 {
+  font-size: clamp(1.5rem, 5vw, 2.5rem);
+  line-height: 1.2;
+}
+
+.text-responsive-h2 {
+  font-size: clamp(1.25rem, 4vw, 2rem);
+  line-height: 1.3;
+}
+
+.text-responsive-h3 {
+  font-size: clamp(1rem, 3.5vw, 1.5rem);
+  line-height: 1.4;
+}
+
+.text-responsive-body {
+  font-size: clamp(0.875rem, 3vw, 1rem);
+  line-height: 1.6;
+}
+
+.text-responsive-small {
+  font-size: clamp(0.75rem, 2.5vw, 0.875rem);
+  line-height: 1.5;
+}
+
+/* ============================================
+   CARDS RESPONSIVE
+   ============================================ */
+.card-responsive {
+  width: 100%;
+  max-width: 100%;
+  min-height: auto;
+  padding: 1rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 768px) {
+  .card-responsive {
+    padding: 1.25rem;
+    border-radius: 16px;
+    margin-bottom: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .card-responsive {
+    padding: 1.5rem;
+    border-radius: 20px;
+    max-width: 400px;
+  }
+}
+
+/* ============================================
+   TABLES RESPONSIVE (Stack sur mobile)
+   ============================================ */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive table {
+  min-width: 600px;
+}
+
+/* Table to Cards on Mobile */
+@media (max-width: 767px) {
+  .table-stack-mobile thead {
+    display: none;
+  }
+  
+  .table-stack-mobile tbody tr {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  
+  .table-stack-mobile tbody td {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border: none;
+  }
+  
+  .table-stack-mobile tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--muted-foreground);
+    margin-right: 1rem;
+  }
+}
+
+/* ============================================
+   MODALS RESPONSIVE
+   ============================================ */
+.modal-responsive {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  border-radius: 0;
+}
+
+@media (min-width: 480px) {
+  .modal-responsive {
+    width: 90%;
+    max-width: 500px;
+    height: auto;
+    max-height: 90vh;
+    margin: auto;
+    border-radius: 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .modal-responsive {
+    width: 80%;
+    max-width: 600px;
+    border-radius: 20px;
+  }
+}
+
+/* ============================================
+   BUTTONS RESPONSIVE
+   ============================================ */
+.btn-responsive {
+  width: 100%;
+  min-height: 48px; /* Touch-friendly */
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border-radius: 12px;
+}
+
+@media (min-width: 480px) {
+  .btn-responsive {
+    width: auto;
+    min-width: 120px;
+    min-height: 44px;
+  }
+}
+
+/* ============================================
+   INPUTS RESPONSIVE (Touch-friendly)
+   ============================================ */
+.input-responsive {
+  width: 100%;
+  min-height: 48px; /* Touch-friendly */
+  padding: 0.75rem 1rem;
+  font-size: 16px; /* Prevents iOS zoom on focus */
+  border-radius: 12px;
+}
+
+@media (min-width: 768px) {
+  .input-responsive {
+    min-height: 44px;
+    font-size: 14px;
+  }
+}
+
+/* ============================================
+   SIDEBAR/NAV RESPONSIVE
+   ============================================ */
+.sidebar-responsive {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  width: 100%;
+  max-width: 300px;
+}
+
+.sidebar-responsive.open {
+  transform: translateX(0);
+}
+
+@media (min-width: 1024px) {
+  .sidebar-responsive {
+    position: relative;
+    transform: none;
+    width: 280px;
+  }
+}
+
+/* ============================================
+   FLEXBOX RESPONSIVE HELPERS
+   ============================================ */
+.flex-col-mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .flex-col-mobile {
+    flex-direction: row;
+    gap: 1.5rem;
+  }
+}
+
+/* ============================================
+   PADDING/MARGIN RESPONSIVE
+   ============================================ */
+.p-responsive {
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .p-responsive {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .p-responsive {
+    padding: 2rem;
+  }
+}
+
+.gap-responsive {
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .gap-responsive {
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .gap-responsive {
+    gap: 1.5rem;
+  }
+}
+
+/* ============================================
+   HIDE/SHOW RESPONSIVE
+   ============================================ */
+.hide-mobile {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .hide-mobile {
+    display: block;
+  }
+  
+  .hide-desktop {
+    display: none;
+  }
+}
+
+/* ============================================
+   FIX SCROLL ISSUES
+   ============================================ */
+.scroll-container {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* Prevent content cut-off */
+.content-safe {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
 /* Police SF Pro */
 @font-face {
   font-family: 'SF Pro Display';
@@ -7457,11 +7844,6 @@ input[type="range"].compta-slider::-webkit-slider-thumb:hover {
     min-width: 44px;
   }
   
-  /* Supprimer les hover effects sur touch */
-  [class*="hover:translate-y"]:hover {
-    transform: none !important;
-  }
-  
   /* Garder les active states */
   button:active, a:active {
     opacity: 0.8;
@@ -7482,6 +7864,409 @@ input[type="range"].compta-slider::-webkit-slider-thumb:hover {
   main.flex-1.overflow-y-auto {
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* ============================================
+   DASHBOARD MOBILE OPTIMIZATIONS (PRD StockGuard)
+   ============================================ */
+
+/* Fix graphique responsive height */
+@media (max-width: 639px) {
+  .business-trends-chart-container,
+  .business-trends-card [class*="h-[200px]"],
+  .recharts-responsive-container {
+    height: 150px !important;
+    min-height: 150px !important;
+  }
+  
+  /* Business trends - optimisations mobiles */
+  .business-trends-card {
+    border-radius: 16px;
+    padding: 14px;
+  }
+  
+  .business-trends-card h3 {
+    font-size: 0.75rem;
+  }
+  
+  .business-trends-card span.text-3xl {
+    font-size: 1.5rem;
+  }
+  
+  /* Quick actions en grille 2x2 sur petit mobile */
+  .quick-actions-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  
+  .quick-action-card {
+    padding: 10px 12px;
+  }
+  
+  .quick-action-label {
+    font-size: 0.75rem;
+  }
+  
+  /* Business health cards - compact */
+  .business-health-card {
+    padding: 14px 16px;
+    border-radius: 16px;
+    min-height: 100px;
+  }
+  
+  .business-health-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+  }
+  
+  .business-health-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  /* Attention cards - compact */
+  .attention-card-glass {
+    padding: 14px 16px;
+    border-radius: 16px;
+    min-height: 110px;
+  }
+  
+  .attention-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+  
+  .attention-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  /* Products cards - compact */
+  .products-card {
+    padding: 14px;
+    border-radius: 14px;
+  }
+  
+  .products-card .px-4.py-3 {
+    padding: 8px 12px;
+  }
+}
+
+/* XS screens (320px) - iPhone SE */
+@media (max-width: 359px) {
+  .business-health-card,
+  .attention-card-glass {
+    padding: 12px;
+  }
+  
+  .business-health-card p.text-2xl,
+  .attention-card-glass p.text-xl {
+    font-size: 1rem;
+  }
+  
+  /* Quick actions stacked on XS */
+  .quick-actions-list {
+    grid-template-columns: 1fr;
+  }
+  
+  /* Reduce font sizes */
+  .business-trends-card span.text-3xl {
+    font-size: 1.25rem;
+  }
+}
+
+/* Employee dashboard mobile optimizations */
+@media (max-width: 639px) {
+  /* Welcome popup - fullscreen on mobile (use data attribute) */
+  [data-welcome-popup] {
+    margin: 16px;
+    max-width: calc(100vw - 32px);
+    border-radius: 20px;
+    padding: 24px;
+  }
+  
+  /* Stats tiles compact */
+  [class*="grid-cols-2"][class*="lg:grid-cols-4"] > div {
+    padding: 14px;
+  }
+  
+  [class*="grid-cols-2"][class*="lg:grid-cols-4"] .w-12 {
+    width: 40px;
+    height: 40px;
+  }
+  
+  [class*="grid-cols-2"][class*="lg:grid-cols-4"] .w-6 {
+    width: 20px;
+    height: 20px;
+  }
+  
+  [class*="grid-cols-2"][class*="lg:grid-cols-4"] .text-2xl {
+    font-size: 1.25rem;
+  }
+  
+  /* Modules grid - 1 col on small mobile */
+  [class*="lg:col-span-2"] [class*="sm:grid-cols-2"] {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Dialogs/Modals responsive */
+@media (max-width: 639px) {
+  [role="dialog"],
+  [data-state="open"][role="dialog"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+  
+  /* Dialog content - full scroll */
+  [role="dialog"] > div {
+    max-height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Touch improvements */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger tap targets */
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Remove hover translate effects on touch devices */
+  .no-touch-hover:hover {
+    transform: none !important;
+  }
+  
+  /* Add active states instead */
+  button:active, a:active, [role="button"]:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+}
+
+/* Prevent horizontal scroll globally */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Smooth scrolling containers */
+.scroll-smooth {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Fix iOS input zoom */
+@media screen and (max-width: 767px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* ============================================
+   🚨 MOBILE ONLY: FIX SCROLL BLOQUÉ
+   Toutes ces règles s'appliquent UNIQUEMENT sur mobile/tablette
+   ============================================ */
+
+/* ============================================
+   📱 MOBILE ONLY (< 1024px) - Scroll Fix
+   ============================================ */
+@media (max-width: 1023px) {
+  /* Force le scroll sur mobile */
+  html {
+    height: auto !important;
+    min-height: 100%;
+    overflow-y: scroll !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body {
+    height: auto !important;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Override les conteneurs qui bloquent le scroll - MOBILE ONLY */
+  .flex.min-h-screen,
+  .flex.h-screen {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+  }
+
+  /* Main content scroll - MOBILE ONLY */
+  main {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    min-height: calc(100vh - 150px);
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(var(--mobile-nav-height, 80px) + 32px) !important;
+  }
+
+  /* Conteneur principal layout - MOBILE ONLY */
+  .flex-1.flex.flex-col {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    min-height: 100%;
+  }
+  
+  /* S'assurer que le contenu n'est pas caché par la nav */
+  .page-container,
+  [class*="min-h-screen"].p-6 {
+    padding-bottom: calc(var(--mobile-nav-height, 80px) + 48px) !important;
+  }
+}
+
+/* ============================================
+   📱 TEXTE LISIBLE - MOBILE ONLY (< 768px)
+   ============================================ */
+@media (max-width: 767px) {
+  /* Texte de base */
+  p, span, li, td, th, label, a {
+    font-size: clamp(14px, 3.5vw, 16px) !important;
+    line-height: 1.5;
+  }
+  
+  /* Titres responsifs */
+  h1, .text-3xl, .text-4xl {
+    font-size: clamp(1.5rem, 6vw, 2.25rem) !important;
+    line-height: 1.2;
+  }
+  
+  h2, .text-2xl {
+    font-size: clamp(1.25rem, 5vw, 1.75rem) !important;
+    line-height: 1.3;
+  }
+  
+  h3, .text-xl {
+    font-size: clamp(1.1rem, 4.5vw, 1.5rem) !important;
+    line-height: 1.3;
+  }
+  
+  h4, .text-lg {
+    font-size: clamp(1rem, 4vw, 1.25rem) !important;
+    line-height: 1.4;
+  }
+  
+  /* Petits textes lisibles */
+  .text-sm, .text-xs {
+    font-size: clamp(12px, 3vw, 14px) !important;
+  }
+  
+  /* Inputs lisibles - évite zoom iOS */
+  input, textarea, select, button {
+    font-size: 16px !important;
+    min-height: 48px;
+  }
+  
+  /* Labels */
+  label {
+    font-size: 14px !important;
+  }
+  
+  /* Dashboard/Pages containers */
+  .dashboard-container,
+  [class*="bg-gradient-to-br"][class*="from-slate-950"],
+  .min-h-screen.bg-gradient-to-br {
+    height: auto !important;
+    overflow-y: auto !important;
+    padding-bottom: 120px !important;
+  }
+}
+
+/* ============================================
+   📱 GRILLES RESPONSIVE (Mobile first)
+   ============================================ */
+.dashboard-grid, .menu-grid, .sales-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(0.75rem, 3vw, 1.5rem);
+  width: 100%;
+  padding: 0;
+}
+
+@media (min-width: 480px) {
+  .dashboard-grid, .menu-grid, .sales-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .dashboard-grid, .menu-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ============================================
+   🔄 iOS SCROLL FIX - MOBILE ONLY
+   ============================================ */
+@media (max-width: 1023px) {
+  /* Empêcher le bounce iOS */
+  * {
+    overscroll-behavior: contain;
+  }
+
+  body {
+    overscroll-behavior-y: auto !important;
+    touch-action: pan-y;
+  }
+
+  /* Scroll containers smooth */
+  .overflow-y-auto, .overflow-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+}
+
+/* ============================================
+   🖥️ DESKTOP (>= 1024px) - Styles normaux préservés
+   ============================================ */
+@media (min-width: 1024px) {
+  /* Le desktop garde son layout normal avec sidebar */
+  /* Aucun override de scroll/overflow sur desktop */
+  
+  /* Tailles de texte normales desktop */
+  html {
+    font-size: 16px;
+  }
+  
+  body {
+    font-size: 16px;
+    line-height: 1.5;
   }
 }
 
