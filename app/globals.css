@@ -4,6 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================
+<<<<<<< HEAD
    🎯 MOBILE-FIRST RESPONSIVE SYSTEM (PRD StockGuard)
    Breakpoints: XS:320px | SM:480px | MD:768px | LG:1024px | XL:1440px+
    ============================================ */
@@ -388,6 +389,18 @@ body {
 /* Prevent content cut-off */
 .content-safe {
   padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+.navbar-fixed,
+nav[class*="fixed"][class*="top"] {
+  padding-top: max(env(safe-area-inset-top), 0px);
+}
+
+/* Footers et éléments fixed en bas */
+footer.fixed,
+.fixed-bottom,
+[class*="fixed"][class*="bottom"] {
+  padding-bottom: max(env(safe-area-inset-bottom), 0px);
+>>>>>>> 14cea5c64907a357d09358fb22951022bc54687b
 }
 
 /* Police SF Pro */

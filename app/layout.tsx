@@ -8,7 +8,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  viewportFit: 'cover',
+  viewportFit: 'cover', // CRITIQUE : étend sous notch/barre home iOS
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#faf9f7' },
     { media: '(prefers-color-scheme: dark)', color: '#0d0b09' },
