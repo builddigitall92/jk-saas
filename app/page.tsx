@@ -39,11 +39,14 @@ import {
   Calculator,
   FileSpreadsheet,
   RefreshCw,
-  Bot
+  Bot,
+  ChevronRight,
+  Menu,
+  XIcon
 } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { Switch } from "@/components/ui/switch"
+import Image from "next/image"
 import { PRICING_PLANS } from "@/lib/pricing-config"
 
 // Animated counter
@@ -99,13 +102,13 @@ function FAQItem({ question, answer, isOpen, onClick }: {
   question: string; answer: string; isOpen: boolean; onClick: () => void
 }) {
   return (
-    <div className="border border-white/10 rounded-2xl overflow-hidden bg-white/[0.02] backdrop-blur-sm">
+    <div className="border border-cyan-500/20 rounded-2xl overflow-hidden bg-[#0a1d37]/50 backdrop-blur-sm">
       <button
         onClick={onClick}
-        className="w-full p-6 text-left flex items-center justify-between gap-4 hover:bg-white/5 transition-colors"
+        className="w-full p-6 text-left flex items-center justify-between gap-4 hover:bg-cyan-500/5 transition-colors"
       >
         <span className="text-lg font-semibold text-white">{question}</span>
-        <ChevronDown className={`h-5 w-5 text-gray-400 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-5 w-5 text-cyan-400 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
       <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-96' : 'max-h-0'}`}>
         <p className="px-6 pb-6 text-gray-400 leading-relaxed">{answer}</p>
@@ -118,6 +121,7 @@ export default function LandingPage() {
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("annual")
   const [openFAQ, setOpenFAQ] = useState<number | null>(null)
   const [isVisible, setIsVisible] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     setIsVisible(true)
@@ -126,35 +130,47 @@ export default function LandingPage() {
   const features = [
     {
       icon: LineChart,
-      title: "Visibilité en temps réel",
-      description: "Fini de deviner. Tu sais exactement ce que tu as, où c'est, et quand ça expire.",
-      color: "emerald"
+      title: "Visibilité temps réel",
+      description: "Tableau de bord intelligent avec KPIs en direct. Fini les surprises.",
+      gradient: "from-cyan-500 to-blue-600"
     },
     {
       icon: Bell,
-      title: "Alertes avant les problèmes",
-      description: "Rupture imminente ? DLC proche ? Tu es prévenu avant que ça devienne une crise.",
-      color: "amber"
+      title: "Alertes prédictives",
+      description: "Rupture imminente ? DLC proche ? Tu es prévenu 48h avant.",
+      gradient: "from-blue-500 to-indigo-600"
     },
     {
       icon: Calculator,
-      title: "Marges protégées",
-      description: "Chaque commande optimisée. Chaque perte évitée. Ton argent reste où il doit être.",
-      color: "emerald"
+      title: "Marges optimisées",
+      description: "Chaque commande calculée. Chaque perte évitée. +20% de marge nette.",
+      gradient: "from-indigo-500 to-purple-600"
+    },
+    {
+      icon: Brain,
+      title: "IA intégrée",
+      description: "Prévisions automatiques basées sur ton historique et la saisonnalité.",
+      gradient: "from-purple-500 to-pink-600"
     },
     {
       icon: RefreshCw,
-      title: "Automatisation intelligente",
-      description: "Les tâches répétitives ? Le logiciel s'en charge. Toi, tu gères ce qui compte vraiment.",
-      color: "amber"
+      title: "Automatisation",
+      description: "Commandes auto, inventaires simplifiés. Moins de tâches répétitives.",
+      gradient: "from-cyan-500 to-teal-600"
+    },
+    {
+      icon: Users,
+      title: "Multi-établissement",
+      description: "Gère tous tes points de vente depuis une seule interface.",
+      gradient: "from-teal-500 to-emerald-600"
     }
   ]
 
-  const painPoints = [
-    { before: "Excel qui plante en plein service", after: "Dashboard temps réel, toujours à jour" },
-    { before: "Commandes au feeling", after: "Prévisions basées sur tes données" },
-    { before: "Découvrir les ruptures trop tard", after: "Alertes 48h avant le problème" },
-    { before: "Perdre du temps à compter", after: "Inventaire automatisé" }
+  const stats = [
+    { value: 20, suffix: "%", label: "Réduction des pertes" },
+    { value: 6, suffix: "h", label: "Économisées / semaine" },
+    { value: 35, suffix: "%", label: "Marges améliorées" },
+    { value: 14, suffix: "j", label: "Essai gratuit" }
   ]
 
   const testimonials = [
@@ -188,23 +204,18 @@ export default function LandingPage() {
     },
     {
       question: "Je peux annuler quand je veux ?",
-      answer: "Oui. Sans engagement, sans frais cachés, sans période de préavis. Tu arrêtes quand tu veux, en un clic. Mais honnêtement, personne ne le fait une fois qu'ils ont vu la différence."
+      answer: "Oui. Sans engagement, sans frais cachés, sans période de préavis. Tu arrêtes quand tu veux, en un clic."
     },
     {
       question: "Ça va me prendre combien de temps à mettre en place ?",
-      answer: "La plupart de nos clients sont opérationnels en moins de 2 heures. Import de tes données existantes, configuration de tes alertes, et c'est parti. On n'est pas là pour te faire perdre du temps."
+      answer: "La plupart de nos clients sont opérationnels en moins de 2 heures. Import de tes données existantes, configuration de tes alertes, et c'est parti."
     },
     {
       question: "Et si ça ne fonctionne pas pour mon établissement ?",
-      answer: "Peu probable, mais on prend le risque : 30 jours satisfait ou remboursé, sans condition. Si tu n'es pas convaincu, tu récupères ton argent. Point."
-    },
-    {
-      question: "C'est vraiment utile si j'ai un petit établissement ?",
-      answer: "Surtout si tu as un petit établissement. Moins de marge d'erreur = plus besoin de contrôle. Un restaurant qui perd 200€/semaine en gaspillage, c'est 10 000€/an dans la poubelle. StockGuard coûte moins que ça."
+      answer: "30 jours satisfait ou remboursé, sans condition. Si tu n'es pas convaincu, tu récupères ton argent. Point."
     }
   ]
 
-  // Utiliser les données de pricing-config.ts (source unique de vérité)
   const plans = {
     starter: PRICING_PLANS.starter,
     pro: PRICING_PLANS.pro,
@@ -212,180 +223,241 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-[#0a0a0a] text-white overflow-hidden">
-      {/* Background Effects - s'étend sous notch iOS */}
-      <div className="fixed inset-0 pointer-events-none bg-[#0a0a0a]">
-        {/* Grid pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
+    <div className="min-h-dvh bg-[#02050b] text-white overflow-x-hidden">
+      {/* Background Effects */}
+      <div className="fixed inset-0 pointer-events-none">
+        {/* Grid pattern subtil */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,212,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,212,255,0.03)_1px,transparent_1px)] bg-[size:80px_80px]" />
         {/* Gradient orbs */}
-        <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-emerald-600/10 rounded-full blur-[150px]" />
-        <div className="absolute top-1/2 right-0 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[100px]" />
+        <div className="absolute top-0 left-1/4 w-[1000px] h-[1000px] bg-cyan-600/10 rounded-full blur-[200px]" />
+        <div className="absolute top-1/2 right-0 w-[800px] h-[800px] bg-blue-600/8 rounded-full blur-[180px]" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-600/5 rounded-full blur-[150px]" />
       </div>
 
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-[#0a0a0a]/80 border-b border-white/5 pt-[env(safe-area-inset-top)]">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
+      {/* Navigation - Paradigm Style */}
+      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-[#02050b]/80 border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                <Shield className="w-5 h-5 text-white" />
               </div>
-              <span className="text-base sm:text-xl font-black tracking-tight">STOCKGUARD</span>
+              <span className="text-xl font-bold tracking-tight">StockGuard</span>
             </div>
+
+            {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Fonctionnalités</a>
               <a href="#pricing" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Tarifs</a>
               <a href="#testimonials" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Témoignages</a>
-              <a href="#faq" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">FAQ</a>
+              <a href="#contact" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Contact</a>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3">
+
+            {/* CTA Buttons */}
+            <div className="hidden md:flex items-center gap-3">
               <Link href="/login">
-                <Button variant="ghost" className="text-gray-400 hover:text-white hover:bg-white/5 px-2 sm:px-4 text-sm sm:text-base">
+                <Button variant="ghost" className="text-gray-400 hover:text-white hover:bg-white/5">
                   Connexion
                 </Button>
               </Link>
               <Link href="/login">
-                <Button className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 sm:px-6 text-sm sm:text-base shadow-lg shadow-emerald-500/20 whitespace-nowrap">
-                  Essai gratuit
+                <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold px-6 shadow-lg shadow-cyan-500/30 border-0">
+                  Démo gratuite
                 </Button>
               </Link>
             </div>
+
+            {/* Mobile Menu Button */}
+            <button 
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg bg-white/5 border border-white/10"
+            >
+              {isMobileMenuOpen ? <XIcon className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
+
+          {/* Mobile Menu */}
+          {isMobileMenuOpen && (
+            <div className="md:hidden mt-4 pb-4 border-t border-white/10 pt-4 space-y-4">
+              <a href="#features" className="block text-gray-400 hover:text-white py-2">Fonctionnalités</a>
+              <a href="#pricing" className="block text-gray-400 hover:text-white py-2">Tarifs</a>
+              <a href="#testimonials" className="block text-gray-400 hover:text-white py-2">Témoignages</a>
+              <a href="#contact" className="block text-gray-400 hover:text-white py-2">Contact</a>
+              <div className="flex flex-col gap-3 pt-4">
+                <Link href="/login">
+                  <Button variant="outline" className="w-full border-white/20 text-white">Connexion</Button>
+                </Link>
+                <Link href="/login">
+                  <Button className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white">Démo gratuite</Button>
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
-      {/* Hero Section - HackerRank Style */}
-      <section className="relative pt-24 sm:pt-32 pb-16 sm:pb-24 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-10 lg:gap-16 items-center">
-            {/* Left Column - Content */}
+      {/* Hero Section - Paradigm Style */}
+      <section className="relative min-h-screen flex items-center pt-20 pb-16 px-4 sm:px-6 overflow-hidden">
+        {/* Decorative curved line */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <svg className="absolute bottom-0 left-0 right-0 w-full h-auto opacity-20" viewBox="0 0 1440 320" preserveAspectRatio="none">
+            <path fill="url(#hero-gradient)" d="M0,160L48,144C96,128,192,96,288,106.7C384,117,480,171,576,197.3C672,224,768,224,864,197.3C960,171,1056,117,1152,112C1248,107,1344,149,1392,170.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"/>
+            <defs>
+              <linearGradient id="hero-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#00d4ff" stopOpacity="0.1"/>
+                <stop offset="50%" stopColor="#0099cc" stopOpacity="0.2"/>
+                <stop offset="100%" stopColor="#00d4ff" stopOpacity="0.1"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+
+        <div className="max-w-7xl mx-auto w-full relative z-10">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            {/* Left Content */}
             <div className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 mb-4 sm:mb-6">
-                <Fingerprint className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-400" />
-                <span className="text-xs sm:text-sm font-medium text-emerald-400">La tour de contrôle de ton stock</span>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-6">
+                <Sparkles className="h-4 w-4 text-cyan-400" />
+                <span className="text-sm font-medium text-cyan-400">Solution IA pour restaurants</span>
               </div>
 
               {/* Headline */}
-              <h1 className="text-6xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.05] mb-6 w-full">
-                <span className="text-gray-300">
-                  Ton stock mérite mieux qu'un
-                </span>
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] mb-6">
+                <span className="text-white">Gestion de stock</span>
                 <br />
-                <span className="relative">
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-300">Excel fatigué</span>
-                  <div className="absolute -inset-1 bg-emerald-500/20 blur-xl -z-10" />
+                <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                  intelligente
                 </span>
               </h1>
 
-              {/* Sub-headline */}
-              <p className="text-base sm:text-lg text-gray-400 mb-8 leading-relaxed w-full lg:max-w-2xl">
-                StockGuard surveille tes niveaux, anticipe tes ruptures et protège tes marges 
-                <span className="text-white font-medium"> pendant que tu t'occupes du service</span>.
+              {/* Subtitle */}
+              <p className="text-lg sm:text-xl text-gray-400 mb-8 max-w-xl leading-relaxed">
+                La solution complète pour gérer votre inventaire, anticiper vos besoins et maximiser vos marges.
+                <span className="text-white font-medium"> Conçue pour les restaurants.</span>
               </p>
 
-              {/* CTAs */}
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8">
-                <Link href="/login" className="w-full sm:w-auto">
-                  <Button className="w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 text-base sm:text-lg font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl shadow-2xl shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all duration-300 hover:-translate-y-1">
-                    Commencer maintenant
-                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 mb-10">
+                <Link href="/login">
+                  <Button className="h-14 px-8 text-lg font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl shadow-2xl shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 hover:-translate-y-1 border-0 w-full sm:w-auto">
+                    Démo Gratuite 14j
+                    <ChevronRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
-                <Link href="#contact" className="w-full sm:w-auto">
-                  <Button variant="outline" className="w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 text-base sm:text-lg font-semibold border-white/20 hover:bg-white/5 text-white rounded-xl">
-                    <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                    Nous contacter
+                <Link href="#pricing">
+                  <Button variant="outline" className="h-14 px-8 text-lg font-semibold border-2 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 rounded-xl w-full sm:w-auto">
+                    Voir les tarifs
                   </Button>
                 </Link>
               </div>
 
               {/* Trust bullets */}
-              <div className="space-y-3">
-                {[
-                  "Moins de ruptures, plus de sérénité",
-                  "Mise en place en quelques heures, pas en semaines",
-                  "Sans engagement, annulable à tout moment"
-                ].map((text, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="h-5 w-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                      <Check className="h-3 w-3 text-emerald-400" />
-                    </div>
-                    <span className="text-gray-400 text-sm">{text}</span>
+              <div className="flex flex-wrap gap-6 text-sm text-gray-400">
+                {["Sans carte bancaire", "Setup en 2h", "Sans engagement"].map((text, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-cyan-400" />
+                    <span>{text}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Right Column - Dashboard Mockup with Glow */}
+            {/* Right - Laptop Mockup */}
             <div className={`relative transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}>
-              {/* Glow effect behind */}
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-amber-500/10 blur-[80px] scale-110" />
+              {/* Glow behind laptop */}
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/30 via-blue-500/20 to-transparent blur-[100px] scale-110" />
               
-              {/* Dashboard card */}
-              <div className="relative bg-gradient-to-br from-gray-900/90 to-gray-950/90 rounded-3xl border border-white/10 p-6 shadow-2xl">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                      <Gauge className="h-5 w-5 text-emerald-400" />
+              {/* Laptop Frame */}
+              <div className="relative">
+                {/* Screen */}
+                <div className="relative bg-gradient-to-br from-gray-900 to-gray-950 rounded-t-2xl border border-white/10 p-2 shadow-2xl">
+                  {/* Browser bar */}
+                  <div className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 rounded-t-lg mb-2">
+                    <div className="flex gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                      <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                      <div className="w-3 h-3 rounded-full bg-green-500/80" />
                     </div>
-                    <div>
-                      <p className="font-semibold text-white">Dashboard</p>
-                      <p className="text-xs text-gray-500">Temps réel</p>
+                    <div className="flex-1 mx-4">
+                      <div className="bg-gray-700/50 rounded-md px-3 py-1 text-xs text-gray-400 text-center">
+                        app.stockguard.fr/dashboard
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-xs text-emerald-400 font-medium">Live</span>
-                  </div>
-                </div>
+                  
+                  {/* Dashboard Content */}
+                  <div className="bg-[#0a1525] rounded-lg p-4 min-h-[300px] sm:min-h-[350px]">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                          <Gauge className="h-4 w-4 text-cyan-400" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-white text-sm">Dashboard</p>
+                          <p className="text-[10px] text-gray-500">Temps réel</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+                        <span className="text-[10px] text-cyan-400 font-medium">Live</span>
+                      </div>
+                    </div>
 
-                {/* Stats grid */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  {[
-                    { label: "Valeur stock", value: "24,850€", change: "+2.3%", positive: true },
-                    { label: "Alertes", value: "3", change: "à traiter", positive: false },
-                    { label: "Marge moyenne", value: "68%", change: "+5pts", positive: true },
-                    { label: "Ruptures évitées", value: "12", change: "ce mois", positive: true }
-                  ].map((stat, i) => (
-                    <div key={i} className="bg-white/5 rounded-xl p-4 border border-white/5">
-                      <p className="text-gray-500 text-xs mb-1">{stat.label}</p>
-                      <p className="text-2xl font-bold text-white">{stat.value}</p>
-                      <p className={`text-xs ${stat.positive ? 'text-emerald-400' : 'text-amber-400'}`}>
-                        {stat.change}
-                      </p>
+                    {/* Stats grid */}
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      {[
+                        { label: "Stock", value: "24,850€", change: "+2.3%", positive: true },
+                        { label: "Alertes", value: "3", change: "actives", positive: false },
+                        { label: "Marge", value: "68%", change: "+5pts", positive: true },
+                        { label: "Économies", value: "1,240€", change: "ce mois", positive: true }
+                      ].map((stat, i) => (
+                        <div key={i} className="bg-white/5 rounded-lg p-3 border border-white/5">
+                          <p className="text-gray-500 text-[10px] mb-0.5">{stat.label}</p>
+                          <p className="text-lg font-bold text-white">{stat.value}</p>
+                          <p className={`text-[10px] ${stat.positive ? 'text-cyan-400' : 'text-amber-400'}`}>
+                            {stat.change}
+                          </p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
 
-                {/* Mini chart placeholder */}
-                <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm font-medium text-white">Évolution du stock</p>
-                    <span className="text-xs text-emerald-400">+12% cette semaine</span>
-                  </div>
-                  <div className="flex items-end gap-1 h-16">
-                    {[40, 55, 45, 70, 60, 80, 75, 90, 85, 95].map((h, i) => (
-                      <div 
-                        key={i} 
-                        className="flex-1 bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t opacity-80"
-                        style={{ height: `${h}%` }}
-                      />
-                    ))}
+                    {/* Mini chart */}
+                    <div className="bg-white/5 rounded-lg p-3 border border-white/5">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-medium text-white">Évolution du stock</p>
+                        <span className="text-[10px] text-cyan-400">+12%</span>
+                      </div>
+                      <div className="flex items-end gap-1 h-12">
+                        {[40, 55, 45, 70, 60, 80, 75, 90, 85, 95, 88, 100].map((h, i) => (
+                          <div 
+                            key={i} 
+                            className="flex-1 bg-gradient-to-t from-cyan-600 to-cyan-400 rounded-t opacity-80"
+                            style={{ height: `${h}%` }}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
+                
+                {/* Laptop base */}
+                <div className="relative h-4 bg-gradient-to-b from-gray-800 to-gray-900 rounded-b-xl mx-8">
+                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-gray-600 to-transparent" />
+                </div>
+                <div className="h-2 bg-gradient-to-b from-gray-700 to-gray-800 rounded-b-3xl mx-4 shadow-xl" />
 
                 {/* Floating notification */}
-                <div className="absolute -right-4 top-1/3 bg-gray-900 border border-amber-500/30 rounded-xl p-3 shadow-xl animate-pulse">
+                <div className="absolute -right-4 top-1/4 bg-[#0a1525] border border-cyan-500/30 rounded-xl p-3 shadow-xl shadow-cyan-500/10 animate-bounce-slow hidden sm:block">
                   <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-amber-500/20 flex items-center justify-center">
-                      <AlertTriangle className="h-4 w-4 text-amber-400" />
+                    <div className="h-8 w-8 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                      <Bell className="h-4 w-4 text-cyan-400" />
                     </div>
                     <div>
                       <p className="text-xs font-medium text-white">Alerte stock</p>
-                      <p className="text-xs text-gray-500">Tomates: 2j restants</p>
+                      <p className="text-[10px] text-gray-500">Tomates: 2j</p>
                     </div>
                   </div>
                 </div>
@@ -395,162 +467,50 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Social Proof - Trusted Restaurants */}
-      <section className="py-16 px-6 border-y border-white/5 bg-white/[0.01]">
+      {/* Stats Band */}
+      <section className="py-16 px-4 sm:px-6 border-y border-white/5 bg-[#0a1525]/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="text-gray-500 text-sm mb-2 uppercase tracking-wider">Ils nous font confiance</p>
-            <p className="text-2xl font-bold text-white">Des établissements reconnus</p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {[
-              {
-                name: "Restaurant Le Comptoir",
-                rating: 4.8,
-                reviews: 234,
-                type: "Restaurant français",
-                city: "Paris"
-              },
-              {
-                name: "Bistrot Moderne",
-                rating: 4.7,
-                reviews: 189,
-                type: "Bistrot",
-                city: "Lyon"
-              },
-              {
-                name: "Café Central",
-                rating: 4.9,
-                reviews: 312,
-                type: "Café-Restaurant",
-                city: "Marseille"
-              },
-              {
-                name: "La Belle Époque",
-                rating: 4.6,
-                reviews: 156,
-                type: "Brasserie",
-                city: "Toulouse"
-              },
-              {
-                name: "Le Gourmet",
-                rating: 4.9,
-                reviews: 278,
-                type: "Restaurant gastronomique",
-                city: "Bordeaux"
-              }
-            ].map((restaurant, i) => (
-              <div 
-                key={i}
-                className="group p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 hover:bg-white/[0.04] transition-all duration-300"
-              >
-                {/* Restaurant name */}
-                <h3 className="font-bold text-white text-lg mb-2 group-hover:text-emerald-400 transition-colors">
-                  {restaurant.name}
-                </h3>
-                
-                {/* Type & City */}
-                <p className="text-xs text-gray-500 mb-3">
-                  {restaurant.type} · {restaurant.city}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {stats.map((stat, i) => (
+              <div key={i} className="text-center">
+                <p className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
+                  <AnimatedCounter value={stat.value} suffix={stat.suffix} />
                 </p>
-                
-                {/* Google Rating */}
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="flex items-center gap-1">
-                    {/* Google logo / icon */}
-                    <div className="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center">
-                      <span className="text-blue-400 text-[8px] font-bold">G</span>
-                    </div>
-                    <span className="text-white font-bold text-sm">{restaurant.rating}</span>
-                  </div>
-                  
-                  {/* Stars */}
-                  <div className="flex gap-0.5">
-                    {[...Array(5)].map((_, j) => (
-                      <Star 
-                        key={j} 
-                        className={`h-3 w-3 ${
-                          j < Math.floor(restaurant.rating) 
-                            ? 'text-amber-400 fill-amber-400' 
-                            : 'text-gray-600'
-                        }`} 
-                      />
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Reviews count */}
-                <p className="text-xs text-gray-500">
-                  {restaurant.reviews} avis Google
-                </p>
+                <p className="text-gray-400 text-sm mt-2">{stat.label}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Before/After - Pain Points */}
-      <section className="py-24 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-black mb-4">
-              <span className="text-gray-400">Du chaos</span>
-              <span className="text-white"> → </span>
-              <span className="text-emerald-400">au contrôle</span>
-            </h2>
-            <p className="text-xl text-gray-400">La différence entre gérer à l'aveugle et piloter en toute sérénité.</p>
-          </div>
-
-          <div className="space-y-4">
-            {painPoints.map((point, i) => (
-              <div key={i} className="grid md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-4 p-5 rounded-xl bg-red-500/5 border border-red-500/20">
-                  <X className="h-5 w-5 text-red-400 shrink-0" />
-                  <span className="text-gray-300">{point.before}</span>
-                </div>
-                <div className="flex items-center gap-4 p-5 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
-                  <Check className="h-5 w-5 text-emerald-400 shrink-0" />
-                  <span className="text-white">{point.after}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features - Comment ça t'aide */}
-      <section id="features" className="py-24 px-6 bg-white/[0.01]">
+      {/* Features Grid - Paradigm Style */}
+      <section id="features" className="py-24 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-6">
-              <Brain className="h-4 w-4 text-emerald-400" />
-              <span className="text-sm font-medium text-emerald-400">Comment ça t'aide</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-6">
+              <Zap className="h-4 w-4 text-cyan-400" />
+              <span className="text-sm font-medium text-cyan-400">Fonctionnalités</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-black mb-4">
-              Tu reprends le <span className="text-emerald-400">contrôle</span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
+              Tout ce dont tu as <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">besoin</span>
             </h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Pas de fonctionnalités gadgets. Que des outils qui te font gagner du temps et de l'argent.
+              Une suite d'outils puissants pour transformer ta gestion de stock.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, i) => {
               const Icon = feature.icon
               return (
                 <div 
                   key={i}
-                  className="group p-8 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 hover:bg-white/[0.04] transition-all duration-300"
+                  className="group p-8 rounded-2xl bg-[#0a1d37]/50 border border-cyan-500/10 hover:border-cyan-500/30 backdrop-blur-sm transition-all duration-300 hover:-translate-y-2"
                 >
-                  <div className={`h-14 w-14 rounded-2xl flex items-center justify-center mb-5 ${
-                    feature.color === 'emerald' 
-                      ? 'bg-emerald-500/10 group-hover:bg-emerald-500/20' 
-                      : 'bg-amber-500/10 group-hover:bg-amber-500/20'
-                  } transition-colors`}>
-                    <Icon className={`h-7 w-7 ${feature.color === 'emerald' ? 'text-emerald-400' : 'text-amber-400'}`} />
+                  <div className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform`}>
+                    <Icon className="h-7 w-7 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">{feature.title}</h3>
+                  <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
                   <p className="text-gray-400 leading-relaxed">{feature.description}</p>
                 </div>
               )
@@ -559,40 +519,42 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pre-Pricing Band */}
-      <section className="py-16 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-black mb-4">
-            Choisis ton <span className="text-emerald-400">rythme de croissance</span>
-          </h2>
-          <p className="text-xl text-gray-400">
-            Tous les plans sont sans engagement. Upgrade possible à tout moment.
-          </p>
+      {/* Social Proof */}
+      <section className="py-16 px-4 sm:px-6 bg-[#0a1525]/30">
+        <div className="max-w-7xl mx-auto">
+          <p className="text-center text-gray-500 text-sm mb-8 uppercase tracking-wider">Ils nous font confiance</p>
+          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16">
+            {["Restaurant Le Comptoir", "Bistrot Moderne", "Café Central", "La Belle Époque", "Le Gourmet"].map((name, i) => (
+              <div key={i} className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+                <Store className="h-5 w-5" />
+                <span className="font-medium">{name}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-24 px-6 relative">
-        {/* Background glow for pricing */}
-        <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 via-transparent to-transparent pointer-events-none" />
+      <section id="pricing" className="py-24 px-4 sm:px-6 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 via-transparent to-transparent pointer-events-none" />
         
         <div className="max-w-7xl mx-auto relative">
           <div className="text-center mb-12">
-            {/* Badge annuel */}
-            {billingPeriod === "annual" && (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 mb-6 animate-pulse">
-                <Sparkles className="h-4 w-4 text-emerald-400" />
-                <span className="text-sm font-semibold text-emerald-400">Économisez jusqu'à 3 mois avec l'abonnement annuel</span>
-              </div>
-            )}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-6">
+              <Crown className="h-4 w-4 text-cyan-400" />
+              <span className="text-sm font-medium text-cyan-400">Tarification simple</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
+              Choisis ton <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">plan</span>
+            </h2>
             
             {/* Toggle */}
-            <div className="inline-flex items-center gap-4 p-2 rounded-full bg-white/5 border border-white/10">
+            <div className="inline-flex items-center gap-4 p-2 rounded-full bg-white/5 border border-white/10 mt-6">
               <button
                 onClick={() => setBillingPeriod("monthly")}
                 className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
                   billingPeriod === "monthly" 
-                    ? "bg-white text-black" 
+                    ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white" 
                     : "text-gray-400 hover:text-white"
                 }`}
               >
@@ -602,118 +564,76 @@ export default function LandingPage() {
                 onClick={() => setBillingPeriod("annual")}
                 className={`px-6 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${
                   billingPeriod === "annual" 
-                    ? "bg-white text-black" 
+                    ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white" 
                     : "text-gray-400 hover:text-white"
                 }`}
               >
                 Annuel
-                <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                  billingPeriod === "annual"
-                    ? "bg-emerald-500 text-white"
-                    : "bg-emerald-500/80 text-white"
-                }`}>
-                  -20%
-                </span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-400 text-black font-bold">-20%</span>
               </button>
             </div>
-            
-            {/* Tag par établissement */}
-            <p className="text-sm text-gray-500 mt-4">Prix par établissement</p>
           </div>
 
-          {/* Pricing Card - Premium Only */}
+          {/* Pricing Card */}
           <div className="flex justify-center">
-            <div className="max-w-md w-full">
-              <div className="group relative rounded-3xl p-8 transition-all duration-300 premium-card-glow">
-                {/* Multi-layer Glow effects - Réduit */}
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/15 to-amber-500/8 blur-2xl rounded-3xl animate-pulse-slow" />
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-400/10 to-orange-500/5 blur-xl rounded-3xl" />
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-amber-500/5 blur-xl rounded-3xl" />
+            <div className="max-w-lg w-full">
+              <div className="relative group">
+                {/* Glow */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-3xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity" />
                 
-                {/* Shimmer effect overlay */}
-                <div className="absolute inset-0 rounded-3xl overflow-hidden">
-                  <div className="absolute inset-0 premium-shimmer" />
-                </div>
-                
-                <div className="relative bg-gradient-to-br from-gray-900 to-gray-950 rounded-3xl border-2 border-amber-500/50 p-8 shadow-2xl shadow-amber-500/20 premium-card-flicker">
-                  {/* Premium badge */}
-                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-10">
-                    <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-amber-500/50 premium-badge-flicker">
+                <div className="relative bg-gradient-to-br from-[#0a1d37] to-[#061224] rounded-3xl border border-cyan-500/30 p-8 shadow-2xl">
+                  {/* Badge */}
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                    <div className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg">
                       <Crown className="h-4 w-4" />
-                      Plan Premium
+                      Premium
                     </div>
                   </div>
 
-                  {/* Promo badge - annual only */}
-                  {billingPeriod === "annual" && plans.premium.annual.discount && (
-                    <div className="absolute -top-3 right-4 z-10">
-                      <div className="bg-gradient-to-r from-amber-600 to-amber-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg shadow-amber-500/30">
-                        {plans.premium.annual.discount}
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="mb-6 pt-2">
-                    <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">{plans.premium.tagline}</span>
-                    <h3 className="text-2xl font-bold text-white mt-2">{plans.premium.name}</h3>
-                    <p className="text-xs text-gray-500 mt-1">{plans.premium.target}</p>
-                  </div>
-
-                  <div className="mb-6">
-                    <div className="flex items-baseline gap-2">
-                      {billingPeriod === "annual" && plans.premium.annual.originalPrice && (
-                        <span className="text-xl font-medium text-gray-500 line-through">
-                          {plans.premium.annual.originalPrice}€
-                        </span>
-                      )}
-                      <span className="text-5xl font-black text-amber-400">
+                  <div className="text-center pt-4 mb-8">
+                    <p className="text-gray-400 mb-2">{plans.premium.tagline}</p>
+                    <div className="flex items-baseline justify-center gap-2">
+                      <span className="text-5xl font-black text-white">
                         {billingPeriod === "monthly" ? plans.premium.monthly.price : plans.premium.annual.price}€
                       </span>
-                      <span className="text-gray-500">{billingPeriod === "monthly" ? "/mois" : "/an"}</span>
+                      <span className="text-gray-500">/{billingPeriod === "monthly" ? "mois" : "an"}</span>
                     </div>
                     {billingPeriod === "annual" && plans.premium.annual.savings && (
-                      <p className="text-sm text-amber-400 font-semibold mt-1">
+                      <p className="text-cyan-400 text-sm font-medium mt-2">
                         Économisez {plans.premium.annual.savings}
                       </p>
                     )}
                   </div>
 
-                  {/* Psychological bullets */}
-                  <div className="space-y-3 mb-6 pb-6 border-b border-amber-500/20">
-                    {plans.premium.bullets.map((bullet, i) => (
-                      <p key={i} className="text-sm text-amber-300/80 italic">"{bullet}"</p>
-                    ))}
-                  </div>
-
-                  <ul className="space-y-2.5 mb-4">
+                  <ul className="space-y-3 mb-8">
                     {plans.premium.features.map((feature, i) => (
                       <li key={i} className="flex items-start gap-3">
-                        <Check className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-                        <span className="text-white text-sm">{feature}</span>
+                        <Check className="h-5 w-5 text-cyan-400 shrink-0 mt-0.5" />
+                        <span className="text-gray-300">{feature}</span>
                       </li>
                     ))}
                   </ul>
 
-                  {/* AI Features - Highlighted */}
-                  <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-purple-500/15 to-blue-500/15 border border-purple-500/30">
+                  {/* AI Features */}
+                  <div className="mb-8 p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20">
                     <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                       <Brain className="h-3.5 w-3.5" />
-                      IA étendue
+                      IA intégrée
                     </p>
                     <ul className="space-y-2">
                       {plans.premium.aiFeatures.map((feature, i) => (
                         <li key={i} className="flex items-start gap-2">
                           <Sparkles className="h-3.5 w-3.5 text-purple-400 shrink-0 mt-0.5" />
-                          <span className="text-white text-xs">{feature}</span>
+                          <span className="text-white text-sm">{feature}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
 
                   <Link href="/login" className="block">
-                    <Button className="w-full h-12 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold shadow-lg shadow-amber-500/30">
-                      {plans.premium.cta}
-                      <ArrowRight className="h-4 w-4 ml-2" />
+                    <Button className="w-full h-14 text-lg font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl shadow-lg shadow-cyan-500/30 border-0">
+                      Commencer l'essai gratuit
+                      <ArrowRight className="h-5 w-5 ml-2" />
                     </Button>
                   </Link>
                 </div>
@@ -723,8 +643,8 @@ export default function LandingPage() {
 
           {/* Guarantee */}
           <div className="mt-12 text-center">
-            <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-              <ShieldCheck className="h-6 w-6 text-emerald-400" />
+            <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/20">
+              <ShieldCheck className="h-6 w-6 text-cyan-400" />
               <span className="text-white font-medium">
                 Garantie 30 jours satisfait ou remboursé
               </span>
@@ -734,24 +654,24 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="py-24 px-6 bg-white/[0.01]">
+      <section id="testimonials" className="py-24 px-4 sm:px-6 bg-[#0a1525]/30">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-6">
-              <Star className="h-4 w-4 text-emerald-400" />
-              <span className="text-sm font-medium text-emerald-400">Ce qu'ils en disent</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-6">
+              <Star className="h-4 w-4 text-cyan-400" />
+              <span className="text-sm font-medium text-cyan-400">Témoignages</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-black mb-4">
-              Des restaurateurs <span className="text-emerald-400">comme toi</span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
+              Ce qu'en disent nos <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">clients</span>
             </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
             {testimonials.map((t, i) => (
-              <div key={i} className="p-8 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
+              <div key={i} className="p-8 rounded-2xl bg-[#0a1d37]/50 border border-cyan-500/10 hover:border-cyan-500/30 transition-all">
                 {/* Result badge */}
                 <div className="mb-4">
-                  <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-semibold">
+                  <span className="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-semibold">
                     {t.result}
                   </span>
                 </div>
@@ -759,7 +679,7 @@ export default function LandingPage() {
                 {/* Stars */}
                 <div className="flex gap-1 mb-4">
                   {[...Array(5)].map((_, j) => (
-                    <Star key={j} className="h-4 w-4 text-emerald-400 fill-emerald-400" />
+                    <Star key={j} className="h-4 w-4 text-cyan-400 fill-cyan-400" />
                   ))}
                 </div>
 
@@ -768,7 +688,7 @@ export default function LandingPage() {
                 </blockquote>
 
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
                     <span className="text-white font-bold text-sm">{t.avatar}</span>
                   </div>
                   <div>
@@ -783,15 +703,15 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="py-24 px-6">
+      <section id="faq" className="py-24 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-6">
-              <HelpCircle className="h-4 w-4 text-emerald-400" />
-              <span className="text-sm font-medium text-emerald-400">Questions fréquentes</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-6">
+              <HelpCircle className="h-4 w-4 text-cyan-400" />
+              <span className="text-sm font-medium text-cyan-400">FAQ</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-black mb-4">
-              Et si... <span className="text-gray-400">?</span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
+              Questions <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">fréquentes</span>
             </h2>
           </div>
 
@@ -809,26 +729,45 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Founder Section */}
+      <section className="py-24 px-4 sm:px-6 bg-gradient-to-b from-[#02050b] to-[#0a1d37]">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full mx-auto mb-6 bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-2xl shadow-cyan-500/30 ring-4 ring-cyan-500/20">
+            <span className="text-3xl sm:text-4xl font-bold text-white">JK</span>
+          </div>
+          <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4">Créé par un passionné</h3>
+          <p className="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
+            Fondateur SaaS • 10+ ans d'expérience en restauration • Expert en optimisation des coûts food
+          </p>
+          <div className="flex justify-center gap-4 mt-8">
+            <a href="#" className="text-gray-400 hover:text-cyan-400 transition-colors">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>
+            </a>
+            <a href="#" className="text-gray-400 hover:text-cyan-400 transition-colors">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* Contact Section */}
-      <section id="contact" className="py-24 px-6 bg-white/[0.01]">
+      <section id="contact" className="py-24 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-black mb-4">
-              Une question ? <span className="text-emerald-400">Parlons-en.</span>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+              Une question ? <span className="text-cyan-400">Parlons-en.</span>
             </h2>
-            <p className="text-xl text-gray-400">
-              Notre équipe répond sous 24h.
-            </p>
+            <p className="text-xl text-gray-400">Notre équipe répond sous 24h.</p>
           </div>
 
-          <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-8 md:p-12">
+          <div className="bg-[#0a1d37]/50 border border-cyan-500/20 rounded-3xl p-8 md:p-12 backdrop-blur-sm">
             <form className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Prénom</label>
                   <input 
                     type="text" 
-                    className="w-full h-12 px-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
+                    className="w-full h-12 px-4 rounded-xl bg-white/5 border border-cyan-500/20 text-white placeholder-gray-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
                     placeholder="Jean"
                   />
                 </div>
@@ -836,7 +775,7 @@ export default function LandingPage() {
                   <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
                   <input 
                     type="email" 
-                    className="w-full h-12 px-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
+                    className="w-full h-12 px-4 rounded-xl bg-white/5 border border-cyan-500/20 text-white placeholder-gray-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
                     placeholder="jean@restaurant.fr"
                   />
                 </div>
@@ -845,11 +784,11 @@ export default function LandingPage() {
                 <label className="block text-sm font-medium text-gray-300 mb-2">Message</label>
                 <textarea 
                   rows={4}
-                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors resize-none"
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-cyan-500/20 text-white placeholder-gray-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors resize-none"
                   placeholder="Comment pouvons-nous t'aider ?"
                 />
               </div>
-              <Button className="w-full h-12 bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
+              <Button className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold border-0">
                 Envoyer
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
@@ -859,16 +798,16 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-24 px-6">
+      <section className="py-24 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-black mb-6">
-            Prêt à reprendre le <span className="text-emerald-400">contrôle</span> ?
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
+            Prêt à <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">transformer</span> ta gestion ?
           </h2>
           <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
             Commence gratuitement pendant 14 jours. Sans carte bancaire. Sans engagement.
           </p>
           <Link href="/login">
-            <Button className="h-16 px-12 text-lg font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-2xl shadow-2xl shadow-emerald-500/30">
+            <Button className="h-16 px-12 text-lg font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-2xl shadow-2xl shadow-cyan-500/30 border-0">
               Commencer maintenant
               <ArrowRight className="h-5 w-5 ml-2" />
             </Button>
@@ -877,14 +816,14 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-6 border-t border-white/5">
+      <footer className="py-12 px-4 sm:px-6 border-t border-white/5">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
                 <Shield className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-black">STOCKGUARD</span>
+              <span className="text-xl font-bold">StockGuard</span>
             </div>
             <div className="flex items-center gap-8 text-sm text-gray-500">
               <a href="#" className="hover:text-white transition-colors">Confidentialité</a>
@@ -898,104 +837,14 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      {/* Premium Card Animations */}
+      {/* Custom animations */}
       <style jsx>{`
-        @keyframes pulse-slow {
-          0%, 100% { opacity: 0.6; }
-          50% { opacity: 1; }
+        @keyframes bounce-slow {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
         }
-        
-        @keyframes shimmer {
-          0% {
-            transform: translateX(-100%) translateY(-100%) rotate(45deg);
-          }
-          100% {
-            transform: translateX(200%) translateY(200%) rotate(45deg);
-          }
-        }
-        
-        @keyframes flicker {
-          0%, 100% { opacity: 1; filter: brightness(1); }
-          25% { opacity: 0.95; filter: brightness(1.1); }
-          50% { opacity: 1; filter: brightness(1.2); }
-          75% { opacity: 0.98; filter: brightness(1.1); }
-        }
-        
-        @keyframes price-flicker {
-          0%, 100% { 
-            text-shadow: 0 0 10px rgba(251, 191, 36, 0.5),
-                         0 0 20px rgba(251, 191, 36, 0.3),
-                         0 0 30px rgba(251, 191, 36, 0.2);
-            filter: brightness(1);
-          }
-          25% { 
-            text-shadow: 0 0 15px rgba(251, 191, 36, 0.7),
-                         0 0 25px rgba(251, 191, 36, 0.5),
-                         0 0 35px rgba(251, 191, 36, 0.3);
-            filter: brightness(1.2);
-          }
-          50% { 
-            text-shadow: 0 0 20px rgba(251, 191, 36, 0.8),
-                         0 0 30px rgba(251, 191, 36, 0.6),
-                         0 0 40px rgba(251, 191, 36, 0.4);
-            filter: brightness(1.3);
-          }
-          75% { 
-            text-shadow: 0 0 15px rgba(251, 191, 36, 0.7),
-                         0 0 25px rgba(251, 191, 36, 0.5),
-                         0 0 35px rgba(251, 191, 36, 0.3);
-            filter: brightness(1.2);
-          }
-        }
-        
-        .animate-pulse-slow {
-          animation: pulse-slow 3s ease-in-out infinite;
-        }
-        
-        .premium-shimmer {
-          background: linear-gradient(
-            45deg,
-            transparent 30%,
-            rgba(251, 191, 36, 0.1) 50%,
-            transparent 70%
-          );
-          width: 200%;
-          height: 200%;
-          animation: shimmer 3s ease-in-out infinite;
-        }
-        
-        .premium-card-flicker {
-          animation: flicker 2s ease-in-out infinite;
-        }
-        
-        .premium-price-flicker {
-          animation: price-flicker 2.5s ease-in-out infinite;
-        }
-        
-        .premium-card-glow:hover {
-          transform: scale(1.02);
-        }
-        
-        .premium-card-glow:hover .premium-shimmer {
-          animation-duration: 1.5s;
-        }
-        
-        @keyframes badge-flicker {
-          0%, 100% { 
-            box-shadow: 0 0 10px rgba(251, 191, 36, 0.5),
-                        0 0 20px rgba(251, 191, 36, 0.3);
-            filter: brightness(1);
-          }
-          50% { 
-            box-shadow: 0 0 15px rgba(251, 191, 36, 0.8),
-                        0 0 25px rgba(251, 191, 36, 0.6),
-                        0 0 35px rgba(251, 191, 36, 0.4);
-            filter: brightness(1.3);
-          }
-        }
-        
-        .premium-badge-flicker {
-          animation: badge-flicker 2s ease-in-out infinite;
+        .animate-bounce-slow {
+          animation: bounce-slow 3s ease-in-out infinite;
         }
       `}</style>
     </div>
