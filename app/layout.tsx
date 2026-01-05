@@ -1,6 +1,14 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover', // CRITIQUE : étend sous notch/barre home iOS
+}
 
 export const metadata: Metadata = {
   title: 'StockGuard - Gestion des Stocks',
@@ -32,7 +40,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className="dark">
-      <body className="antialiased" style={{ fontFamily: "var(--font-sf-pro)" }}>
+      <body 
+        className="antialiased min-h-dvh" 
+        style={{ 
+          fontFamily: "var(--font-sf-pro)",
+          backgroundColor: "#0a0f0a" // Fond iOS safe area
+        }}
+      >
         {children}
         <Analytics />
       </body>

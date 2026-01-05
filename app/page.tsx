@@ -212,9 +212,9 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
-      {/* Background Effects */}
-      <div className="fixed inset-0 pointer-events-none">
+    <div className="min-h-dvh bg-[#0a0a0a] text-white overflow-hidden">
+      {/* Background Effects - s'étend sous notch iOS */}
+      <div className="fixed inset-0 pointer-events-none bg-[#0a0a0a]">
         {/* Grid pattern */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
         {/* Gradient orbs */}
@@ -224,7 +224,7 @@ export default function LandingPage() {
       </div>
 
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-[#0a0a0a]/80 border-b border-white/5">
+      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-[#0a0a0a]/80 border-b border-white/5 pt-[env(safe-area-inset-top)]">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3">

@@ -3,6 +3,56 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ============================================
+   iOS Safe Area Reset - Full Screen Support
+   ============================================ */
+
+/* Reset complet iOS - fond étendu sous notch et barre home */
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 100%;
+  min-height: 100dvh; /* Dynamic viewport height */
+  width: 100%;
+  background: #0a0f0a !important; /* Fond par défaut dark */
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Containers principaux avec safe area padding */
+.app-root,
+[data-testid="app-root"],
+#__next,
+main {
+  min-height: 100dvh;
+  background: inherit;
+}
+
+/* Safe Area automatique pour pages full-height */
+.safe-area-page {
+  min-height: 100dvh;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Headers et éléments fixed en haut */
+header,
+nav.fixed,
+.fixed-top,
+.navbar-fixed,
+nav[class*="fixed"][class*="top"] {
+  padding-top: max(env(safe-area-inset-top), 0px);
+}
+
+/* Footers et éléments fixed en bas */
+footer.fixed,
+.fixed-bottom,
+[class*="fixed"][class*="bottom"] {
+  padding-bottom: max(env(safe-area-inset-bottom), 0px);
+}
+
 /* Police SF Pro */
 @font-face {
   font-family: 'SF Pro Display';
