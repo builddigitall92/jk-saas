@@ -324,7 +324,7 @@ export default function LandingPage() {
               </div>
 
               {/* Headline */}
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] mb-6">
+              <h1 className="text-5xl sm:text-6xl md:text-6xl lg:text-7xl font-bold leading-[1.1] mb-6">
                 <span className="text-white">Gestion de stock</span>
                 <br />
                 <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-300 bg-clip-text text-transparent">
@@ -333,7 +333,7 @@ export default function LandingPage() {
               </h1>
 
               {/* Subtitle */}
-              <p className="text-lg sm:text-xl text-gray-400 mb-8 max-w-xl leading-relaxed">
+              <p className="text-base sm:text-lg md:text-xl text-gray-400 mb-8 max-w-xl leading-relaxed">
                 La solution complète pour gérer votre inventaire, anticiper vos besoins et maximiser vos marges.
                 <span className="text-white font-medium"> Conçue pour les restaurants.</span>
               </p>
