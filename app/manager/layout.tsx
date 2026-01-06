@@ -31,6 +31,7 @@ import {
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useSubscription } from "@/lib/hooks/use-subscription"
 import { useNotifications } from "@/lib/hooks/use-notifications"
+import { TrialBanner, TrialExpiringBanner } from "@/components/trial-banner"
 
 const mainNavItems = [
   { name: "Dashboard", href: "/manager", icon: LayoutDashboard, color: "blue" },
@@ -58,7 +59,7 @@ export default function ManagerLayout({
   const pathname = usePathname()
   const router = useRouter()
   const { profile, user } = useAuth()
-  const { subscription, currentPlan, isTrialing, loading: subscriptionLoading } = useSubscription()
+  const { subscription, currentPlan, isTrialing, trialDaysRemaining, loading: subscriptionLoading } = useSubscription()
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
   const userName = profile?.first_name || "Manager"
   const [isProfileOpen, setIsProfileOpen] = useState(false)
@@ -652,10 +653,20 @@ export default function ManagerLayout({
           </div>
         </header>
 
+        {/* Trial Banner - Affiché si l'utilisateur est en période d'essai */}
+        {isTrialing && subscription?.trialEndsAt && (
+          <TrialBanner trialEndsAt={subscription.trialEndsAt} />
+        )}
+
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto pt-[calc(var(--mobile-header-height,56px)+8px)] pb-[calc(var(--mobile-nav-height,70px)+16px)] lg:pt-0 lg:pb-0">
           {children}
         </main>
+
+        {/* Trial Expiring Banner - Popup pour les derniers jours */}
+        {isTrialing && subscription?.trialEndsAt && trialDaysRemaining !== null && trialDaysRemaining <= 3 && (
+          <TrialExpiringBanner trialEndsAt={subscription.trialEndsAt} />
+        )}
       </div>
 
       {/* Mobile Header */}

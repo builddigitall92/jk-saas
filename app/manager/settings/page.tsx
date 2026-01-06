@@ -72,7 +72,7 @@ const DEFAULT_CHECK_ITEMS = [
 
 export default function SettingsPage() {
   const { profile } = useAuth()
-  const { subscription, currentPlan, isTrialing, isPastDue, openBillingPortal, loading: subLoading } = useSubscription()
+  const { subscription, currentPlan, isTrialing, isPastDue, openBillingPortal, loading: subLoading, trialDaysRemaining } = useSubscription()
   const [establishment, setEstablishment] = useState<Establishment | null>(null)
   const [openingPortal, setOpeningPortal] = useState(false)
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
@@ -479,6 +479,18 @@ export default function SettingsPage() {
                             Essai gratuit
                           </span>
                         )}
+                        {/* Badge de statut */}
+                        {subscription?.status && subscription.status !== 'active' && subscription.status !== 'trialing' && (
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            subscription.status === 'past_due' || subscription.status === 'unpaid' 
+                              ? 'bg-red-500/10 text-red-500' 
+                              : 'bg-amber-500/10 text-amber-500'
+                          }`}>
+                            {subscription.status === 'past_due' ? 'Impayé' : 
+                             subscription.status === 'canceled' ? 'Annulé' : 
+                             subscription.status}
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {currentPlan?.price === 0 
@@ -491,48 +503,164 @@ export default function SettingsPage() {
                         </p>
                       )}
                       {isTrialing && subscription?.trialEndsAt && (
-                        <p className="text-xs text-orange-500 mt-1">
-                          Fin de l'essai: {subscription.trialEndsAt.toLocaleDateString('fr-FR')}
+                        <p className="text-xs text-orange-500 mt-1 font-medium">
+                          Fin de l'essai: {subscription.trialEndsAt.toLocaleDateString('fr-FR')} ({trialDaysRemaining !== null ? `${trialDaysRemaining} jours restants` : ''})
                         </p>
                       )}
                     </div>
                   </div>
                   
                   <div className="flex flex-col gap-2">
-                    {subscription?.stripeCustomerId ? (
-                      <Button
-                        variant="outline"
-                        onClick={async () => {
-                          setOpeningPortal(true)
-                          try {
-                            await openBillingPortal()
-                          } catch {
-                            alert('Erreur lors de l\'ouverture du portail')
-                          } finally {
-                            setOpeningPortal(false)
-                          }
-                        }}
-                        disabled={openingPortal}
-                        className="gap-2"
-                      >
-                        {openingPortal ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <>
-                            <ExternalLink className="h-4 w-4" />
-                            Gérer l'abonnement
-                          </>
-                        )}
-                      </Button>
-                    ) : null}
-                    <Link href="/pricing">
-                      <Button className="w-full bg-purple-500 hover:bg-purple-600 gap-2">
-                        <Crown className="h-4 w-4" />
-                        {subscription?.plan === 'FREE' ? 'Passer à Premium' : 'Changer de plan'}
-                      </Button>
-                    </Link>
+                    {/* Bouton Gérer l'abonnement / Portail Stripe */}
+                    {/* Afficher si : plan payant OU essai OU a un ID Stripe (même si plan = free) */}
+                    {(() => {
+                      const hasActiveSubscription = subscription?.plan && subscription.plan !== 'FREE'
+                      const hasStripeAccount = subscription?.stripeCustomerId || subscription?.stripeSubscriptionId
+                      const shouldShowManageButton = hasActiveSubscription || isTrialing || hasStripeAccount
+                      
+                      return shouldShowManageButton ? (
+                        <>
+                          <Button
+                            variant="default"
+                            onClick={async () => {
+                              setOpeningPortal(true)
+                              try {
+                                await openBillingPortal()
+                              } catch (error) {
+                                console.error('Erreur portail:', error)
+                                // Si pas de customer Stripe, rediriger vers pricing pour créer un abonnement
+                                const errorMessage = error instanceof Error ? error.message : String(error)
+                                if (errorMessage.includes('customer') || errorMessage.includes('abonnement') || errorMessage.includes('Aucun')) {
+                                  if (confirm('Vous n\'avez pas encore d\'abonnement actif. Souhaitez-vous vous abonner maintenant ?')) {
+                                    window.location.href = '/pricing'
+                                  }
+                                } else {
+                                  alert('Erreur lors de l\'ouverture du portail de paiement. Veuillez réessayer.')
+                                }
+                              } finally {
+                                setOpeningPortal(false)
+                              }
+                            }}
+                            disabled={openingPortal}
+                            className="gap-2 bg-purple-600 hover:bg-purple-700 text-white w-full"
+                          >
+                            {openingPortal ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Ouverture...
+                              </>
+                            ) : (
+                              <>
+                                <CreditCard className="h-4 w-4" />
+                                {isTrialing ? 'Gérer ou annuler l\'essai' : 'Gérer mon abonnement'}
+                              </>
+                            )}
+                          </Button>
+                          {/* Bouton pour changer de plan */}
+                          <Link href="/pricing">
+                            <Button variant="outline" className="w-full gap-2 border-purple-500/30 text-purple-600 hover:bg-purple-500/10">
+                              <Crown className="h-4 w-4" />
+                              Changer de plan
+                            </Button>
+                          </Link>
+                        </>
+                      ) : (
+                        /* Bouton pour s'abonner si pas d'abonnement */
+                        <Link href="/pricing">
+                          <Button className="w-full bg-purple-500 hover:bg-purple-600 gap-2">
+                            <Crown className="h-4 w-4" />
+                            S'abonner
+                          </Button>
+                        </Link>
+                      )
+                    })()}
                   </div>
                 </div>
+
+                {/* Info importante pour l'essai */}
+                {isTrialing && subscription?.stripeSubscriptionId && (
+                  <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-orange-500 mt-0.5 shrink-0" />
+                      <div className="flex-1">
+                        <p className="font-semibold text-orange-600 dark:text-orange-400 mb-1">
+                          Période d'essai en cours
+                        </p>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Vous pouvez annuler votre abonnement à tout moment depuis le portail Stripe. 
+                          {subscription?.trialEndsAt && (
+                            <> L'essai se termine le <strong>{subscription.trialEndsAt.toLocaleDateString('fr-FR')}</strong>.</>
+                          )}
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            setOpeningPortal(true)
+                            try {
+                              await openBillingPortal()
+                            } catch (error) {
+                              console.error('Erreur portail:', error)
+                              alert('Erreur lors de l\'ouverture du portail.')
+                            } finally {
+                              setOpeningPortal(false)
+                            }
+                          }}
+                          disabled={openingPortal}
+                          className="gap-2 border-orange-500/30 text-orange-600 hover:bg-orange-500/10"
+                        >
+                          {openingPortal ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <ExternalLink className="h-3 w-3" />
+                          )}
+                          Annuler l'essai ou l'abonnement
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Info pour les abonnements actifs */}
+                {!isTrialing && subscription?.stripeSubscriptionId && subscription?.plan !== 'FREE' && (
+                  <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                    <div className="flex items-start gap-3">
+                      <CreditCard className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
+                      <div className="flex-1">
+                        <p className="font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                          Abonnement actif
+                        </p>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Gérez votre abonnement, mettez à jour votre moyen de paiement ou annulez depuis le portail client Stripe sécurisé.
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            setOpeningPortal(true)
+                            try {
+                              await openBillingPortal()
+                            } catch (error) {
+                              console.error('Erreur portail:', error)
+                              alert('Erreur lors de l\'ouverture du portail.')
+                            } finally {
+                              setOpeningPortal(false)
+                            }
+                          }}
+                          disabled={openingPortal}
+                          className="gap-2 border-blue-500/30 text-blue-600 hover:bg-blue-500/10"
+                        >
+                          {openingPortal ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <ExternalLink className="h-3 w-3" />
+                          )}
+                          Ouvrir le portail de gestion
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Features du plan */}
                 <div className="grid gap-2 sm:grid-cols-2">

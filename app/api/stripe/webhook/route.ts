@@ -102,7 +102,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session, supabas
   // Trouver l'établissement par customer ID
   const { data: establishment } = await supabaseAdmin
     .from('establishments')
-    .select('id')
+    .select('id, has_used_trial')
     .eq('stripe_customer_id', customerId)
     .single()
 
@@ -132,6 +132,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session, supabas
       .eq('id', establishment.id)
   } else {
     // Pour les abonnements, récupérer le plan depuis la subscription
+    let hasTrialPeriod = false
+    
     if (session.subscription && stripe) {
       try {
         const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
@@ -139,6 +141,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session, supabas
         if (priceId) {
           planId = getPlanFromPriceId(priceId).toLowerCase()
         }
+        // Vérifier si la subscription a une période d'essai
+        hasTrialPeriod = subscription.status === 'trialing'
       } catch (error) {
         console.error('Erreur récupération subscription:', error)
         // Fallback sur les métadonnées de la session
@@ -149,12 +153,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session, supabas
     }
 
     // Mettre à jour avec l'ID de souscription
+    // Marquer has_used_trial à true si une période d'essai a été utilisée
     await supabaseAdmin
       .from('establishments')
       .update({
         stripe_subscription_id: subscriptionId,
-        subscription_status: 'trialing', // En période d'essai si applicable
+        subscription_status: hasTrialPeriod ? 'trialing' : 'active',
         subscription_plan: planId,
+        has_used_trial: hasTrialPeriod ? true : establishment.has_used_trial,
       })
       .eq('id', establishment.id)
   }

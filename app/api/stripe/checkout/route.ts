@@ -43,16 +43,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Établissement non trouvé' }, { status: 404 })
     }
 
-    // Récupérer l'établissement
+    // Récupérer l'établissement avec has_used_trial
     const { data: establishment } = await supabase
       .from('establishments')
-      .select('id, name, stripe_customer_id')
+      .select('id, name, stripe_customer_id, has_used_trial')
       .eq('id', profile.establishment_id)
       .single()
 
     if (!establishment) {
       return NextResponse.json({ error: 'Établissement non trouvé' }, { status: 404 })
     }
+
+    // Vérifier si l'utilisateur a déjà utilisé une période d'essai
+    const hasUsedTrial = establishment.has_used_trial || false
 
     let customerId = establishment.stripe_customer_id
 
@@ -133,7 +136,11 @@ export async function POST(request: NextRequest) {
           plan_id: planId,
           billing_type: billingType,
         },
-        trial_period_days: 14, // 14 jours d'essai gratuit pour les abonnements
+      }
+      
+      // Ajouter la période d'essai seulement si l'utilisateur n'a jamais eu d'essai
+      if (!hasUsedTrial) {
+        sessionConfig.subscription_data.trial_period_days = 14 // 14 jours d'essai gratuit
       }
     }
 

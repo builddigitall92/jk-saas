@@ -9,7 +9,8 @@ ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR(255),
 ADD COLUMN IF NOT EXISTS subscription_plan VARCHAR(50) DEFAULT 'free',
 ADD COLUMN IF NOT EXISTS subscription_status VARCHAR(50) DEFAULT 'active',
 ADD COLUMN IF NOT EXISTS subscription_period_end TIMESTAMPTZ,
-ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ;
+ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS has_used_trial BOOLEAN DEFAULT false;
 
 -- Créer des index pour améliorer les performances des requêtes
 CREATE INDEX IF NOT EXISTS idx_establishments_stripe_customer ON establishments(stripe_customer_id);
@@ -60,4 +61,5 @@ COMMENT ON COLUMN establishments.subscription_plan IS 'Plan d''abonnement actuel
 COMMENT ON COLUMN establishments.subscription_status IS 'Statut de l''abonnement Stripe (active, canceled, past_due, trialing, etc.)';
 COMMENT ON COLUMN establishments.subscription_period_end IS 'Date de fin de la période de facturation actuelle';
 COMMENT ON COLUMN establishments.trial_ends_at IS 'Date de fin de la période d''essai gratuit';
+COMMENT ON COLUMN establishments.has_used_trial IS 'Indique si l''établissement a déjà utilisé une période d''essai gratuit';
 

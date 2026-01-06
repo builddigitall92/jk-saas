@@ -582,14 +582,14 @@ export default function ManagerReportsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between glass-animate-fade-up">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 glass-animate-fade-up">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-100 tracking-tight">Rapports Financiers</h1>
-          <p className="text-sm text-slate-400">Analyse des performances et pertes/bénéfices</p>
+          <h1 className="text-xl sm:text-2xl font-semibold text-slate-100 tracking-tight">Rapports Financiers</h1>
+          <p className="text-xs sm:text-sm text-slate-400">Analyse des performances et pertes/bénéfices</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <input
             ref={fileInputRef}
             type="file"
@@ -598,24 +598,24 @@ export default function ManagerReportsPage() {
             className="hidden"
           />
           <button 
-            className="glass-btn-secondary"
+            className="glass-btn-secondary text-xs sm:text-sm px-2 sm:px-3 py-2"
             onClick={() => fileInputRef.current?.click()}
             disabled={importStatus === 'loading'}
           >
             {importStatus === 'loading' ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
             ) : (
-              <Upload className="h-4 w-4" />
+              <Upload className="h-3 w-3 sm:h-4 sm:w-4" />
             )}
-            Importer
+            <span className="hidden sm:inline">Importer</span>
           </button>
-          <button className="glass-btn-secondary" onClick={exportToCSV} disabled={entries.length === 0}>
-            <Download className="h-4 w-4" />
-            CSV
+          <button className="glass-btn-secondary text-xs sm:text-sm px-2 sm:px-3 py-2" onClick={exportToCSV} disabled={entries.length === 0}>
+            <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">CSV</span>
           </button>
-          <button className="glass-btn-primary" onClick={exportToExcel} disabled={entries.length === 0}>
-            <FileSpreadsheet className="h-4 w-4" />
-            Excel
+          <button className="glass-btn-primary text-xs sm:text-sm px-2 sm:px-3 py-2" onClick={exportToExcel} disabled={entries.length === 0}>
+            <FileSpreadsheet className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Excel</span>
           </button>
         </div>
       </div>
@@ -644,21 +644,21 @@ export default function ManagerReportsPage() {
       )}
 
       {/* Tabs */}
-      <div className="glass-tabs glass-animate-fade-up glass-stagger-1">
+      <div className="glass-tabs glass-animate-fade-up glass-stagger-1 flex flex-wrap gap-2 overflow-x-auto">
         <button 
-          className={`glass-tab ${activeTab === 'overview' ? 'glass-tab-active' : ''}`}
+          className={`glass-tab text-xs sm:text-sm whitespace-nowrap ${activeTab === 'overview' ? 'glass-tab-active' : ''}`}
           onClick={() => setActiveTab('overview')}
         >
           Vue d'ensemble
         </button>
         <button 
-          className={`glass-tab ${activeTab === 'entries' ? 'glass-tab-active' : ''}`}
+          className={`glass-tab text-xs sm:text-sm whitespace-nowrap ${activeTab === 'entries' ? 'glass-tab-active' : ''}`}
           onClick={() => setActiveTab('entries')}
         >
           Pertes & Bénéfices
         </button>
         <button 
-          className={`glass-tab ${activeTab === 'waste' ? 'glass-tab-active' : ''}`}
+          className={`glass-tab text-xs sm:text-sm whitespace-nowrap ${activeTab === 'waste' ? 'glass-tab-active' : ''}`}
           onClick={() => setActiveTab('waste')}
         >
           Gaspillage
@@ -667,9 +667,9 @@ export default function ManagerReportsPage() {
 
       {/* Tab: Vue d'ensemble */}
       {activeTab === 'overview' && (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* KPIs */}
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             <div className="glass-stat-card glass-animate-fade-up glass-stagger-1">
               <div className="glass-stat-icon glass-stat-icon-blue">
                 <DollarSign className="h-5 w-5" />
@@ -679,47 +679,47 @@ export default function ManagerReportsPage() {
             </div>
             <div className="glass-stat-card glass-animate-fade-up glass-stagger-2">
               <div className="glass-stat-icon glass-stat-icon-purple">
-                <Package className="h-5 w-5" />
+                <Package className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
-              <p className="glass-stat-value glass-stat-value-purple">{totalCosts.toLocaleString('fr-FR')}€</p>
-              <p className="glass-stat-label">Coûts achats (réels)</p>
-              <p className="text-xs text-slate-500 mt-1">Ingrédients vendus</p>
+              <p className="glass-stat-value glass-stat-value-purple text-lg sm:text-xl lg:text-2xl">{totalCosts.toLocaleString('fr-FR')}€</p>
+              <p className="glass-stat-label text-xs sm:text-sm">Coûts achats (réels)</p>
+              <p className="text-xs text-slate-500 mt-1 hidden lg:block">Ingrédients vendus</p>
             </div>
             <div className="glass-stat-card glass-animate-fade-up glass-stagger-3" style={{ borderColor: grossMargin >= 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)' }}>
               <div className="glass-stat-icon glass-stat-icon-green">
-                <TrendingUp className="h-5 w-5" />
+                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
-              <p className={`glass-stat-value ${grossMargin >= 0 ? 'glass-stat-value-green' : 'text-red-400'}`}>
+              <p className={`glass-stat-value text-lg sm:text-xl lg:text-2xl ${grossMargin >= 0 ? 'glass-stat-value-green' : 'text-red-400'}`}>
                 {grossMargin.toLocaleString('fr-FR')}€
               </p>
-              <p className="glass-stat-label">Marge brute ({marginPercent}%)</p>
+              <p className="glass-stat-label text-xs sm:text-sm">Marge brute ({marginPercent}%)</p>
             </div>
             <div className="glass-stat-card glass-animate-fade-up glass-stagger-4">
               <div className="glass-stat-icon glass-stat-icon-orange">
-                <Trash2 className="h-5 w-5" />
+                <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
-              <p className="text-2xl font-bold text-red-400">{totalWaste.toLocaleString('fr-FR')}€</p>
-              <p className="glass-stat-label">Pertes/Gaspillage</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-red-400">{totalWaste.toLocaleString('fr-FR')}€</p>
+              <p className="glass-stat-label text-xs sm:text-sm">Pertes/Gaspillage</p>
             </div>
-            <div className="glass-stat-card glass-animate-fade-up glass-stagger-5" style={{ borderColor: netProfit >= 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)' }}>
+            <div className="glass-stat-card glass-animate-fade-up glass-stagger-5 col-span-2 sm:col-span-1" style={{ borderColor: netProfit >= 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)' }}>
               <div className="glass-stat-icon" style={{ background: netProfit >= 0 ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)', borderColor: netProfit >= 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)' }}>
-                <Euro className="h-5 w-5" style={{ color: netProfit >= 0 ? '#22c55e' : '#ef4444' }} />
+                <Euro className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: netProfit >= 0 ? '#22c55e' : '#ef4444' }} />
               </div>
-              <p className={`text-2xl font-bold ${netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              <p className={`text-lg sm:text-xl lg:text-2xl font-bold ${netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                 {netProfit >= 0 ? '+' : ''}{netProfit.toLocaleString('fr-FR')}€
               </p>
-              <p className="glass-stat-label">Bénéfice Net</p>
+              <p className="glass-stat-label text-xs sm:text-sm">Bénéfice Net</p>
             </div>
           </div>
 
           {/* Chart */}
           <div className="glass-stat-card glass-animate-fade-up glass-stagger-5">
-            <div className="mb-5">
-              <h3 className="font-semibold text-white">Évolution</h3>
-              <p className="text-sm text-slate-400">Revenus vs Coûts</p>
+            <div className="mb-4 sm:mb-5">
+              <h3 className="font-semibold text-white text-sm sm:text-base">Évolution</h3>
+              <p className="text-xs sm:text-sm text-slate-400">Revenus vs Coûts</p>
             </div>
             {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={250} className="min-h-[250px]">
                 <LineChart data={chartData}>
                   <XAxis dataKey="month" stroke="#64748b" style={{ fontSize: "12px" }} />
                   <YAxis stroke="#64748b" style={{ fontSize: "12px" }} />
@@ -749,16 +749,16 @@ export default function ManagerReportsPage() {
 
       {/* Tab: Pertes & Bénéfices */}
       {activeTab === 'entries' && (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Summary Cards */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div className="glass-stat-card glass-animate-fade-up glass-stagger-1" style={{ borderLeft: '3px solid #22c55e' }}>
               <p className="glass-stat-label mb-1">Total Recettes</p>
               <p className="glass-stat-value glass-stat-value-green">+{totalRevenue.toLocaleString('fr-FR')}€</p>
             </div>
             <div className="glass-stat-card glass-animate-fade-up glass-stagger-2" style={{ borderLeft: '3px solid #ef4444' }}>
-              <p className="glass-stat-label mb-1">Total Dépenses</p>
-              <p className="text-2xl font-bold text-red-400">-{(totalCosts + totalWaste + totalOther).toLocaleString('fr-FR')}€</p>
+              <p className="glass-stat-label mb-1 text-xs sm:text-sm">Total Dépenses</p>
+              <p className="text-xl sm:text-2xl font-bold text-red-400">-{(totalCosts + totalWaste + totalOther).toLocaleString('fr-FR')}€</p>
               <p className="text-xs text-slate-500 mt-1">
                 Coûts: {totalCosts.toLocaleString('fr-FR')}€ | Pertes: {totalWaste.toLocaleString('fr-FR')}€ | Autres: {totalOther.toLocaleString('fr-FR')}€
               </p>
@@ -795,27 +795,27 @@ export default function ManagerReportsPage() {
           {/* Add Entry Form */}
           {isAddingEntry && (
             <div className="glass-stat-card glass-animate-fade-up">
-              <div className="grid grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
                 <div>
-                  <label className="text-sm text-slate-400 mb-2 block">Date</label>
+                  <label className="text-xs sm:text-sm text-slate-400 mb-2 block">Date</label>
                   <input
                     type="date"
                     value={newEntry.date}
                     onChange={(e) => setNewEntry({ ...newEntry, date: e.target.value })}
-                    className="glass-search-input"
+                    className="glass-search-input text-sm"
                   />
                 </div>
-                <div className="col-span-2">
-                  <label className="text-sm text-slate-400 mb-2 block">Libellé</label>
+                <div className="sm:col-span-2">
+                  <label className="text-xs sm:text-sm text-slate-400 mb-2 block">Libellé</label>
                   <input
                     placeholder="Description de l'opération"
                     value={newEntry.libelle}
                     onChange={(e) => setNewEntry({ ...newEntry, libelle: e.target.value })}
-                    className="glass-search-input"
+                    className="glass-search-input text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-slate-400 mb-2 block">Catégorie</label>
+                  <label className="text-xs sm:text-sm text-slate-400 mb-2 block">Catégorie</label>
                   <select
                     value={newEntry.category}
                     onChange={(e) => setNewEntry({ 
@@ -823,7 +823,7 @@ export default function ManagerReportsPage() {
                       category: e.target.value as FinancialEntry['category'],
                       type: e.target.value === 'revenue' ? 'income' : 'expense'
                     })}
-                    className="glass-search-input"
+                    className="glass-search-input text-sm"
                   >
                     {categories.map(cat => (
                       <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -831,7 +831,7 @@ export default function ManagerReportsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm text-slate-400 mb-2 block">Montant (€)</label>
+                  <label className="text-xs sm:text-sm text-slate-400 mb-2 block">Montant (€)</label>
                   <div className="flex gap-2">
                     <input
                       type="number"
@@ -839,10 +839,10 @@ export default function ManagerReportsPage() {
                       placeholder="0.00"
                       value={newEntry.amount || ''}
                       onChange={(e) => setNewEntry({ ...newEntry, amount: parseFloat(e.target.value) || 0 })}
-                      className="glass-search-input flex-1"
+                      className="glass-search-input flex-1 text-sm"
                     />
-                    <button onClick={handleAddEntry} className="glass-btn-success px-4">
-                      <Check className="h-4 w-4" />
+                    <button onClick={handleAddEntry} className="glass-btn-success px-3 sm:px-4">
+                      <Check className="h-3 w-3 sm:h-4 sm:w-4" />
                     </button>
                   </div>
                 </div>
@@ -852,8 +852,8 @@ export default function ManagerReportsPage() {
 
           {/* Entries Table */}
           <div className="glass-table-container glass-animate-fade-up glass-stagger-5">
-            <div className="overflow-hidden">
-              <table className="w-full">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px]">
                 <thead style={{ background: 'rgba(30, 41, 59, 0.5)' }}>
                   <tr>
                     <th className="text-left p-4 text-sm font-medium text-slate-400">Date</th>
@@ -919,15 +919,15 @@ export default function ManagerReportsPage() {
 
       {/* Tab: Gaspillage */}
       {activeTab === 'waste' && (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {wasteData.length > 0 ? (
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <div className="glass-stat-card glass-animate-fade-up glass-stagger-1">
                 <div className="mb-5">
                   <h3 className="font-semibold text-white">Répartition</h3>
                   <p className="text-sm text-slate-400">Par catégorie</p>
                 </div>
-                <ResponsiveContainer width="100%" height={250}>
+                <ResponsiveContainer width="100%" height={250} className="min-h-[250px]">
                   <PieChart>
                     <Pie
                       data={wasteData}

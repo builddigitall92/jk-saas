@@ -89,9 +89,9 @@ export default function OnboardingPage() {
 
       setStep("complete")
       
-      // Rediriger après 2 secondes
+      // Rediriger vers la page de pricing pour choisir un plan
       setTimeout(() => {
-        router.push("/manager")
+        router.push("/pricing")
       }, 2000)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de la création")
