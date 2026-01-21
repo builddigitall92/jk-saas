@@ -420,23 +420,6 @@ export default function EmployeeLayout({
           </button>
         </div>
 
-        {/* Theme Toggle */}
-        <div className="mt-3 mb-2">
-          <button 
-            onClick={toggleTheme}
-            className="icon-sidebar-item"
-            onMouseEnter={(e) => showTooltip(e, theme === "dark" ? "Mode Clair" : "Mode Sombre")}
-            onMouseLeave={hideTooltip}
-          >
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20 transition-all duration-300 hover:border-orange-500/40">
-              {theme === "dark" ? (
-                <Sun className="w-[18px] h-[18px] text-amber-400" />
-              ) : (
-                <Moon className="w-[18px] h-[18px] text-orange-400" />
-              )}
-            </div>
-          </button>
-        </div>
       </aside>
 
       {/* Main Content Area */}
@@ -669,7 +652,7 @@ export default function EmployeeLayout({
                   <div className="glass-dropdown-divider" />
                   <Link href="/employee/alerts" className="glass-dropdown-item">
                     <HelpCircle className="w-4 h-4" />
-                    <span>Aide & Support</span>
+                    <span>Alertes & Péremptions</span>
                   </Link>
                   <div className="glass-dropdown-divider" />
                   <button onClick={handleSignOut} className="glass-dropdown-item text-red-400 w-full">

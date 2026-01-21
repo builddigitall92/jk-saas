@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { 
   ArrowLeft, 
@@ -29,10 +29,65 @@ export default function SubscriptionPage() {
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("annual")
   const [loading, setLoading] = useState(false)
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
+  const [establishmentData, setEstablishmentData] = useState<{
+    subscription_plan: string
+    subscription_status: string
+    billing_period: string
+    stripe_subscription_id: string | null
+  } | null>(null)
 
-  // Plan actuel
-  const currentPlan = profile?.subscription_plan || "free"
-  const currentBillingPeriod = profile?.billing_period || "monthly"
+  // Récupérer les données de l'établissement
+  useEffect(() => {
+    const fetchEstablishmentData = async () => {
+      if (!profile?.establishment_id) return
+
+      try {
+        const { data, error } = await supabase
+          .from('establishments')
+          .select('subscription_plan, subscription_status, billing_period, stripe_subscription_id')
+          .eq('id', profile.establishment_id)
+          .single()
+
+        if (error) {
+          console.error('Erreur récupération établissement:', error)
+          return
+        }
+
+        if (data) {
+          setEstablishmentData({
+            subscription_plan: data.subscription_plan || 'free',
+            subscription_status: data.subscription_status || 'none',
+            billing_period: data.billing_period || 'monthly',
+            stripe_subscription_id: data.stripe_subscription_id || null
+          })
+        }
+      } catch (err) {
+        console.error('Erreur:', err)
+      }
+    }
+
+    fetchEstablishmentData()
+  }, [profile?.establishment_id])
+
+  // Déterminer le plan actuel basé sur l'établissement
+  // Si l'utilisateur a un abonnement Stripe actif → Premium
+  // Sinon → Free (essai)
+  const FORCE_PREMIUM_ACCESS = true // Même logique que useSubscription
+  const isOwner = profile?.role === 'admin' || FORCE_PREMIUM_ACCESS
+  
+  const hasActiveSubscription = establishmentData?.stripe_subscription_id && 
+    (establishmentData.subscription_status === 'active' || establishmentData.subscription_status === 'trialing')
+
+  // Si owner mais pas d'abonnement Stripe → c'est un essai gratuit
+  // Si abonnement Stripe actif → Premium
+  // Sinon → Free (essai)
+  const currentPlan = isOwner && !hasActiveSubscription
+    ? 'free' // Essai gratuit pour owner sans abonnement
+    : hasActiveSubscription 
+      ? (establishmentData.subscription_plan || 'premium')
+      : 'free'
+
+  const currentBillingPeriod = establishmentData?.billing_period || 'monthly'
 
   // Données de facturation simulées (à remplacer par des vraies données)
   const invoices = [
@@ -45,7 +100,7 @@ export default function SubscriptionPage() {
   const plans = [
     {
       id: "free",
-      name: "Gratuit",
+      name: currentPlan === "free" ? "Essai" : "Gratuit",
       description: "Pour découvrir",
       target: "Essai limité",
       price: 0,
@@ -227,7 +282,7 @@ export default function SubscriptionPage() {
               <div>
                 <p className="text-xs text-slate-500">Plan</p>
                 <p className="text-lg font-bold text-white">
-                  {currentPlanData?.name || 'Gratuit'}
+                  {currentPlan === 'free' ? 'Essai' : (currentPlanData?.name || 'Premium')}
                 </p>
               </div>
             </div>
@@ -504,7 +559,7 @@ export default function SubscriptionPage() {
       {/* =====================================================
           SECTION 3: HISTORIQUE & FACTURATION
           ===================================================== */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div>
         {/* Historique des factures */}
         <div 
           className="relative overflow-hidden rounded-2xl p-5"
@@ -555,42 +610,19 @@ export default function SubscriptionPage() {
               <p>Aucune facture pour le moment</p>
             </div>
           )}
-        </div>
 
-        {/* Mode de paiement */}
-        <div 
-          className="relative overflow-hidden rounded-2xl p-5"
-          style={{
-            background: "linear-gradient(145deg, rgba(20, 27, 45, 0.92) 0%, rgba(15, 20, 35, 0.95) 100%)",
-            backdropFilter: "blur(16px)",
-            border: "1px solid rgba(100, 130, 180, 0.15)",
-          }}
-        >
-          <h3 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-            <CreditCard className="w-5 h-5 text-purple-400" />
-            Mode de paiement
-          </h3>
-
-          <div className="p-4 rounded-xl bg-slate-800/30 border border-white/5 mb-4">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-                <span className="text-white font-bold text-xs">VISA</span>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-white">•••• •••• •••• 4242</p>
-                <p className="text-xs text-slate-500">Expire 12/2025</p>
-              </div>
-            </div>
-          </div>
-
+          {/* Bouton vers le portail Stripe */}
           <button
             onClick={handleManageSubscription}
             disabled={loading}
-            className="w-full py-3 rounded-xl text-sm font-medium bg-slate-800/50 border border-white/10 text-slate-300 hover:bg-slate-800 hover:text-white transition-all flex items-center justify-center gap-2"
+            className="w-full mt-4 py-3 rounded-xl text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 disabled:opacity-50"
           >
-            <CreditCard className="w-4 h-4" />
-            Modifier le mode de paiement
-            <ChevronRight className="w-4 h-4" />
+            {loading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <ExternalLink className="w-4 h-4" />
+            )}
+            Voir toutes mes factures sur Stripe
           </button>
         </div>
       </div>

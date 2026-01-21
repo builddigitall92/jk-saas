@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import {
   X,
   Send,
@@ -391,9 +391,28 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Hooks
-  const { addProductAndStock, products, stocks, fetchStocks } = useStock()
+  const { addProductAndStock, products: stockProducts, stocks, fetchStocks } = useStock()
   const { createMenuItem, addIngredient, updateMenuItem, products: menuProducts, fetchMenuItems, menuItems } = useMenuItems()
   const { suppliers, fetchSuppliers } = useSuppliers()
+
+  // Combiner les produits des deux sources pour avoir une liste complète
+  const products = useMemo(() => {
+    const productMap = new Map<string, typeof stockProducts[0]>()
+    
+    // Ajouter les produits du stock
+    stockProducts.forEach(p => {
+      if (p && p.id) productMap.set(p.id, p)
+    })
+    
+    // Ajouter les produits du menu (peut contenir des produits non encore en stock)
+    menuProducts.forEach(p => {
+      if (p && p.id && !productMap.has(p.id)) productMap.set(p.id, p)
+    })
+    
+    const allProducts = Array.from(productMap.values())
+    console.log('[AI] Produits combinés:', allProducts.length, '- Stock:', stockProducts.length, '- Menu:', menuProducts.length)
+    return allProducts
+  }, [stockProducts, menuProducts])
 
   // Helper pour récupérer le prix d'un produit depuis le stock
   const getStockPriceForProduct = (productId: string): { unitPrice: number; unit: string } | null => {
@@ -551,12 +570,50 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
     switch (phase) {
       case 'stock_name': {
-        // Check for existing product
-        const existing = products.find(p =>
-          p.name.toLowerCase() === lowerInput ||
-          p.name.toLowerCase().includes(lowerInput) ||
-          lowerInput.includes(p.name.toLowerCase())
-        )
+        // Recherche flexible du produit existant
+        const searchTerm = lowerInput.trim()
+        
+        // Fonction de normalisation (sans accents)
+        const normalizeStr = (s: string) => s
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9\s]/gi, '')
+          .toLowerCase()
+        
+        const normalizedSearch = normalizeStr(searchTerm)
+        
+        // 1. Correspondance exacte
+        let existing = products.find(p => p.name.toLowerCase() === searchTerm)
+        
+        // 2. Le nom du produit contient la recherche
+        if (!existing) {
+          existing = products.find(p => p.name.toLowerCase().includes(searchTerm))
+        }
+        
+        // 3. La recherche contient le nom du produit
+        if (!existing) {
+          existing = products.find(p => searchTerm.includes(p.name.toLowerCase()))
+        }
+        
+        // 4. Recherche sans accents
+        if (!existing) {
+          existing = products.find(p => {
+            const normalizedProduct = normalizeStr(p.name)
+            return normalizedProduct.includes(normalizedSearch) || 
+                   normalizedSearch.includes(normalizedProduct)
+          })
+        }
+        
+        // 5. Recherche par mots
+        if (!existing) {
+          const searchWords = searchTerm.split(/\s+/).filter(w => w.length >= 2)
+          existing = products.find(p => {
+            const productWords = p.name.toLowerCase().split(/\s+/)
+            return searchWords.some(sw => 
+              productWords.some(pw => pw.includes(sw) || sw.includes(pw))
+            )
+          })
+        }
 
         if (existing) {
           setStockCtx({ ...stockCtx, name: existing.name, existingProductId: existing.id })
@@ -566,6 +623,24 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           )
           setPhase('stock_existing_choice')
         } else {
+          // Proposer des suggestions si aucun produit trouvé
+          const suggestions = products
+            .filter(p => {
+              const pName = normalizeStr(p.name)
+              return normalizedSearch.split('').filter(c => pName.includes(c)).length >= normalizedSearch.length / 3
+            })
+            .slice(0, 4)
+          
+          if (suggestions.length > 0) {
+            ask(
+              `🔍 Je n'ai pas trouvé **"${trimmed}"** exactement.\n\n` +
+              `Produits similaires :\n${suggestions.map(p => `• **${p.name}**`).join('\n')}\n\n` +
+              `_Tape le nom exact ou continue pour créer "${trimmed}"_`,
+              [...suggestions.map(p => p.name), `➕ Créer "${trimmed}"`]
+            )
+            return
+          }
+          
           setStockCtx({ ...stockCtx, name: trimmed })
           ask(
             `Parfait, on ajoute **"${trimmed}"** ! 📦\n\n**De quel type de produit s'agit-il ?**`,
@@ -1423,13 +1498,129 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
       }
 
       case 'menu_ingredient_name': {
-        // Smart search: check for exact match, partial match, or similar names
-        const exactMatch = products.find(p => p.name.toLowerCase() === lowerInput)
-        const partialMatch = products.find(p =>
-          p.name.toLowerCase().includes(lowerInput) ||
-          lowerInput.includes(p.name.toLowerCase())
-        )
-        const existing = exactMatch || partialMatch
+        // Vérifier si des produits sont disponibles
+        if (products.length === 0) {
+          ask(
+            `⚠️ **Aucun produit n'est enregistré dans ton stock.**\n\n` +
+            `Pour ajouter des ingrédients à ta recette, tu dois d'abord créer des produits dans **Stock → Ingrédients**.\n\n` +
+            `_Ou tape le nom du produit et je vais t'aider à le créer maintenant !_`
+          )
+        }
+        
+        // Fonction de normalisation (supprime accents, met en minuscule)
+        const normalizeStr = (s: string) => s
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .trim()
+        
+        const searchTerm = lowerInput.trim()
+        const normalizedSearch = normalizeStr(searchTerm)
+        
+        // Debug
+        console.log('[AI] ============ RECHERCHE PRODUIT ============')
+        console.log('[AI] Terme recherché:', searchTerm)
+        console.log('[AI] Terme normalisé:', normalizedSearch)
+        console.log('[AI] Nombre de produits:', products.length)
+        console.log('[AI] Produits disponibles:', products.map(p => `${p.name} (${p.unit})`).join(', '))
+        
+        // Recherche simple et efficace
+        let existing: typeof products[0] | undefined = undefined
+        
+        // Méthode 1: Recherche directe (le plus simple)
+        for (const product of products) {
+          const pName = product.name.toLowerCase()
+          const pNorm = normalizeStr(product.name)
+          
+          // Correspondance exacte
+          if (pName === searchTerm || pNorm === normalizedSearch) {
+            existing = product
+            console.log('[AI] ✓ Correspondance EXACTE:', product.name)
+            break
+          }
+          
+          // Le produit contient la recherche (ex: "COCA COLA" contient "coca")
+          if (pName.includes(searchTerm) || pNorm.includes(normalizedSearch)) {
+            existing = product
+            console.log('[AI] ✓ Produit CONTIENT recherche:', product.name)
+            break
+          }
+          
+          // La recherche contient le produit (ex: "coca cola zero" contient "coca")
+          if (searchTerm.includes(pName) || normalizedSearch.includes(pNorm)) {
+            existing = product
+            console.log('[AI] ✓ Recherche CONTIENT produit:', product.name)
+            break
+          }
+        }
+        
+        // Méthode 2: Si pas trouvé, recherche par mots partiels
+        if (!existing && searchTerm.length >= 3) {
+          for (const product of products) {
+            const pNorm = normalizeStr(product.name)
+            
+            // Un mot du produit commence par la recherche
+            const productWords = pNorm.split(/[\s\-_]+/)
+            for (const word of productWords) {
+              if (word.startsWith(normalizedSearch) || normalizedSearch.startsWith(word)) {
+                existing = product
+                console.log('[AI] ✓ Mot PARTIEL trouvé:', product.name, '- mot:', word)
+                break
+              }
+            }
+            if (existing) break
+            
+            // Recherche par sous-chaîne (minimum 3 caractères)
+            if (normalizedSearch.length >= 3 && pNorm.includes(normalizedSearch.substring(0, 3))) {
+              existing = product
+              console.log('[AI] ✓ Sous-chaîne trouvée:', product.name)
+              break
+            }
+          }
+        }
+        
+        console.log('[AI] Résultat final:', existing ? `TROUVÉ: ${existing.name}` : 'NON TROUVÉ')
+        
+        // Si toujours pas trouvé, proposer des suggestions
+        if (!existing && products.length > 0) {
+          const suggestions = products
+            .map(p => {
+              const pNorm = normalizeStr(p.name)
+              let score = 0
+              
+              // Score basé sur les caractères communs
+              for (const char of normalizedSearch) {
+                if (pNorm.includes(char)) score += 10
+              }
+              
+              // Bonus si un mot est similaire
+              const searchWords = normalizedSearch.split(/[\s\-_]+/)
+              const productWords = pNorm.split(/[\s\-_]+/)
+              for (const sw of searchWords) {
+                for (const pw of productWords) {
+                  if (pw.includes(sw) || sw.includes(pw)) {
+                    score += 30
+                  }
+                }
+              }
+              
+              return { product: p, score }
+            })
+            .filter(x => x.score > 20)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 5)
+          
+          if (suggestions.length > 0) {
+            ask(
+              `🔍 Je n'ai pas trouvé **"${trimmed}"** exactement.\n\n` +
+              `**Produits similaires :**\n` +
+              suggestions.map(s => `• **${s.product.name}**`).join('\n') +
+              `\n\n_Clique sur un produit ou tape "nouveau" pour créer "${trimmed}"_`,
+              [...suggestions.map(s => s.product.name), `➕ Créer "${trimmed}"`]
+            )
+            return
+          }
+        }
 
         if (existing) {
           // Get the unit cost from the stock if available
@@ -1472,10 +1663,22 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           )
           setPhase('menu_recipe_quantity')
         } else {
-          setCurrentIngredient({ name: trimmed, stockContext: {} })
+          // Si l'utilisateur tape "nouveau" ou similaire, on crée un nouveau produit
+          const isNewProductRequest = lowerInput.includes('nouveau') || lowerInput.includes('créer') || lowerInput.includes('ajouter')
+          const productName = isNewProductRequest ? '' : trimmed
+          
+          if (isNewProductRequest && !productName) {
+            ask(
+              `📝 **Quel est le nom du nouvel ingrédient ?**\n\n` +
+              `_Tape le nom exact (ex: fromage râpé, sauce tomate, pain burger...)_`
+            )
+            return
+          }
+          
+          setCurrentIngredient({ name: productName || trimmed, stockContext: {} })
 
           ask(
-            `🆕 **"${trimmed}"** n'est pas dans ton stock.\n\n` +
+            `🆕 **"${productName || trimmed}"** n'est pas dans ton stock.\n\n` +
             `On va l'ajouter en même temps que la recette !\n\n` +
             `**Quel type de produit est-ce ?**`,
             PRODUCT_TYPES.map(t => `${t.emoji} ${t.label}`)

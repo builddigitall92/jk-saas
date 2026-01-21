@@ -1,850 +1,1297 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import {
-  Shield,
+import { useState, useEffect, useRef } from "react"
+import Link from "next/link"
+import { motion, useScroll, useTransform, useInView, AnimatePresence } from "framer-motion"
+import { 
+  Shield, 
+  Menu, 
+  X, 
+  ArrowRight, 
+  Check, 
+  Brain, 
+  Calculator, 
+  FileText, 
   TrendingUp,
+  Star,
+  ChevronRight,
   Package,
   AlertTriangle,
   BarChart3,
-  Users,
-  ArrowRight,
-  CheckCircle2,
   Zap,
   Clock,
-  PieChart,
-  Euro,
-  Star,
-  Building2,
-  Check,
-  X,
-  HelpCircle,
-  ChevronDown,
-  Crown,
+  Users,
   Sparkles,
-  Store,
-  MessageCircle,
-  Rocket,
-  Target,
-  Award,
-  HeartHandshake,
   Play,
-  Fingerprint,
-  Brain,
-  TrendingDown,
-  ShieldCheck,
-  Gauge,
-  LineChart,
+  CheckCircle,
+  ShoppingCart,
+  Receipt,
+  PieChart,
   Bell,
-  Calculator,
-  FileSpreadsheet,
+  Settings,
+  Eye,
+  Target,
+  Rocket,
+  ChevronDown,
+  ArrowUpRight,
+  Layers,
+  LineChart,
   RefreshCw,
-  Bot,
-  ChevronRight,
-  Menu,
-  XIcon
+  ShieldCheck,
+  Timer,
+  BadgeCheck,
+  Gem,
+  Crown
 } from "lucide-react"
-import { useState, useEffect, useRef } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { PRICING_PLANS } from "@/lib/pricing-config"
+import { Button } from "@/components/ui/button"
 
-// Animated counter
-function AnimatedCounter({ value, suffix = "", prefix = "", duration = 2000 }: { 
-  value: number; suffix?: string; prefix?: string; duration?: number 
-}) {
-  const [count, setCount] = useState(0)
-  const ref = useRef<HTMLSpanElement>(null)
-  const [isVisible, setIsVisible] = useState(false)
+// ============================================
+// ANIMATION VARIANTS
+// ============================================
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true)
-        }
-      },
-      { threshold: 0.1 }
-    )
-
-    if (ref.current) {
-      observer.observe(ref.current)
-    }
-
-    return () => observer.disconnect()
-  }, [])
-
-  useEffect(() => {
-    if (!isVisible) return
-
-    const steps = 60
-    const increment = value / steps
-    let current = 0
-
-    const timer = setInterval(() => {
-      current += increment
-      if (current >= value) {
-        setCount(value)
-        clearInterval(timer)
-      } else {
-        setCount(Math.floor(current))
-      }
-    }, duration / steps)
-
-    return () => clearInterval(timer)
-  }, [value, duration, isVisible])
-
-  return <span ref={ref}>{prefix}{count.toLocaleString('fr-FR')}{suffix}</span>
+const fadeInUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+  }
 }
 
-// FAQ Item
-function FAQItem({ question, answer, isOpen, onClick }: {
-  question: string; answer: string; isOpen: boolean; onClick: () => void
-}) {
+const fadeIn = {
+  hidden: { opacity: 0 },
+  visible: { 
+    opacity: 1,
+    transition: { duration: 0.5 }
+  }
+}
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08, delayChildren: 0.1 }
+  }
+}
+
+const scaleIn = {
+  hidden: { scale: 0.9, opacity: 0 },
+  visible: { 
+    scale: 1, 
+    opacity: 1,
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+  }
+}
+
+const slideInLeft = {
+  hidden: { x: -50, opacity: 0 },
+  visible: { x: 0, opacity: 1, transition: { duration: 0.5 } }
+}
+
+const slideInRight = {
+  hidden: { x: 50, opacity: 0 },
+  visible: { x: 0, opacity: 1, transition: { duration: 0.5 } }
+}
+
+// ============================================
+// COMPONENTS
+// ============================================
+
+// Animated Counter
+function Counter({ value, suffix = "", duration = 2 }: { value: number; suffix?: string; duration?: number }) {
+  const [count, setCount] = useState(0)
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: "-50px" })
+
+  useEffect(() => {
+    if (!isInView) return
+    let start = 0
+    const end = value
+    const totalFrames = 60
+    const counter = setInterval(() => {
+      start += end / totalFrames
+      if (start >= end) {
+        setCount(end)
+        clearInterval(counter)
+      } else {
+        setCount(Math.floor(start))
+      }
+    }, duration * 1000 / totalFrames)
+    return () => clearInterval(counter)
+  }, [isInView, value, duration])
+
+  return <span ref={ref}>{count.toLocaleString('fr-FR')}{suffix}</span>
+}
+
+// Glass Card Component
+function GlassCard({ children, className = "", hover = true }: { children: React.ReactNode; className?: string; hover?: boolean }) {
   return (
-    <div className="border border-cyan-500/20 rounded-2xl overflow-hidden bg-[#0a1d37]/50 backdrop-blur-sm">
-      <button
-        onClick={onClick}
-        className="w-full p-6 text-left flex items-center justify-between gap-4 hover:bg-cyan-500/5 transition-colors"
-      >
-        <span className="text-lg font-semibold text-white">{question}</span>
-        <ChevronDown className={`h-5 w-5 text-cyan-400 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-      <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-96' : 'max-h-0'}`}>
-        <p className="px-6 pb-6 text-gray-400 leading-relaxed">{answer}</p>
+    <motion.div
+      whileHover={hover ? { y: -8, scale: 1.02 } : {}}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      className={`
+        relative overflow-hidden
+        bg-white/[0.03] backdrop-blur-xl
+        border border-white/[0.08]
+        rounded-2xl
+        shadow-[0_8px_32px_rgba(0,0,0,0.12)]
+        ${hover ? 'hover:bg-white/[0.06] hover:border-white/[0.15] hover:shadow-[0_20px_50px_rgba(0,212,255,0.1)]' : ''}
+        transition-all duration-300
+        ${className}
+      `}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+// Pipeline Progress Component
+function PipelineProgress() {
+  const steps = [
+    { icon: Package, label: "Stock", status: "complete", xp: "+50 XP" },
+    { icon: Brain, label: "Prévision", status: "complete", xp: "+75 XP" },
+    { icon: ShoppingCart, label: "Commande", status: "current", xp: "+100 XP" },
+    { icon: Bell, label: "Alertes", status: "pending", xp: "+25 XP" }
+  ]
+
+  return (
+    <div className="relative">
+      {/* Progress Line */}
+      <div className="absolute top-6 left-0 right-0 h-0.5 bg-white/10 hidden sm:block" />
+      <motion.div 
+        initial={{ width: 0 }}
+        whileInView={{ width: "62%" }}
+        viewport={{ once: true }}
+        transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
+        className="absolute top-6 left-0 h-0.5 bg-gradient-to-r from-[#00d4ff] to-[#00d4ff]/50 hidden sm:block"
+      />
+
+      <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-0">
+        {steps.map((step, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 + i * 0.15 }}
+            className="flex sm:flex-col items-center gap-3 sm:gap-2 text-center"
+          >
+            <div className={`
+              relative z-10 w-12 h-12 rounded-xl flex items-center justify-center
+              ${step.status === 'complete' ? 'bg-[#00d4ff]/20 border-[#00d4ff]/50' : 
+                step.status === 'current' ? 'bg-[#00d4ff]/30 border-[#00d4ff] animate-pulse' : 
+                'bg-white/5 border-white/10'}
+              border backdrop-blur-sm
+            `}>
+              <step.icon className={`w-5 h-5 ${step.status === 'pending' ? 'text-white/40' : 'text-[#00d4ff]'}`} />
+              {step.status === 'complete' && (
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center">
+                  <Check className="w-2.5 h-2.5 text-white" />
+                </div>
+              )}
+            </div>
+            <div className="text-left sm:text-center">
+              <p className={`text-sm font-medium ${step.status === 'pending' ? 'text-white/40' : 'text-white'}`}>
+                {step.label}
+              </p>
+              <p className={`text-xs ${step.status === 'complete' ? 'text-emerald-400' : step.status === 'current' ? 'text-[#00d4ff]' : 'text-white/30'}`}>
+                {step.xp}
+              </p>
+            </div>
+          </motion.div>
+        ))}
       </div>
     </div>
   )
 }
 
-export default function LandingPage() {
-  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("annual")
-  const [openFAQ, setOpenFAQ] = useState<number | null>(null)
-  const [isVisible, setIsVisible] = useState(false)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-
-  useEffect(() => {
-    setIsVisible(true)
-  }, [])
-
-  const features = [
+// Feature Tabs Component
+function FeatureTabs() {
+  const [activeTab, setActiveTab] = useState(0)
+  
+  const tabs = [
     {
-      icon: LineChart,
-      title: "Visibilité temps réel",
-      description: "Tableau de bord intelligent avec KPIs en direct. Fini les surprises.",
-      gradient: "from-cyan-500 to-blue-600"
+      id: "inventaire",
+      label: "Inventaire",
+      icon: Package,
+      title: "Suivi en Temps Réel",
+      description: "Visualisez chaque produit, chaque mouvement, chaque alerte. Fini les surprises en cuisine.",
+      features: ["Scan code-barres", "Alertes DLC automatiques", "Catégorisation intelligente", "Historique complet"],
+      color: "#00d4ff"
     },
     {
-      icon: Bell,
-      title: "Alertes prédictives",
-      description: "Rupture imminente ? DLC proche ? Tu es prévenu 48h avant.",
-      gradient: "from-blue-500 to-indigo-600"
-    },
-    {
-      icon: Calculator,
-      title: "Marges optimisées",
-      description: "Chaque commande calculée. Chaque perte évitée. +20% de marge nette.",
-      gradient: "from-indigo-500 to-purple-600"
-    },
-    {
+      id: "previsions",
+      label: "Prévisions IA",
       icon: Brain,
-      title: "IA intégrée",
-      description: "Prévisions automatiques basées sur ton historique et la saisonnalité.",
-      gradient: "from-purple-500 to-pink-600"
+      title: "L'IA qui Anticipe",
+      description: "Notre algorithme analyse vos ventes, la météo, les événements pour prédire vos besoins.",
+      features: ["Prévisions 7 jours", "Saisonnalité intégrée", "Suggestions commandes", "Réduction pertes 30%"],
+      color: "#8b5cf6"
     },
     {
-      icon: RefreshCw,
-      title: "Automatisation",
-      description: "Commandes auto, inventaires simplifiés. Moins de tâches répétitives.",
-      gradient: "from-cyan-500 to-teal-600"
+      id: "rapports",
+      label: "Rapports",
+      icon: BarChart3,
+      title: "Insights Actionnables",
+      description: "Dashboards clairs, exports automatisés, KPIs personnalisables pour piloter votre marge.",
+      features: ["Tableaux de bord live", "Export PDF/Excel", "Comparaison périodes", "Alertes personnalisées"],
+      color: "#10b981"
     },
     {
-      icon: Users,
-      title: "Multi-établissement",
-      description: "Gère tous tes points de vente depuis une seule interface.",
-      gradient: "from-teal-500 to-emerald-600"
+      id: "pipeline",
+      label: "Pipeline",
+      icon: Layers,
+      title: "Workflow Gamifié",
+      description: "Transformez la gestion en jeu : débloquez des badges, suivez votre progression, motivez l'équipe.",
+      features: ["Système XP", "Badges débloquables", "Classement équipe", "Défis quotidiens"],
+      color: "#f59e0b"
     }
   ]
 
-  const stats = [
-    { value: 20, suffix: "%", label: "Réduction des pertes" },
-    { value: 6, suffix: "h", label: "Économisées / semaine" },
-    { value: 35, suffix: "%", label: "Marges améliorées" },
-    { value: 14, suffix: "j", label: "Essai gratuit" }
-  ]
-
-  const testimonials = [
-    {
-      quote: "On est passés de 'on espère que ça passe' à 'on sait exactement ce qu'on a'. Le changement est brutal.",
-      author: "Marie L.",
-      role: "Propriétaire, Restaurant Le Comptoir",
-      result: "-35% de pertes",
-      avatar: "ML"
-    },
-    {
-      quote: "J'ai récupéré 6h par semaine. 6 heures. À ne plus vérifier des feuilles Excel qui mentent.",
-      author: "Thomas D.",
-      role: "Chef, Bistrot Moderne",
-      result: "6h/semaine économisées",
-      avatar: "TD"
-    },
-    {
-      quote: "Le ROI est ridicule. Le coût de l'abonnement, on le rentabilise en évitant UNE rupture.",
-      author: "Sophie M.",
-      role: "Directrice, Café Central",
-      result: "ROI en 2 semaines",
-      avatar: "SM"
-    }
-  ]
-
-  const faqs = [
-    {
-      question: "Et si je ne suis pas à l'aise avec la tech ?",
-      answer: "C'est justement le point. On a conçu StockGuard pour des gens qui n'ont pas le temps d'apprendre un logiciel compliqué. Interface simple, prise en main en moins d'1 heure, et notre équipe te guide pas à pas si besoin."
-    },
-    {
-      question: "Je peux annuler quand je veux ?",
-      answer: "Oui. Sans engagement, sans frais cachés, sans période de préavis. Tu arrêtes quand tu veux, en un clic."
-    },
-    {
-      question: "Ça va me prendre combien de temps à mettre en place ?",
-      answer: "La plupart de nos clients sont opérationnels en moins de 2 heures. Import de tes données existantes, configuration de tes alertes, et c'est parti."
-    },
-    {
-      question: "Et si ça ne fonctionne pas pour mon établissement ?",
-      answer: "30 jours satisfait ou remboursé, sans condition. Si tu n'es pas convaincu, tu récupères ton argent. Point."
-    }
-  ]
-
-  const plans = {
-    starter: PRICING_PLANS.starter,
-    pro: PRICING_PLANS.pro,
-    premium: PRICING_PLANS.premium
-  }
+  const currentTab = tabs[activeTab]
 
   return (
-    <div className="min-h-dvh bg-[#02050b] text-white overflow-x-hidden">
-      {/* Background Effects */}
-      <div className="fixed inset-0 pointer-events-none">
-        {/* Grid pattern subtil */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,212,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,212,255,0.03)_1px,transparent_1px)] bg-[size:80px_80px]" />
-        {/* Gradient orbs */}
-        <div className="absolute top-0 left-1/4 w-[1000px] h-[1000px] bg-cyan-600/10 rounded-full blur-[200px]" />
-        <div className="absolute top-1/2 right-0 w-[800px] h-[800px] bg-blue-600/8 rounded-full blur-[180px]" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-600/5 rounded-full blur-[150px]" />
+    <div className="space-y-8">
+      {/* Tab Buttons */}
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+        {tabs.map((tab, i) => (
+          <motion.button
+            key={tab.id}
+            onClick={() => setActiveTab(i)}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className={`
+              relative px-4 sm:px-6 py-3 rounded-xl font-light text-sm
+              transition-all duration-300 flex items-center gap-2
+              ${activeTab === i 
+                ? 'bg-white/10 border-white/20 text-white shadow-lg shadow-[#00d4ff]/10' 
+                : 'bg-white/[0.03] border-white/[0.05] text-white/60 hover:text-white hover:bg-white/[0.06]'}
+              border backdrop-blur-md
+            `}
+          >
+            <tab.icon className="w-4 h-4" style={{ color: activeTab === i ? tab.color : 'currentColor' }} />
+            <span className="hidden sm:inline">{tab.label}</span>
+          </motion.button>
+        ))}
       </div>
 
-      {/* Navigation - Paradigm Style */}
-      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-[#02050b]/80 border-b border-white/5">
+      {/* Tab Content */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3 }}
+        >
+          <GlassCard className="p-6 sm:p-10" hover={false}>
+            <div className="grid lg:grid-cols-2 gap-8 items-center">
+              <div className="space-y-6">
+                <div 
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
+                  style={{ backgroundColor: `${currentTab.color}15`, color: currentTab.color }}
+                >
+                  <currentTab.icon className="w-3.5 h-3.5" />
+                  {currentTab.label}
+                </div>
+                
+                <h3 className="text-2xl sm:text-3xl font-light text-white">
+                  {currentTab.title}
+                </h3>
+                
+                <p className="text-white/60 font-light leading-relaxed">
+                  {currentTab.description}
+                </p>
+
+                <ul className="space-y-3">
+                  {currentTab.features.map((feature, i) => (
+                    <motion.li
+                      key={i}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="flex items-center gap-3 text-white/80 font-light"
+                    >
+                      <div 
+                        className="w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: `${currentTab.color}20` }}
+                      >
+                        <Check className="w-3 h-3" style={{ color: currentTab.color }} />
+                      </div>
+                      {feature}
+                    </motion.li>
+                  ))}
+                </ul>
+
+                <Link href="/login">
+                  <Button 
+                    className="mt-4 bg-white/10 hover:bg-white/15 text-white border border-white/10 font-light"
+                  >
+                    Découvrir
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Visual Mockup */}
+              <div className="relative">
+                <div 
+                  className="absolute inset-0 blur-[60px] opacity-30 rounded-full"
+                  style={{ backgroundColor: currentTab.color }}
+                />
+                <div className="relative bg-[#0a0a0f]/80 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6">
+                  {activeTab === 0 && <InventoryMockup />}
+                  {activeTab === 1 && <PredictionMockup />}
+                  {activeTab === 2 && <ReportsMockup />}
+                  {activeTab === 3 && <PipelineMockup />}
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  )
+}
+
+// Mini Mockups for Tabs
+function InventoryMockup() {
+  const items = [
+    { name: "Tomates fraîches", qty: "12 kg", status: "ok" },
+    { name: "Mozzarella", qty: "3 kg", status: "low" },
+    { name: "Basilic", qty: "0.5 kg", status: "critical" },
+    { name: "Farine T55", qty: "25 kg", status: "ok" }
+  ]
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-white/80 text-sm font-light">Stock actuel</span>
+        <span className="text-xs text-white/40">Mis à jour il y a 2 min</span>
+      </div>
+      {items.map((item, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: i * 0.1 }}
+          className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5"
+        >
+          <div className="flex items-center gap-3">
+            <div className={`w-2 h-2 rounded-full ${
+              item.status === 'ok' ? 'bg-emerald-400' : 
+              item.status === 'low' ? 'bg-amber-400' : 'bg-red-400'
+            }`} />
+            <span className="text-white/80 text-sm font-light">{item.name}</span>
+          </div>
+          <span className="text-white/60 text-sm">{item.qty}</span>
+        </motion.div>
+      ))}
+    </div>
+  )
+}
+
+function PredictionMockup() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-white/80 text-sm font-light">Prévisions 7 jours</span>
+        <span className="text-xs text-[#8b5cf6]">IA Active</span>
+      </div>
+      <div className="flex items-end gap-1.5 h-32">
+        {[45, 60, 55, 80, 70, 90, 75].map((h, i) => (
+          <motion.div
+            key={i}
+            initial={{ height: 0 }}
+            animate={{ height: `${h}%` }}
+            transition={{ delay: i * 0.1, duration: 0.5 }}
+            className="flex-1 bg-gradient-to-t from-[#8b5cf6]/60 to-[#8b5cf6]/20 rounded-t-lg"
+          />
+        ))}
+      </div>
+      <div className="flex justify-between text-[10px] text-white/40">
+        {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(d => (
+          <span key={d}>{d}</span>
+        ))}
+      </div>
+      <div className="p-3 rounded-lg bg-[#8b5cf6]/10 border border-[#8b5cf6]/20">
+        <p className="text-[#8b5cf6] text-xs">💡 Pic prévu samedi : +40% commandes</p>
+      </div>
+    </div>
+  )
+}
+
+function ReportsMockup() {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        {[
+          { label: "CA Mois", value: "24,850€", change: "+12%" },
+          { label: "Marge", value: "68%", change: "+5pts" },
+          { label: "Pertes", value: "2.1%", change: "-0.8%" },
+          { label: "Rotation", value: "4.2j", change: "-0.5j" }
+        ].map((stat, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: i * 0.1 }}
+            className="p-3 rounded-lg bg-white/5 border border-white/5"
+          >
+            <p className="text-white/40 text-[10px] uppercase tracking-wider">{stat.label}</p>
+            <p className="text-white font-medium mt-1">{stat.value}</p>
+            <p className="text-emerald-400 text-xs">{stat.change}</p>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function PipelineMockup() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <span className="text-white/80 text-sm font-light">Votre progression</span>
+        <span className="text-[#f59e0b] text-xs font-medium">Level 12</span>
+      </div>
+      
+      <div className="p-4 rounded-xl bg-gradient-to-r from-[#f59e0b]/10 to-transparent border border-[#f59e0b]/20">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-full bg-[#f59e0b]/20 flex items-center justify-center">
+            <Crown className="w-5 h-5 text-[#f59e0b]" />
+          </div>
+          <div>
+            <p className="text-white text-sm font-medium">Stock Master</p>
+            <p className="text-white/50 text-xs">2,450 / 3,000 XP</p>
+          </div>
+        </div>
+        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: "82%" }}
+            transition={{ duration: 1, delay: 0.5 }}
+            className="h-full bg-gradient-to-r from-[#f59e0b] to-[#f59e0b]/60 rounded-full"
+          />
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        {['🏆', '⭐', '🎯', '🔥'].map((badge, i) => (
+          <motion.div
+            key={i}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.5 + i * 0.1, type: "spring" }}
+            className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-lg"
+          >
+            {badge}
+          </motion.div>
+        ))}
+        <div className="w-10 h-10 rounded-lg bg-white/5 border border-dashed border-white/20 flex items-center justify-center text-white/30">
+          ?
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Testimonial Carousel
+function TestimonialCard({ testimonial, isActive }: { testimonial: any; isActive: boolean }) {
+  return (
+    <GlassCard className={`p-6 sm:p-8 transition-all duration-500 ${isActive ? 'opacity-100 scale-100' : 'opacity-50 scale-95'}`} hover={false}>
+      <div className="flex gap-1 mb-4">
+        {[...Array(5)].map((_, i) => (
+          <Star key={i} className="w-4 h-4 text-[#f59e0b] fill-[#f59e0b]" />
+        ))}
+      </div>
+      <p className="text-white/80 font-light leading-relaxed mb-6 italic">
+        "{testimonial.quote}"
+      </p>
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00d4ff] to-[#8b5cf6] flex items-center justify-center text-white font-medium text-sm">
+          {testimonial.avatar}
+        </div>
+        <div>
+          <p className="text-white font-medium text-sm">{testimonial.name}</p>
+          <p className="text-white/50 text-xs">{testimonial.role}</p>
+        </div>
+      </div>
+    </GlassCard>
+  )
+}
+
+// Logo Ticker
+function LogoTicker() {
+  const logos = ["Metro", "Sysco", "Brake", "Promocash", "Transgourmet", "Pomona"]
+  
+  return (
+    <div className="relative overflow-hidden py-6">
+      <div className="flex animate-scroll gap-12">
+        {[...logos, ...logos].map((logo, i) => (
+          <div key={i} className="flex items-center gap-2 text-white/30 hover:text-white/50 transition-colors whitespace-nowrap">
+            <div className="w-6 h-6 rounded bg-white/10" />
+            <span className="font-light text-sm">{logo}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ============================================
+// FAQ ITEM COMPONENT
+// ============================================
+function FAQItem({ question, answer, index }: { question: string; answer: string; index: number }) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.1 }}
+      className="group"
+    >
+      <div className="relative overflow-hidden
+        bg-white/[0.03] backdrop-blur-xl
+        border border-white/[0.08]
+        rounded-2xl
+        shadow-[0_8px_32px_rgba(0,0,0,0.12)]
+        transition-all duration-300
+        hover:bg-white/[0.05] hover:border-white/[0.12]"
+      >
+        {/* Subtle glow on hover */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#00d4ff]/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl" />
+        
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full px-6 sm:px-8 py-6 flex items-center justify-between gap-4 text-left relative z-10"
+        >
+          <span className="text-white font-medium text-base sm:text-lg pr-8">
+            {question}
+          </span>
+          <motion.div
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="flex-shrink-0"
+          >
+            <ChevronDown className="w-5 h-5 text-white/50" />
+          </motion.div>
+        </button>
+        
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <div className="px-6 sm:px-8 pb-6 pt-0 border-t border-white/[0.05] relative z-10">
+                <p className="text-white/60 font-light leading-relaxed text-sm sm:text-base pt-4">
+                  {answer}
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  )
+}
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
+
+export default function LandingPage() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("annual")
+  const [activeTestimonial, setActiveTestimonial] = useState(0)
+  
+  const heroRef = useRef(null)
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] })
+  const heroOpacity = useTransform(scrollYProgress, [0, 1], [1, 0])
+
+  const testimonials = [
+    { quote: "On a divisé par deux le temps d’inventaire. Tout est clair, rapide, et l’équipe est autonome dès le premier jour.", name: "Marie Laurent", role: "Propriétaire, Le Comptoir", avatar: "ML" },
+    { quote: "Plus de surprises en plein service : alertes utiles, visibilité sur les niveaux, et des décisions d’achat beaucoup plus simples.", name: "Thomas Dubois", role: "Chef, Bistrot Moderne", avatar: "TD" },
+    { quote: "Prise en main immédiate. En 10 minutes, tout le monde savait quoi faire — et on a réduit le gaspillage dès la première semaine.", name: "Sophie Martin", role: "Directrice, Café Central", avatar: "SM" }
+  ]
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveTestimonial((prev) => (prev + 1) % testimonials.length)
+    }, 5000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const price = billingPeriod === "monthly" ? 199 : 1393
+
+  return (
+    <div className="min-h-screen bg-[#050508] text-white overflow-x-hidden font-light">
+      {/* Background Gradient */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a12] via-[#050508] to-[#050508]" />
+        <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-[#0f3460]/20 rounded-full blur-[150px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-[#00d4ff]/5 rounded-full blur-[120px]" />
+      </div>
+
+      {/* Navigation */}
+      <nav className="fixed top-0 w-full z-50 backdrop-blur-2xl bg-[#050508]/60 border-b border-white/[0.05]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
-                <Shield className="w-5 h-5 text-white" />
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00d4ff] to-[#0f3460] flex items-center justify-center">
+                <Shield className="w-4 h-4 text-white" />
               </div>
-              <span className="text-xl font-bold tracking-tight">StockGuard</span>
-            </div>
+              <span className="text-lg font-normal tracking-tight">StockGuard</span>
+            </Link>
 
-            {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Fonctionnalités</a>
-              <a href="#pricing" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Tarifs</a>
-              <a href="#testimonials" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Témoignages</a>
-              <a href="#contact" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Contact</a>
+              {["Fonctionnalités", "Tarifs", "Témoignages", "FAQ"].map((item) => (
+                <a key={item} href={`#${item.toLowerCase()}`} className="text-sm text-white/50 hover:text-white transition-colors font-light">
+                  {item}
+                </a>
+              ))}
             </div>
 
-            {/* CTA Buttons */}
-            <div className="hidden md:flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-4">
+              <div className="flex items-center gap-2 text-xs text-emerald-400">
+                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                En ligne
+              </div>
               <Link href="/login">
-                <Button variant="ghost" className="text-gray-400 hover:text-white hover:bg-white/5">
+                <Button className="bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/10 text-white font-light px-5">
                   Connexion
                 </Button>
               </Link>
-              <Link href="/login">
-                <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold px-6 shadow-lg shadow-cyan-500/30 border-0">
-                  Démo gratuite
-                </Button>
-              </Link>
             </div>
 
-            {/* Mobile Menu Button */}
-            <button 
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg bg-white/5 border border-white/10"
-            >
-              {isMobileMenuOpen ? <XIcon className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden p-2 rounded-lg bg-white/5 border border-white/10">
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
-
-          {/* Mobile Menu */}
-          {isMobileMenuOpen && (
-            <div className="md:hidden mt-4 pb-4 border-t border-white/10 pt-4 space-y-4">
-              <a href="#features" className="block text-gray-400 hover:text-white py-2">Fonctionnalités</a>
-              <a href="#pricing" className="block text-gray-400 hover:text-white py-2">Tarifs</a>
-              <a href="#testimonials" className="block text-gray-400 hover:text-white py-2">Témoignages</a>
-              <a href="#contact" className="block text-gray-400 hover:text-white py-2">Contact</a>
-              <div className="flex flex-col gap-3 pt-4">
-                <Link href="/login">
-                  <Button variant="outline" className="w-full border-white/20 text-white">Connexion</Button>
-                </Link>
-                <Link href="/login">
-                  <Button className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white">Démo gratuite</Button>
-                </Link>
-              </div>
-            </div>
-          )}
         </div>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="md:hidden border-t border-white/5 bg-[#050508]/95 backdrop-blur-2xl"
+            >
+              <div className="px-4 py-6 space-y-4">
+                {["Fonctionnalités", "Tarifs", "Témoignages", "FAQ"].map((item) => (
+                  <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsMobileMenuOpen(false)} className="block text-white/70 hover:text-white py-2 font-light">
+                    {item}
+                  </a>
+                ))}
+                <div className="pt-4 flex flex-col gap-3">
+                  <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button className="w-full bg-white/10 border border-white/10 text-white font-light">Connexion</Button>
+                  </Link>
+                  <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button className="w-full bg-[#00d4ff] hover:bg-[#00d4ff]/90 text-black font-medium">Essai gratuit</Button>
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
-      {/* Hero Section - Paradigm Style */}
-      <section className="relative min-h-screen flex items-center pt-20 pb-16 px-4 sm:px-6 overflow-hidden">
-        {/* Decorative curved line */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <svg className="absolute bottom-0 left-0 right-0 w-full h-auto opacity-20" viewBox="0 0 1440 320" preserveAspectRatio="none">
-            <path fill="url(#hero-gradient)" d="M0,160L48,144C96,128,192,96,288,106.7C384,117,480,171,576,197.3C672,224,768,224,864,197.3C960,171,1056,117,1152,112C1248,107,1344,149,1392,170.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"/>
-            <defs>
-              <linearGradient id="hero-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#00d4ff" stopOpacity="0.1"/>
-                <stop offset="50%" stopColor="#0099cc" stopOpacity="0.2"/>
-                <stop offset="100%" stopColor="#00d4ff" stopOpacity="0.1"/>
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-
-        <div className="max-w-7xl mx-auto w-full relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-            {/* Left Content */}
-            <div className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-6">
-                <Sparkles className="h-4 w-4 text-cyan-400" />
-                <span className="text-sm font-medium text-cyan-400">Solution IA pour restaurants</span>
-              </div>
-
-              {/* Headline */}
-              <h1 className="text-7xl sm:text-6xl md:text-7xl lg:text-8xl font-black leading-[0.95] mb-4 sm:mb-6">
-                <span className="text-white">Gestion de stock</span>
+      {/* Hero Section */}
+      <section ref={heroRef} className="relative min-h-[100dvh] flex items-center pt-24 pb-16 px-4 overflow-hidden">
+        <motion.div style={{ opacity: heroOpacity }} className="w-full">
+          <div className="max-w-7xl mx-auto">
+            <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="text-center max-w-4xl mx-auto">
+              
+              {/* Title */}
+              <motion.h1 variants={fadeInUp} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-normal leading-[1.1] mb-6 tracking-tight">
+                Transformez Vos Stocks
                 <br />
-                <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-300 bg-clip-text text-transparent">
-                  intelligente
+                <span className="bg-gradient-to-r from-[#00d4ff] via-[#e1f5fe] to-[#00d4ff] bg-clip-text text-transparent">
+                  Restaurant
                 </span>
-              </h1>
+              </motion.h1>
 
               {/* Subtitle */}
-              <p className="text-sm sm:text-lg md:text-xl text-gray-400 mb-6 sm:mb-8 max-w-xl leading-relaxed">
-                La solution complète pour gérer votre inventaire, anticiper vos besoins et maximiser vos marges.
-                <span className="text-white font-medium"> Conçue pour les restaurants.</span>
-              </p>
+              <motion.p variants={fadeInUp} className="text-base sm:text-lg md:text-xl text-white/50 font-light max-w-2xl mx-auto mb-10 leading-relaxed">
+                Suivi temps réel, prévisions IA, 0 perte. Boostez vos marges et simplifiez votre gestion avec notre plateforme tout-en-un.
+              </motion.p>
 
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 mb-10">
+              {/* CTAs */}
+              <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
                 <Link href="/login">
-                  <Button className="h-14 px-8 text-lg font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl shadow-2xl shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 hover:-translate-y-1 border-0 w-full sm:w-auto">
-                    Démo Gratuite 14j
-                    <ChevronRight className="w-5 h-5 ml-2" />
-                  </Button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="relative h-16 sm:h-18 px-12 sm:px-16 bg-white text-[#050508] font-semibold text-lg sm:text-xl rounded-xl overflow-hidden group transition-all duration-300 shadow-lg shadow-white/20 hover:shadow-2xl hover:shadow-white/40"
+                  >
+                    {/* Effet de remplissage au survol - animation de gauche à droite */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-cyan-400/30 to-cyan-300/40"
+                      initial={{ x: "-100%", opacity: 0 }}
+                      whileHover={{ x: "0%", opacity: 1 }}
+                      transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                    />
+                    
+                    {/* Deuxième couche de remplissage pour plus d'intensité */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                      initial={{ x: "-100%" }}
+                      whileHover={{ x: "100%" }}
+                      transition={{ duration: 0.6, ease: "easeInOut" }}
+                    />
+                    
+                    {/* Glow effect - ombre externe qui grandit */}
+                    <motion.div
+                      className="absolute -inset-1 bg-gradient-to-r from-cyan-400 via-cyan-300 to-white rounded-xl blur-xl opacity-0 group-hover:opacity-70 -z-10"
+                      animate={{
+                        scale: [1, 1.1, 1],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        repeatType: "reverse",
+                      }}
+                    />
+                    
+                    {/* Texte avec z-index pour rester au-dessus */}
+                    <span className="relative z-10 inline-flex items-center gap-2.5">
+                      Essai Gratuit 14 jours
+                      <motion.div
+                        animate={{ x: 0 }}
+                        whileHover={{ x: 4 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
+                      </motion.div>
+                    </span>
+                  </motion.button>
                 </Link>
-                <Link href="#pricing">
-                  <Button variant="outline" className="h-14 px-8 text-lg font-semibold border-2 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 rounded-xl w-full sm:w-auto">
-                    Voir les tarifs
-                  </Button>
-                </Link>
-              </div>
+              </motion.div>
 
-              {/* Trust bullets */}
-              <div className="flex flex-wrap gap-6 text-sm text-gray-400">
-                {["Sans carte bancaire", "Setup en 2h", "Sans engagement"].map((text, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-cyan-400" />
-                    <span>{text}</span>
+              {/* Trust Badges */}
+              <motion.div variants={fadeInUp} className="flex flex-wrap justify-center gap-6 sm:gap-10 text-sm text-white/40 font-light">
+                {[
+                  { icon: Zap, text: "4-6 semaines déploiement" },
+                  { icon: Eye, text: "Tarifs transparents" },
+                  { icon: ShieldCheck, text: "Satisfait ou remboursé" }
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-2 group">
+                    <div className="relative">
+                      {/* Glow effect */}
+                      <div className="absolute inset-0 bg-emerald-400 blur-md opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
+                      <item.icon className="relative w-4 h-4 text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)] group-hover:drop-shadow-[0_0_12px_rgba(16,185,129,1)] transition-all duration-300" />
+                    </div>
+                    <span>{item.text}</span>
                   </div>
                 ))}
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
 
-            {/* Right - Laptop Mockup */}
-            <div className={`relative transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}>
-              {/* Glow behind laptop */}
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/30 via-blue-500/20 to-transparent blur-[100px] scale-110" />
+            {/* Hero Visual */}
+            <motion.div
+              initial={{ opacity: 0, y: 60 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+              className="mt-16 sm:mt-24 relative max-w-5xl mx-auto"
+            >
+              {/* Glow */}
+              <div className="absolute inset-0 bg-gradient-to-r from-[#00d4ff]/20 via-[#8b5cf6]/10 to-[#00d4ff]/20 blur-[80px] rounded-full scale-110" />
               
-              {/* Laptop Frame */}
-              <div className="relative">
-                {/* Screen */}
-                <div className="relative bg-gradient-to-br from-gray-900 to-gray-950 rounded-t-2xl border border-white/10 p-2 shadow-2xl">
-                  {/* Browser bar */}
-                  <div className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 rounded-t-lg mb-2">
+              {/* Dashboard Preview */}
+              <GlassCard className="p-1 sm:p-2" hover={false}>
+                <div className="bg-[#0a0a0f] rounded-xl overflow-hidden">
+                  {/* Browser Bar */}
+                  <div className="flex items-center gap-2 px-4 py-3 bg-[#0f0f14] border-b border-white/5">
                     <div className="flex gap-1.5">
-                      <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                      <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-                      <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                      <div className="w-3 h-3 rounded-full bg-[#ff5f57]" />
+                      <div className="w-3 h-3 rounded-full bg-[#febc2e]" />
+                      <div className="w-3 h-3 rounded-full bg-[#28c840]" />
                     </div>
                     <div className="flex-1 mx-4">
-                      <div className="bg-gray-700/50 rounded-md px-3 py-1 text-xs text-gray-400 text-center">
-                        app.stockguard.fr/dashboard
+                      <div className="max-w-xs mx-auto bg-white/5 rounded-md px-3 py-1 text-xs text-white/40 text-center">
+                        app.stockguard.fr
                       </div>
                     </div>
                   </div>
                   
                   {/* Dashboard Content */}
-                  <div className="bg-[#0a1525] rounded-lg p-4 min-h-[300px] sm:min-h-[350px]">
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                          <Gauge className="h-4 w-4 text-cyan-400" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-white text-sm">Dashboard</p>
-                          <p className="text-[10px] text-gray-500">Temps réel</p>
-                        </div>
+                  <div className="p-4 sm:p-8 space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-white font-medium">Tableau de bord</h3>
+                        <p className="text-white/40 text-sm">Janvier 2026</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
-                        <span className="text-[10px] text-cyan-400 font-medium">Live</span>
+                        <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                        <span className="text-emerald-400 text-xs">Sync</span>
                       </div>
                     </div>
 
-                    {/* Stats grid */}
-                    <div className="grid grid-cols-2 gap-2 mb-4">
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                       {[
-                        { label: "Stock", value: "24,850€", change: "+2.3%", positive: true },
-                        { label: "Alertes", value: "3", change: "actives", positive: false },
-                        { label: "Marge", value: "68%", change: "+5pts", positive: true },
-                        { label: "Économies", value: "1,240€", change: "ce mois", positive: true }
+                        { label: "Valeur Stock", value: "24,850€", change: "+12%", color: "emerald" },
+                        { label: "Alertes", value: "3", change: "actives", color: "amber" },
+                        { label: "Marge Moy.", value: "68%", change: "+5pts", color: "blue" },
+                        { label: "Économies", value: "2,340€", change: "ce mois", color: "purple" }
                       ].map((stat, i) => (
-                        <div key={i} className="bg-white/5 rounded-lg p-3 border border-white/5">
-                          <p className="text-gray-500 text-[10px] mb-0.5">{stat.label}</p>
-                          <p className="text-lg font-bold text-white">{stat.value}</p>
-                          <p className={`text-[10px] ${stat.positive ? 'text-cyan-400' : 'text-amber-400'}`}>
-                            {stat.change}
-                          </p>
-                        </div>
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.8 + i * 0.1 }}
+                          className="p-4 rounded-xl bg-white/[0.03] border border-white/5"
+                        >
+                          <p className="text-white/40 text-xs uppercase tracking-wider">{stat.label}</p>
+                          <p className="text-white text-xl sm:text-2xl font-light mt-1">{stat.value}</p>
+                          <p className={`text-xs mt-1 ${
+                            stat.color === 'emerald' ? 'text-emerald-400' : 
+                            stat.color === 'amber' ? 'text-amber-400' : 
+                            stat.color === 'blue' ? 'text-[#00d4ff]' : 'text-purple-400'
+                          }`}>{stat.change}</p>
+                        </motion.div>
                       ))}
                     </div>
 
-                    {/* Mini chart */}
-                    <div className="bg-white/5 rounded-lg p-3 border border-white/5">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-medium text-white">Évolution du stock</p>
-                        <span className="text-[10px] text-cyan-400">+12%</span>
+                    {/* Chart Area */}
+                    <div className="grid lg:grid-cols-3 gap-4">
+                      <div className="lg:col-span-2 p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                        <p className="text-white/60 text-sm mb-4">Évolution du stock</p>
+                        <div className="flex items-end gap-1 h-24 sm:h-32">
+                          {[35, 45, 30, 60, 45, 70, 55, 80, 65, 90, 75, 100].map((h, i) => (
+                            <motion.div
+                              key={i}
+                              initial={{ height: 0 }}
+                              animate={{ height: `${h}%` }}
+                              transition={{ delay: 1 + i * 0.05, duration: 0.5 }}
+                              className="flex-1 bg-gradient-to-t from-[#00d4ff]/60 to-[#00d4ff]/20 rounded-t"
+                            />
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex items-end gap-1 h-12">
-                        {[40, 55, 45, 70, 60, 80, 75, 90, 85, 95, 88, 100].map((h, i) => (
-                          <div 
-                            key={i} 
-                            className="flex-1 bg-gradient-to-t from-cyan-600 to-cyan-400 rounded-t opacity-80"
-                            style={{ height: `${h}%` }}
-                          />
-                        ))}
+                      <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                        <p className="text-white/60 text-sm mb-4">Pipeline</p>
+                        <PipelineProgress />
                       </div>
                     </div>
                   </div>
                 </div>
-                
-                {/* Laptop base */}
-                <div className="relative h-4 bg-gradient-to-b from-gray-800 to-gray-900 rounded-b-xl mx-8">
-                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-gray-600 to-transparent" />
-                </div>
-                <div className="h-2 bg-gradient-to-b from-gray-700 to-gray-800 rounded-b-3xl mx-4 shadow-xl" />
+              </GlassCard>
+            </motion.div>
+          </div>
+        </motion.div>
+      </section>
 
-                {/* Floating notification */}
-                <div className="absolute -right-4 top-1/4 bg-[#0a1525] border border-cyan-500/30 rounded-xl p-3 shadow-xl shadow-cyan-500/10 animate-bounce-slow hidden sm:block">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-cyan-500/20 flex items-center justify-center">
-                      <Bell className="h-4 w-4 text-cyan-400" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-white">Alerte stock</p>
-                      <p className="text-[10px] text-gray-500">Tomates: 2j</p>
-                    </div>
+      {/* Why Choose Section */}
+      <section id="fonctionnalités" className="py-24 sm:py-32 px-4 relative z-10">
+        <div className="max-w-7xl mx-auto">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="text-center mb-16">
+            <motion.p variants={fadeInUp} className="text-[#00d4ff] text-sm uppercase tracking-widest mb-4 font-light">
+              Pourquoi StockGuard
+            </motion.p>
+            <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl lg:text-5xl font-extralight mb-4">
+              Libérez le Potentiel de <span className="italic font-light text-[#00d4ff]">Votre Restaurant</span>
+            </motion.h2>
+            <motion.p variants={fadeInUp} className="text-white/50 font-light max-w-2xl mx-auto">
+              Notre solution SaaS vous donne les outils et insights nécessaires pour piloter votre croissance et votre efficacité.
+            </motion.p>
+          </motion.div>
+
+          {/* Features Grid */}
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-24">
+            {[
+              { icon: Layers, title: "Intégration Fluide", desc: "Connectez-vous à vos systèmes existants (POS, comptabilité) sans friction." },
+              { icon: Zap, title: "Productivité Décuplée", desc: "Automatisez les tâches répétitives et concentrez-vous sur l'essentiel : votre cuisine." },
+              { icon: Users, title: "Support Premium", desc: "Une équipe dédiée disponible 24/7 pour résoudre vos problèmes rapidement." }
+            ].map((feature, i) => (
+              <motion.div key={i} variants={fadeInUp}>
+                <GlassCard className="p-6 sm:p-8 h-full">
+                  <div className="w-12 h-12 rounded-xl bg-[#00d4ff]/10 flex items-center justify-center mb-6">
+                    <feature.icon className="w-6 h-6 text-[#00d4ff]" />
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Band */}
-      <section className="py-16 px-4 sm:px-6 border-y border-white/5 bg-[#0a1525]/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, i) => (
-              <div key={i} className="text-center">
-                <p className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
-                  <AnimatedCounter value={stat.value} suffix={stat.suffix} />
-                </p>
-                <p className="text-gray-400 text-sm mt-2">{stat.label}</p>
-              </div>
+                  <h3 className="text-lg font-medium text-white mb-2">{feature.title}</h3>
+                  <p className="text-white/50 font-light leading-relaxed text-sm">{feature.desc}</p>
+                </GlassCard>
+              </motion.div>
             ))}
-          </div>
-        </div>
-      </section>
+          </motion.div>
 
-      {/* Features Grid - Paradigm Style */}
-      <section id="features" className="py-24 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-6">
-              <Zap className="h-4 w-4 text-cyan-400" />
-              <span className="text-sm font-medium text-cyan-400">Fonctionnalités</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              Tout ce dont tu as <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">besoin</span>
-            </h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Une suite d'outils puissants pour transformer ta gestion de stock.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, i) => {
-              const Icon = feature.icon
-              return (
-                <div 
-                  key={i}
-                  className="group p-8 rounded-2xl bg-[#0a1d37]/50 border border-cyan-500/10 hover:border-cyan-500/30 backdrop-blur-sm transition-all duration-300 hover:-translate-y-2"
-                >
-                  <div className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform`}>
-                    <Icon className="h-7 w-7 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
-                  <p className="text-gray-400 leading-relaxed">{feature.description}</p>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Social Proof */}
-      <section className="py-16 px-4 sm:px-6 bg-[#0a1525]/30">
-        <div className="max-w-7xl mx-auto">
-          <p className="text-center text-gray-500 text-sm mb-8 uppercase tracking-wider">Ils nous font confiance</p>
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16">
-            {["Restaurant Le Comptoir", "Bistrot Moderne", "Café Central", "La Belle Époque", "Le Gourmet"].map((name, i) => (
-              <div key={i} className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
-                <Store className="h-5 w-5" />
-                <span className="font-medium">{name}</span>
-              </div>
-            ))}
-          </div>
+          {/* Feature Tabs */}
+          <FeatureTabs />
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-24 px-4 sm:px-6 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 via-transparent to-transparent pointer-events-none" />
-        
-        <div className="max-w-7xl mx-auto relative">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-6">
-              <Crown className="h-4 w-4 text-cyan-400" />
-              <span className="text-sm font-medium text-cyan-400">Tarification simple</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              Choisis ton <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">plan</span>
-            </h2>
-            
-            {/* Toggle */}
-            <div className="inline-flex items-center gap-4 p-2 rounded-full bg-white/5 border border-white/10 mt-6">
-              <button
-                onClick={() => setBillingPeriod("monthly")}
-                className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
-                  billingPeriod === "monthly" 
-                    ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white" 
-                    : "text-gray-400 hover:text-white"
-                }`}
-              >
-                Mensuel
-              </button>
-              <button
-                onClick={() => setBillingPeriod("annual")}
-                className={`px-6 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${
-                  billingPeriod === "annual" 
-                    ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white" 
-                    : "text-gray-400 hover:text-white"
-                }`}
-              >
-                Annuel
-                <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-400 text-black font-bold">-20%</span>
-              </button>
-            </div>
-          </div>
+      <section id="tarifs" className="py-24 sm:py-32 px-4 relative z-10 overflow-hidden">
+        {/* Background glow effects */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-[#00d4ff]/15 blur-[150px] rounded-full" />
+          <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] bg-[#8b5cf6]/10 blur-[120px] rounded-full" />
+          <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-[#00d4ff]/10 blur-[100px] rounded-full" />
+        </div>
 
-          {/* Pricing Card */}
-          <div className="flex justify-center">
-            <div className="max-w-lg w-full">
-              <div className="relative group">
-                {/* Glow */}
-                <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-3xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity" />
-                
-                <div className="relative bg-gradient-to-br from-[#0a1d37] to-[#061224] rounded-3xl border border-cyan-500/30 p-8 shadow-2xl">
-                  {/* Badge */}
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                    <div className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg">
-                      <Crown className="h-4 w-4" />
-                      Premium
+        <div className="max-w-5xl mx-auto relative">
+          {/* Header */}
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="text-center mb-16">
+            <motion.p variants={fadeInUp} className="text-[#00d4ff] text-sm uppercase tracking-widest mb-4 font-light">
+              Tarifs
+            </motion.p>
+            <motion.h2 variants={fadeInUp} className="text-4xl sm:text-5xl lg:text-6xl font-extralight mb-4">
+              <span className="text-white/30">Pricing</span>
+            </motion.h2>
+            <motion.p variants={fadeInUp} className="text-white/50 font-light max-w-xl mx-auto">
+              Un seul plan Premium, toutes les fonctionnalités incluses
+            </motion.p>
+          </motion.div>
+
+          {/* Pricing Cards Container - 2 cards */}
+          <motion.div
+            initial={{ opacity: 0, y: 60 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="relative flex flex-col lg:flex-row items-center lg:items-stretch justify-center gap-8 perspective-1000"
+          >
+            {/* Premium Mensuel - Left card with rotation */}
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              whileHover={{ scale: 1.03, rotateY: 0 }}
+              className="w-full max-w-sm lg:w-[380px] lg:transform lg:rotate-y-[-6deg] z-10"
+              style={{ transformStyle: 'preserve-3d' }}
+            >
+              <div className="relative h-full p-[1px] rounded-3xl bg-gradient-to-b from-white/25 via-white/10 to-transparent overflow-hidden group">
+                {/* Glass card inner */}
+                <div className="relative h-full bg-[#0a0c14]/80 backdrop-blur-xl rounded-3xl p-8 border border-white/[0.1]">
+                  {/* Subtle cyan glow on hover */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-24 bg-[#00d4ff]/10 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  
+                  <div className="relative z-10">
+                    {/* Plan name */}
+                    <p className="text-[#00d4ff] text-sm font-medium mb-2">Premium</p>
+                    
+                    {/* Price */}
+                    <div className="mb-4">
+                      <span className="text-5xl font-light text-white">199€</span>
+                      <span className="text-white/40 text-lg font-light">/mois</span>
                     </div>
-                  </div>
-
-                  <div className="text-center pt-4 mb-8">
-                    <p className="text-gray-400 mb-2">{plans.premium.tagline}</p>
-                    <div className="flex items-baseline justify-center gap-2">
-                      <span className="text-5xl font-black text-white">
-                        {billingPeriod === "monthly" ? plans.premium.monthly.price : plans.premium.annual.price}€
-                      </span>
-                      <span className="text-gray-500">/{billingPeriod === "monthly" ? "mois" : "an"}</span>
-                    </div>
-                    {billingPeriod === "annual" && plans.premium.annual.savings && (
-                      <p className="text-cyan-400 text-sm font-medium mt-2">
-                        Économisez {plans.premium.annual.savings}
-                      </p>
-                    )}
-                  </div>
-
-                  <ul className="space-y-3 mb-8">
-                    {plans.premium.features.map((feature, i) => (
-                      <li key={i} className="flex items-start gap-3">
-                        <Check className="h-5 w-5 text-cyan-400 shrink-0 mt-0.5" />
-                        <span className="text-gray-300">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {/* AI Features */}
-                  <div className="mb-8 p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20">
-                    <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <Brain className="h-3.5 w-3.5" />
-                      IA intégrée
+                    
+                    {/* Description */}
+                    <p className="text-white/40 text-sm font-light mb-8 leading-relaxed">
+                      Le plan complet pour reprendre le contrôle du stock, réduire le gaspillage et protéger vos marges.
                     </p>
-                    <ul className="space-y-2">
-                      {plans.premium.aiFeatures.map((feature, i) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <Sparkles className="h-3.5 w-3.5 text-purple-400 shrink-0 mt-0.5" />
-                          <span className="text-white text-sm">{feature}</span>
-                        </li>
+                    
+                    {/* Features */}
+                    <div className="space-y-4 mb-8">
+                      {[
+                        "Produits illimités",
+                        "Multi-établissements",
+                        "Alertes intelligentes (ruptures, dates, surstock)",
+                        "Inventaires rapides & historiques",
+                        "Suivi des pertes & des gaspillages",
+                        "Suggestions d'achat basées sur vos usages",
+                        "Tableau de bord temps réel (KPIs & tendances)",
+                        "Accès équipe + rôles & permissions"
+                      ].map((feature, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+                            <Check className="w-3 h-3 text-white/70" />
+                          </div>
+                          <span className="text-white/70 text-sm font-light">{feature}</span>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
+                    
+                    {/* CTA Button */}
+                    <Link href="/login">
+                      <button className="w-full py-4 rounded-full border border-white/20 text-white text-sm font-medium hover:bg-white/5 hover:border-white/40 transition-all duration-300">
+                        Choisir ce plan
+                      </button>
+                    </Link>
                   </div>
-
-                  <Link href="/login" className="block">
-                    <Button className="w-full h-14 text-lg font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl shadow-lg shadow-cyan-500/30 border-0">
-                      Commencer l'essai gratuit
-                      <ArrowRight className="h-5 w-5 ml-2" />
-                    </Button>
-                  </Link>
                 </div>
               </div>
-            </div>
-          </div>
+            </motion.div>
 
-          {/* Guarantee */}
-          <div className="mt-12 text-center">
-            <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/20">
-              <ShieldCheck className="h-6 w-6 text-cyan-400" />
-              <span className="text-white font-medium">
-                Garantie 30 jours satisfait ou remboursé
-              </span>
-            </div>
-          </div>
+            {/* Premium Annuel - Right card with rotation (featured) */}
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+              whileHover={{ scale: 1.03, rotateY: 0 }}
+              className="w-full max-w-sm lg:w-[380px] lg:transform lg:rotate-y-[6deg] z-10"
+              style={{ transformStyle: 'preserve-3d' }}
+            >
+              <div className="relative h-full p-[1px] rounded-3xl bg-gradient-to-b from-[#00d4ff]/50 via-[#00d4ff]/20 to-transparent overflow-hidden group shadow-2xl shadow-[#00d4ff]/20">
+                {/* Animated border glow */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[#00d4ff]/0 via-[#00d4ff]/30 to-[#00d4ff]/0 animate-pulse" />
+                
+                {/* Glass card inner */}
+                <div className="relative h-full bg-[#0a0c14]/90 backdrop-blur-xl rounded-3xl p-8 border border-[#00d4ff]/20">
+                  {/* Top glow */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-[#00d4ff]/20 blur-3xl rounded-full" />
+                  
+                  {/* Subtle inner glow */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#00d4ff]/10 via-transparent to-transparent opacity-50 rounded-3xl" />
+                  
+                  <div className="relative z-10">
+                    {/* Best value badge */}
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[#00d4ff] text-sm font-medium">Premium</p>
+                      <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-medium border border-emerald-500/30">
+                        -41% économisé
+                      </span>
+                    </div>
+                    
+                    {/* Price */}
+                    <div className="mb-4">
+                      <span className="text-5xl font-light text-white">1393€</span>
+                      <span className="text-white/40 text-lg font-light">/an</span>
+                    </div>
+                    
+                    {/* Description */}
+                    <p className="text-white/50 text-sm font-light mb-8 leading-relaxed">
+                      Le meilleur rapport qualité-prix pour piloter votre stock toute l’année, sans compromis.
+                    </p>
+                    
+                    {/* Features */}
+                    <div className="space-y-4 mb-8">
+                      {[
+                        "Produits illimités",
+                        "Multi-établissements",
+                        "Alertes intelligentes (ruptures, dates, surstock)",
+                        "Inventaires rapides & historiques",
+                        "Suivi des pertes & des gaspillages",
+                        "Suggestions d'achat basées sur vos usages",
+                        "Tableau de bord temps réel (KPIs & tendances)",
+                        "Accès équipe + rôles & permissions"
+                      ].map((feature, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <div className="w-5 h-5 rounded-full bg-[#00d4ff]/20 flex items-center justify-center flex-shrink-0">
+                            <Check className="w-3 h-3 text-[#00d4ff]" />
+                          </div>
+                          <span className="text-white/80 text-sm font-light">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* CTA Button */}
+                    <Link href="/login">
+                      <button className="w-full py-4 rounded-full bg-gradient-to-r from-[#00d4ff] to-[#00a8cc] text-[#050508] text-sm font-semibold hover:opacity-90 transition-all duration-300 shadow-lg shadow-[#00d4ff]/30">
+                        Choisir ce plan
+                      </button>
+                    </Link>
+                    
+                    <p className="text-center text-white/30 text-xs mt-4 font-light">
+                      14 jours d'essai gratuit • Aucune carte requise
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="py-24 px-4 sm:px-6 bg-[#0a1525]/30">
+      <section id="témoignages" className="py-24 sm:py-32 px-4 relative z-10">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-6">
-              <Star className="h-4 w-4 text-cyan-400" />
-              <span className="text-sm font-medium text-cyan-400">Témoignages</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              Ce qu'en disent nos <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">clients</span>
-            </h2>
-          </div>
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="text-center mb-12">
+            <motion.p variants={fadeInUp} className="text-[#00d4ff] text-sm uppercase tracking-widest mb-4 font-light">
+              Témoignages
+            </motion.p>
+            <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl lg:text-5xl font-extralight">
+              Ils nous font <span className="italic text-[#00d4ff] font-medium">confiance</span>
+            </motion.h2>
+          </motion.div>
 
           <div className="grid md:grid-cols-3 gap-6">
             {testimonials.map((t, i) => (
-              <div key={i} className="p-8 rounded-2xl bg-[#0a1d37]/50 border border-cyan-500/10 hover:border-cyan-500/30 transition-all">
-                {/* Result badge */}
-                <div className="mb-4">
-                  <span className="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-semibold">
-                    {t.result}
-                  </span>
-                </div>
-
-                {/* Stars */}
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, j) => (
-                    <Star key={j} className="h-4 w-4 text-cyan-400 fill-cyan-400" />
-                  ))}
-                </div>
-
-                <blockquote className="text-gray-300 mb-6 leading-relaxed">
-                  "{t.quote}"
-                </blockquote>
-
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">{t.avatar}</span>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-white">{t.author}</p>
-                    <p className="text-sm text-gray-500">{t.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section id="faq" className="py-24 px-4 sm:px-6">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 mb-6">
-              <HelpCircle className="h-4 w-4 text-cyan-400" />
-              <span className="text-sm font-medium text-cyan-400">FAQ</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              Questions <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">fréquentes</span>
-            </h2>
-          </div>
-
-          <div className="space-y-4">
-            {faqs.map((faq, i) => (
-              <FAQItem
+              <motion.div
                 key={i}
-                question={faq.question}
-                answer={faq.answer}
-                isOpen={openFAQ === i}
-                onClick={() => setOpenFAQ(openFAQ === i ? null : i)}
-              />
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+              >
+                <TestimonialCard testimonial={t} isActive={true} />
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Founder Section */}
-      <section className="py-24 px-4 sm:px-6 bg-gradient-to-b from-[#02050b] to-[#0a1d37]">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full mx-auto mb-6 bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-2xl shadow-cyan-500/30 ring-4 ring-cyan-500/20">
-            <span className="text-3xl sm:text-4xl font-bold text-white">JK</span>
-          </div>
-          <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4">Créé par un passionné</h3>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            Fondateur SaaS • 10+ ans d'expérience en restauration • Expert en optimisation des coûts food
-          </p>
-          <div className="flex justify-center gap-4 mt-8">
-            <a href="#" className="text-gray-400 hover:text-cyan-400 transition-colors">
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>
-            </a>
-            <a href="#" className="text-gray-400 hover:text-cyan-400 transition-colors">
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-            </a>
-          </div>
+      {/* FAQ Section */}
+      <section id="faq" className="py-24 sm:py-32 px-4 relative z-10 overflow-hidden">
+        {/* Background glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-[#00d4ff]/10 blur-[120px] rounded-full" />
         </div>
-      </section>
 
-      {/* Contact Section */}
-      <section id="contact" className="py-24 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Une question ? <span className="text-cyan-400">Parlons-en.</span>
-            </h2>
-            <p className="text-xl text-gray-400">Notre équipe répond sous 24h.</p>
-          </div>
+        <div className="max-w-4xl mx-auto relative">
+          {/* Header */}
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="text-center mb-16">
+            <motion.p variants={fadeInUp} className="text-[#00d4ff] text-sm uppercase tracking-widest mb-4 font-light">
+              FAQ
+            </motion.p>
+            <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl lg:text-5xl font-extralight mb-4">
+              Questions <span className="italic text-[#00d4ff] font-medium">fréquentes</span>
+            </motion.h2>
+            <motion.p variants={fadeInUp} className="text-white/50 font-light max-w-xl mx-auto">
+              Tout ce que vous devez savoir sur StockGuard
+            </motion.p>
+          </motion.div>
 
-          <div className="bg-[#0a1d37]/50 border border-cyan-500/20 rounded-3xl p-8 md:p-12 backdrop-blur-sm">
-            <form className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Prénom</label>
-                  <input 
-                    type="text" 
-                    className="w-full h-12 px-4 rounded-xl bg-white/5 border border-cyan-500/20 text-white placeholder-gray-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
-                    placeholder="Jean"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                  <input 
-                    type="email" 
-                    className="w-full h-12 px-4 rounded-xl bg-white/5 border border-cyan-500/20 text-white placeholder-gray-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
-                    placeholder="jean@restaurant.fr"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Message</label>
-                <textarea 
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-cyan-500/20 text-white placeholder-gray-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors resize-none"
-                  placeholder="Comment pouvons-nous t'aider ?"
-                />
-              </div>
-              <Button className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold border-0">
-                Envoyer
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </form>
+          {/* FAQ Items */}
+          <div className="space-y-4">
+            {[
+              {
+                question: "Comment fonctionne l'essai gratuit de 14 jours ?",
+                answer: "Vous pouvez tester StockGuard pendant 14 jours sans carte bancaire. Accédez à toutes les fonctionnalités Premium, créez vos produits, invitez votre équipe, et testez la gestion complète. À la fin de l'essai, vous choisissez si vous souhaitez continuer ou arrêter, sans engagement."
+              },
+              {
+                question: "Puis-je utiliser StockGuard sur plusieurs établissements ?",
+                answer: "Oui, avec le plan Premium, vous pouvez gérer un nombre illimité d'établissements depuis un seul compte. Chaque établissement a son propre stock, ses statistiques et ses alertes, tout en restant centralisé dans votre tableau de bord principal."
+              },
+              {
+                question: "StockGuard fonctionne-t-il hors ligne ?",
+                answer: "StockGuard est une application web qui nécessite une connexion Internet pour synchroniser les données en temps réel. Cependant, vous pouvez consulter les dernières données chargées même avec une connexion limitée. Pour un usage optimal, une connexion Internet stable est recommandée."
+              },
+              {
+                question: "Combien de membres d'équipe puis-je inviter ?",
+                answer: "Avec le plan Premium, vous pouvez inviter un nombre illimité de membres d'équipe. Vous pouvez définir des rôles et permissions (gestionnaire, employé, visiteur) pour contrôler qui peut modifier le stock, consulter les statistiques ou gérer les commandes."
+              },
+              {
+                question: "Comment fonctionnent les alertes intelligentes ?",
+                answer: "StockGuard surveille automatiquement votre stock et vous alerte en cas de rupture, de dates de péremption approchantes, ou de surstock. Vous pouvez personnaliser les seuils d'alerte par produit et recevoir des notifications en temps réel sur l'application ou par email."
+              },
+              {
+                question: "Que se passe-t-il si j'annule mon abonnement ?",
+                answer: "Vous pouvez annuler votre abonnement à tout moment depuis votre compte. Vous gardez l'accès jusqu'à la fin de la période payée, puis vos données restent stockées pendant 30 jours. Après cette période, elles sont supprimées définitivement. Vous pouvez réactiver votre compte à tout moment."
+              },
+              {
+                question: "Les données sont-elles sécurisées ?",
+                answer: "Absolument. Toutes vos données sont chiffrées en transit (HTTPS) et au repos. Nous utilisons une infrastructure sécurisée et conformes au RGPD. Vos données sont hébergées en Europe et nous effectuons des sauvegardes quotidiennes. Nous ne vendons jamais vos données à des tiers."
+              },
+              {
+                question: "Puis-je importer mes données existantes ?",
+                answer: "Oui, vous pouvez importer vos produits via un fichier Excel ou CSV. Notre équipe peut aussi vous aider lors de l'onboarding pour migrer vos données rapidement. L'importation est simple et vous guide pas à pas pour mapper vos colonnes."
+              }
+            ].map((faq, i) => (
+              <FAQItem key={i} question={faq.question} answer={faq.answer} index={i} />
+            ))}
           </div>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="py-24 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
-            Prêt à <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">transformer</span> ta gestion ?
-          </h2>
-          <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
-            Commence gratuitement pendant 14 jours. Sans carte bancaire. Sans engagement.
-          </p>
-          <Link href="/login">
-            <Button className="h-16 px-12 text-lg font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-2xl shadow-2xl shadow-cyan-500/30 border-0">
-              Commencer maintenant
-              <ArrowRight className="h-5 w-5 ml-2" />
-            </Button>
-          </Link>
+      <section className="py-24 sm:py-32 px-4 relative z-10">
+        <div className="max-w-4xl mx-auto">
+          <GlassCard className="p-8 sm:p-16 text-center relative overflow-hidden" hover={false}>
+            <div className="absolute inset-0 bg-gradient-to-r from-[#00d4ff]/5 via-[#8b5cf6]/5 to-[#00d4ff]/5" />
+            <div className="relative">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extralight mb-6">
+                Prêt à <span className="text-[#00d4ff]">transformer</span> votre gestion ?
+              </h2>
+              <p className="text-white/50 font-light max-w-xl mx-auto mb-10">
+                Rejoignez les centaines de restaurateurs qui ont déjà optimisé leur stock avec StockGuard.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/login">
+                  <Button className="h-14 px-10 bg-white text-[#050508] hover:bg-white/90 font-medium text-base rounded-xl">
+                    Commencer gratuitement
+                    <Rocket className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+                <Button variant="ghost" className="h-14 px-10 text-white/70 hover:text-white hover:bg-white/5 font-light rounded-xl">
+                  Nous contacter
+                </Button>
+              </div>
+            </div>
+          </GlassCard>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 sm:px-6 border-t border-white/5">
+      <footer className="py-12 px-4 border-t border-white/5 relative z-10">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                <Shield className="w-5 h-5 text-white" />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+            <div>
+              <Link href="/" className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00d4ff] to-[#0f3460] flex items-center justify-center">
+                  <Shield className="w-4 h-4 text-white" />
+                </div>
+                <span className="font-normal">StockGuard</span>
+              </Link>
+              <p className="text-white/40 text-sm font-light leading-relaxed">
+                La solution complète pour la gestion de stock des restaurants.
+              </p>
+            </div>
+            
+            {[
+              { title: "Produit", links: ["Fonctionnalités", "Tarifs", "Intégrations", "Changelog"] },
+              { title: "Entreprise", links: ["À propos", "Blog", "Carrières", "Contact"] },
+              { title: "Légal", links: ["Mentions légales", "Confidentialité", "CGU", "Cookies"] }
+            ].map((col, i) => (
+              <div key={i}>
+                <h4 className="font-medium text-white mb-4 text-sm">{col.title}</h4>
+                <ul className="space-y-3">
+                  {col.links.map((link, j) => (
+                    <li key={j}>
+                      <a href="#" className="text-white/40 hover:text-white/70 transition-colors text-sm font-light">{link}</a>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <span className="text-xl font-bold">StockGuard</span>
-            </div>
-            <div className="flex items-center gap-8 text-sm text-gray-500">
-              <a href="#" className="hover:text-white transition-colors">Confidentialité</a>
-              <a href="#" className="hover:text-white transition-colors">CGU</a>
-              <a href="#" className="hover:text-white transition-colors">Contact</a>
-            </div>
-            <p className="text-sm text-gray-500">
-              © {new Date().getFullYear()} StockGuard. Tous droits réservés.
-            </p>
+            ))}
+          </div>
+
+          <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p className="text-white/30 text-xs font-light">© {new Date().getFullYear()} StockGuard. Tous droits réservés.</p>
+            <p className="text-white/30 text-xs font-light">Fait avec ❤️ en France</p>
           </div>
         </div>
       </footer>
 
-      {/* Custom animations */}
-      <style jsx>{`
-        @keyframes bounce-slow {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
+      {/* Custom Styles */}
+      <style jsx global>{`
+        @keyframes scroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
         }
-        .animate-bounce-slow {
-          animation: bounce-slow 3s ease-in-out infinite;
+        .animate-scroll {
+          animation: scroll 20s linear infinite;
+        }
+        
+        /* Perspective for 3D pricing cards */
+        .perspective-1000 {
+          perspective: 1000px;
+        }
+        
+        .rotate-y-\\[-8deg\\] {
+          transform: rotateY(-8deg);
+        }
+        
+        .rotate-y-\\[8deg\\] {
+          transform: rotateY(8deg);
+        }
+        
+        @media (max-width: 1024px) {
+          .rotate-y-\\[-8deg\\],
+          .rotate-y-\\[8deg\\] {
+            transform: rotateY(0deg);
+          }
         }
       `}</style>
     </div>

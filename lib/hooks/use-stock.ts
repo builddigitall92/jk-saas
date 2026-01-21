@@ -17,15 +17,36 @@ export function useStock() {
 
   const fetchStocks = useCallback(async () => {
     try {
+      // Récupérer l'establishment_id de l'utilisateur
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData.user) {
+        console.log('[useStock] Utilisateur non connecté pour stocks')
+        return
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('establishment_id')
+        .eq('id', userData.user.id)
+        .single()
+
+      if (!profile?.establishment_id) {
+        console.log('[useStock] Pas d\'établissement associé pour stocks')
+        return
+      }
+
       const { data, error } = await supabase
         .from('stock')
         .select(`
           *,
           product:products(*)
         `)
+        .eq('establishment_id', profile.establishment_id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
+      console.log('[useStock] Stocks chargés:', data?.length || 0)
       setStocks(data as StockWithProduct[])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue')
@@ -34,13 +55,36 @@ export function useStock() {
 
   const fetchProducts = useCallback(async () => {
     try {
+      // Récupérer l'establishment_id de l'utilisateur
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData.user) {
+        console.log('[useStock] Utilisateur non connecté')
+        return
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('establishment_id')
+        .eq('id', userData.user.id)
+        .single()
+
+      if (!profile?.establishment_id) {
+        console.log('[useStock] Pas d\'établissement associé')
+        return
+      }
+
+      // Récupérer les produits de cet établissement
       const { data, error } = await supabase
         .from('products')
         .select('*')
+        .eq('establishment_id', profile.establishment_id)
         .eq('is_active', true)
         .order('name')
 
       if (error) throw error
+      
+      console.log('[useStock] Produits chargés:', data?.length || 0)
       setProducts(data as Product[])
     } catch (err) {
       console.error('Erreur lors du chargement des produits:', err)

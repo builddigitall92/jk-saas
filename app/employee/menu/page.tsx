@@ -212,13 +212,34 @@ function CreateMenuItemWizard({ isOpen, onClose, products, stocks, onCreateItem,
   }, [stocks, products])
 
   const filteredProducts = useMemo(() => {
-    if (!searchIngredient.trim()) {
-      // Afficher tous les produits disponibles (limité à 20)
-      return availableProducts.slice(0, 20)
+    const search = searchIngredient.trim().toLowerCase()
+    if (!search) {
+      // Afficher TOUS les produits disponibles triés par nom
+      return availableProducts.sort((a, b) => a.name.localeCompare(b.name))
     }
-    return availableProducts.filter(p => 
-      p.name.toLowerCase().includes(searchIngredient.toLowerCase())
-    ).slice(0, 20)
+    // Recherche flexible : nom contient la recherche OU recherche contient le nom
+    return availableProducts
+      .filter(p => {
+        const productName = p.name.toLowerCase()
+        return productName.includes(search) || 
+               search.includes(productName) ||
+               // Recherche par mots individuels
+               search.split(' ').some(word => productName.includes(word)) ||
+               productName.split(' ').some(word => search.includes(word))
+      })
+      .sort((a, b) => {
+        // Priorité aux correspondances exactes
+        const aExact = a.name.toLowerCase() === search
+        const bExact = b.name.toLowerCase() === search
+        if (aExact && !bExact) return -1
+        if (!aExact && bExact) return 1
+        // Puis par correspondance au début du nom
+        const aStarts = a.name.toLowerCase().startsWith(search)
+        const bStarts = b.name.toLowerCase().startsWith(search)
+        if (aStarts && !bStarts) return -1
+        if (!aStarts && bStarts) return 1
+        return a.name.localeCompare(b.name)
+      })
   }, [availableProducts, searchIngredient])
 
   const addIngredient = (product: Product) => {
@@ -446,38 +467,76 @@ function CreateMenuItemWizard({ isOpen, onClose, products, stocks, onCreateItem,
                   />
                 </div>
                 
-                {filteredProducts.length > 0 && (
-                  <div className="menu-ingredient-dropdown">
-                    {filteredProducts.map(product => {
-                      const stock = getProductStock(product.id)
-                      const hasStock = stock && Number(stock.quantity) > 0
-                      return (
-                        <button
-                          key={product.id}
-                          type="button"
-                          className="menu-ingredient-option"
-                          onClick={() => addIngredient(product)}
-                          disabled={ingredients.some(i => i.product_id === product.id)}
-                        >
-                          <span className="menu-ingredient-option-icon">{product.icon || '📦'}</span>
-                          <span className="menu-ingredient-option-name">{product.name}</span>
-                          <span className="menu-ingredient-option-unit">{product.unit}</span>
-                          {hasStock && (
-                            <span className="text-xs text-emerald-400">En stock</span>
-                          )}
-                          {ingredients.some(i => i.product_id === product.id) && (
-                            <Check className="w-4 h-4 text-emerald-400" />
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-                {filteredProducts.length === 0 && searchIngredient && (
-                  <div className="text-center py-4 text-slate-400 text-sm">
-                    Aucun produit trouvé pour "{searchIngredient}"
-                  </div>
-                )}
+                {/* Liste des produits disponibles - TOUJOURS VISIBLE */}
+                <div 
+                  className="mt-3 rounded-xl border border-slate-700/50 overflow-hidden"
+                  style={{ 
+                    maxHeight: '300px', 
+                    overflowY: 'auto',
+                    background: 'linear-gradient(145deg, rgba(20, 27, 45, 0.98) 0%, rgba(15, 20, 35, 0.99) 100%)'
+                  }}
+                >
+                  {availableProducts.length === 0 ? (
+                    <div className="text-center py-8 text-slate-400">
+                      <Package className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                      <p className="text-sm font-medium">Aucun produit en stock</p>
+                      <p className="text-xs mt-2 text-slate-500">
+                        Allez dans <span className="text-cyan-400">Stock → Ingrédients</span> pour ajouter des produits
+                      </p>
+                    </div>
+                  ) : filteredProducts.length > 0 ? (
+                    <>
+                      <div className="px-3 py-2 text-xs text-slate-400 border-b border-slate-700/50 sticky top-0 bg-slate-900/98 backdrop-blur-sm z-10">
+                        {searchIngredient.trim() 
+                          ? `🔍 ${filteredProducts.length} produit(s) trouvé(s)` 
+                          : `📦 ${availableProducts.length} produit(s) disponibles - Cliquez pour ajouter`}
+                      </div>
+                      {filteredProducts.map(product => {
+                        const stock = getProductStock(product.id)
+                        const hasStock = stock && Number(stock.quantity) > 0
+                        const isAdded = ingredients.some(i => i.product_id === product.id)
+                        return (
+                          <button
+                            key={product.id}
+                            type="button"
+                            className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all text-sm border-b border-slate-800/50 last:border-b-0 ${
+                              isAdded 
+                                ? 'opacity-40 bg-slate-800/30 cursor-not-allowed' 
+                                : 'hover:bg-slate-700/40 cursor-pointer'
+                            }`}
+                            onClick={() => !isAdded && addIngredient(product)}
+                            disabled={isAdded}
+                          >
+                            <span className="text-xl">{product.icon || '📦'}</span>
+                            <div className="flex-1 min-w-0">
+                              <span className="block text-white font-medium truncate">{product.name}</span>
+                              <span className="text-xs text-slate-500">{product.unit}</span>
+                            </div>
+                            {hasStock && (
+                              <span className="text-xs px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400">
+                                {stock.quantity} en stock
+                              </span>
+                            )}
+                            {!hasStock && (
+                              <span className="text-xs px-2 py-1 rounded-full bg-amber-500/20 text-amber-400">
+                                Stock vide
+                              </span>
+                            )}
+                            {isAdded && (
+                              <Check className="w-5 h-5 text-emerald-400" />
+                            )}
+                          </button>
+                        )
+                      })}
+                    </>
+                  ) : (
+                    <div className="text-center py-6 text-slate-400">
+                      <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Aucun résultat pour "{searchIngredient}"</p>
+                      <p className="text-xs mt-1 text-slate-500">Essayez un autre terme ou ajoutez ce produit dans Stock</p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="menu-ingredients-list">

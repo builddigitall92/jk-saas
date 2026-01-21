@@ -88,9 +88,10 @@ export async function updateSession(request: NextRequest) {
       .eq("id", user.id)
       .single()
 
-    // Si admin ou owner, accès direct
+    // Si admin ou owner, accès direct (même sans establishment_id)
     if (profile?.role === "admin" || isOwner) {
-      // Continuer sans vérifier l'abonnement
+      // Continuer sans vérifier l'abonnement ni l'établissement
+      return supabaseResponse
     } else if (!profile?.establishment_id) {
       // Si pas d'établissement, rediriger vers onboarding
       const url = request.nextUrl.clone()
@@ -134,8 +135,15 @@ export async function updateSession(request: NextRequest) {
 
     const url = request.nextUrl.clone()
     
-    if (!profile?.establishment_id) {
+    // Si owner/admin ou mode FORCE_PREMIUM_ACCESS, aller directement au dashboard
+    const isOwner = FORCE_PREMIUM_ACCESS || isOwnerEmail(user.email)
+    const isAdmin = profile?.role === "admin"
+    
+    if (!profile?.establishment_id && !isOwner && !isAdmin) {
       url.pathname = "/onboarding"
+    } else if (!profile?.establishment_id && (isOwner || isAdmin)) {
+      // Owner/Admin sans établissement → aller au dashboard manager quand même
+      url.pathname = "/manager"
     } else {
       // Vérifier l'abonnement avant de rediriger
       const { data: establishment } = await supabase

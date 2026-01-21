@@ -427,11 +427,11 @@ export default function ManagerTeamPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="glass-animate-fade-up flex items-start justify-between">
+      <div className="glass-animate-fade-up flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-100 tracking-tight glass-title-black">
+          <h1 className="text-xl sm:text-2xl font-semibold text-slate-100 tracking-tight glass-title-black">
             Mon <span className="glow-cyan">Équipe</span>
           </h1>
           <p className="text-sm text-slate-400 flex items-center gap-2">
@@ -439,71 +439,72 @@ export default function ManagerTeamPage() {
             {establishment?.name || 'Mon établissement'}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button 
-            className="ai-trigger-btn"
+            className="ai-trigger-btn text-sm"
             onClick={() => setIsAIAssistantOpen(true)}
           >
             <Sparkles className="h-4 w-4" />
-            Assistant IA
+            <span className="hidden sm:inline">Assistant IA</span>
+            <span className="sm:hidden">IA</span>
           </button>
           <button
             onClick={handleRefresh}
-            className="p-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-slate-400 hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-500/10 transition-all"
+            className="p-2 sm:p-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-slate-400 hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-500/10 transition-all"
             title="Rafraîchir la liste"
           >
-            <RefreshCw className="h-5 w-5" />
+            <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         <div className="glass-stat-card glass-animate-fade-up glass-stagger-1">
           <div className="glass-stat-icon glass-stat-icon-cyan">
-            <Users className="h-5 w-5" />
+            <Users className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
-          <p className="glass-stat-value glass-stat-value-cyan glass-title-black">{activeMembers.length}</p>
-          <p className="glass-stat-label">
+          <p className="glass-stat-value glass-stat-value-cyan glass-title-black text-lg sm:text-xl">{activeMembers.length}</p>
+          <p className="glass-stat-label text-xs sm:text-sm">
             <span className="glow-cyan">Membres</span> actifs
           </p>
         </div>
         <div className="glass-stat-card glass-animate-fade-up glass-stagger-2">
           <div className="glass-stat-icon glass-stat-icon-green">
-            <UserCheck className="h-5 w-5" />
+            <UserCheck className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
-          <p className="glass-stat-value glass-stat-value-green glass-title-black">{onlineCount}</p>
-          <p className="glass-stat-label">
+          <p className="glass-stat-value glass-stat-value-green glass-title-black text-lg sm:text-xl">{onlineCount}</p>
+          <p className="glass-stat-label text-xs sm:text-sm">
             <span className="glow-green">En ligne</span>
           </p>
         </div>
         <div className="glass-stat-card glass-animate-fade-up glass-stagger-3">
           <div className="glass-stat-icon glass-stat-icon-blue">
-            <Users className="h-5 w-5" />
+            <Users className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
-          <p className="glass-stat-value glass-stat-value-blue glass-title-black">{employeeCount}</p>
-          <p className="glass-stat-label">
+          <p className="glass-stat-value glass-stat-value-blue glass-title-black text-lg sm:text-xl">{employeeCount}</p>
+          <p className="glass-stat-label text-xs sm:text-sm">
             <span className="glow-blue">Employés</span>
           </p>
         </div>
         <div className="glass-stat-card glass-animate-fade-up glass-stagger-4">
           <div className="glass-stat-icon glass-stat-icon-purple">
-            <Shield className="h-5 w-5" />
+            <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
-          <p className="glass-stat-value glass-stat-value-purple glass-title-black">{managerCount}</p>
-          <p className="glass-stat-label">
+          <p className="glass-stat-value glass-stat-value-purple glass-title-black text-lg sm:text-xl">{managerCount}</p>
+          <p className="glass-stat-label text-xs sm:text-sm">
             <span className="glow-purple">Managers</span>
           </p>
         </div>
         <div 
-          className={`glass-stat-card glass-animate-fade-up glass-stagger-5 cursor-pointer transition-all ${inactiveCount > 0 ? 'hover:border-red-500/30' : ''}`}
+          className={`glass-stat-card glass-animate-fade-up glass-stagger-5 cursor-pointer transition-all col-span-2 sm:col-span-1 ${inactiveCount > 0 ? 'hover:border-red-500/30' : ''}`}
           onClick={() => inactiveCount > 0 && setShowInactive(!showInactive)}
         >
           <div className="glass-stat-icon" style={{ background: 'rgba(239, 68, 68, 0.15)', borderColor: 'rgba(239, 68, 68, 0.3)' }}>
-            <UserX className="h-5 w-5 text-red-400" />
+            <UserX className="h-4 w-4 sm:h-5 sm:w-5 text-red-400" />
           </div>
-          <p className="glass-stat-value text-red-400 glass-title-black">{inactiveCount}</p>
-          <p className="glass-stat-label">
+          <p className="glass-stat-value text-red-400 glass-title-black text-lg sm:text-xl">{inactiveCount}</p>
+          <p className="glass-stat-label text-xs sm:text-sm">
             <span className="text-red-400">Désactivés</span>
           </p>
         </div>
@@ -511,31 +512,31 @@ export default function ManagerTeamPage() {
 
       {/* Onglets Actifs / Désactivés */}
       {inactiveCount > 0 && (
-        <div className="flex gap-2 glass-animate-fade-up glass-stagger-5">
+        <div className="flex flex-col sm:flex-row gap-2 glass-animate-fade-up glass-stagger-5">
           <button
             onClick={() => setShowInactive(false)}
-            className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+            className={`flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
               !showInactive
                 ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30'
                 : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:border-slate-600/50'
             }`}
           >
-            <span className="flex items-center gap-2">
+            <span className="flex items-center justify-center gap-2">
               <UserCheck className="h-4 w-4" />
-              Membres actifs ({activeMembers.length})
+              <span className="hidden xs:inline">Membres</span> actifs ({activeMembers.length})
             </span>
           </button>
           <button
             onClick={() => setShowInactive(true)}
-            className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+            className={`flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
               showInactive
                 ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
                 : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:border-slate-600/50'
             }`}
           >
-            <span className="flex items-center gap-2">
+            <span className="flex items-center justify-center gap-2">
               <UserX className="h-4 w-4" />
-              Anciens membres ({inactiveCount})
+              Anciens <span className="hidden xs:inline">membres</span> ({inactiveCount})
             </span>
           </button>
         </div>
@@ -543,24 +544,24 @@ export default function ManagerTeamPage() {
 
       {/* Filtres */}
       <div className="glass-stat-card glass-animate-fade-up glass-stagger-6">
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col gap-3 sm:gap-4">
           {/* Recherche */}
-          <div className="relative flex-1">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
             <input
               type="text"
               placeholder="Rechercher un membre..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all text-sm sm:text-base"
             />
           </div>
           
           {/* Filtre par rôle */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
             <button
               onClick={() => setFilterRole("all")}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              className={`flex-shrink-0 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
                 filterRole === "all"
                   ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
                   : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:border-slate-600/50'
@@ -570,7 +571,7 @@ export default function ManagerTeamPage() {
             </button>
             <button
               onClick={() => setFilterRole("employee")}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              className={`flex-shrink-0 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
                 filterRole === "employee"
                   ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                   : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:border-slate-600/50'
@@ -580,7 +581,7 @@ export default function ManagerTeamPage() {
             </button>
             <button
               onClick={() => setFilterRole("manager")}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              className={`flex-shrink-0 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
                 filterRole === "manager"
                   ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
                   : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:border-slate-600/50'
@@ -634,7 +635,7 @@ export default function ManagerTeamPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
             {filteredMembers.map((member, index) => {
               const fullName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || 'Sans nom'
               const isEmployee = member.role === 'employee'
@@ -642,18 +643,18 @@ export default function ManagerTeamPage() {
               return (
                 <div 
                   key={member.id} 
-                  className="p-4 rounded-xl transition-all glass-animate-scale-in group hover:scale-[1.02]"
+                  className="p-3 sm:p-4 rounded-xl transition-all glass-animate-scale-in group hover:scale-[1.02]"
                   style={{
                     animationDelay: `${0.05 * index}s`,
                     background: 'linear-gradient(145deg, rgba(20, 27, 45, 0.8) 0%, rgba(15, 20, 35, 0.9) 100%)',
                     border: '1px solid rgba(100, 130, 180, 0.15)',
                   }}
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3 sm:gap-4">
                     {/* Avatar */}
-                    <div className="relative">
+                    <div className="relative flex-shrink-0">
                       <div 
-                        className="h-16 w-16 rounded-2xl overflow-hidden transition-all group-hover:shadow-lg"
+                        className="h-12 w-12 sm:h-16 sm:w-16 rounded-xl sm:rounded-2xl overflow-hidden transition-all group-hover:shadow-lg"
                         style={{
                           border: isEmployee 
                             ? '2px solid rgba(59, 130, 246, 0.4)' 
@@ -673,7 +674,7 @@ export default function ManagerTeamPage() {
                           />
                         ) : (
                           <div 
-                            className="w-full h-full flex items-center justify-center text-white font-bold text-xl"
+                            className="w-full h-full flex items-center justify-center text-white font-bold text-base sm:text-xl"
                             style={{
                               background: isEmployee
                                 ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.4) 0%, rgba(37, 99, 235, 0.3) 100%)'
@@ -685,12 +686,12 @@ export default function ManagerTeamPage() {
                         )}
                       </div>
                       
-                      {/* Indicateur de présence en ligne - plus visible */}
+                      {/* Indicateur de présence en ligne */}
                       <div 
-                        className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${member.is_online ? 'animate-pulse' : ''}`}
+                        className={`absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center ${member.is_online ? 'animate-pulse' : ''}`}
                         style={{
                           background: member.is_online ? '#22c55e' : '#64748b',
-                          border: '3px solid #0f172a',
+                          border: '2px solid #0f172a',
                           boxShadow: member.is_online 
                             ? '0 0 10px rgba(34, 197, 94, 0.5)' 
                             : 'none',
@@ -698,17 +699,17 @@ export default function ManagerTeamPage() {
                         title={member.is_online ? 'En ligne maintenant' : `Hors ligne${member.last_seen ? ` - Dernière activité: ${new Date(member.last_seen).toLocaleTimeString('fr-FR')}` : ''}`}
                       >
                         {member.is_online && (
-                          <div className="w-2 h-2 rounded-full bg-white" />
+                          <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />
                         )}
                       </div>
                     </div>
 
                     {/* Infos */}
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-white truncate">{fullName}</p>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <p className="font-semibold text-white truncate text-sm sm:text-base">{fullName}</p>
+                      <div className="flex items-center gap-1.5 sm:gap-2 mt-1 flex-wrap">
                         <span 
-                          className="text-xs font-medium px-2 py-0.5 rounded-full"
+                          className="text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded-full"
                           style={{
                             background: isEmployee 
                               ? 'rgba(59, 130, 246, 0.15)' 
@@ -723,7 +724,7 @@ export default function ManagerTeamPage() {
                         </span>
                         {member.is_active ? (
                           <span 
-                            className="text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1"
+                            className="text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-1"
                             style={{
                               background: member.is_online 
                                 ? 'rgba(34, 197, 94, 0.15)' 
@@ -735,13 +736,13 @@ export default function ManagerTeamPage() {
                             }}
                           >
                             <span 
-                              className={`w-1.5 h-1.5 rounded-full ${member.is_online ? 'bg-green-400 animate-pulse' : 'bg-slate-400'}`}
+                              className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${member.is_online ? 'bg-green-400 animate-pulse' : 'bg-slate-400'}`}
                             />
-                            {member.is_online ? 'En ligne' : 'Hors ligne'}
+                            <span className="hidden sm:inline">{member.is_online ? 'En ligne' : 'Hors ligne'}</span>
                           </span>
                         ) : (
                           <span 
-                            className="text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1"
+                            className="text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-1"
                             style={{
                               background: 'rgba(239, 68, 68, 0.15)',
                               color: '#f87171',
@@ -749,11 +750,11 @@ export default function ManagerTeamPage() {
                             }}
                           >
                             <UserX className="w-3 h-3" />
-                            Désactivé
+                            <span className="hidden sm:inline">Désactivé</span>
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1 mt-2 text-xs text-slate-500">
+                      <div className="hidden sm:flex items-center gap-1 mt-2 text-xs text-slate-500">
                         <Calendar className="h-3 w-3" />
                         <span>Depuis {formatDate(member.created_at)}</span>
                       </div>
@@ -766,7 +767,7 @@ export default function ManagerTeamPage() {
                           e.stopPropagation()
                           setMemberToRemove(member)
                         }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/40"
+                        className="sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-1.5 sm:p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/40 flex-shrink-0"
                         title="Retirer de l'équipe"
                       >
                         <UserMinus className="h-4 w-4" />
@@ -777,7 +778,7 @@ export default function ManagerTeamPage() {
                           e.stopPropagation()
                           setMemberToReactivate(member)
                         }}
-                        className="p-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20 hover:border-green-500/40 transition-all"
+                        className="p-1.5 sm:p-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20 hover:border-green-500/40 transition-all flex-shrink-0"
                         title="Réactiver ce membre"
                       >
                         <UserCheck className="h-4 w-4" />

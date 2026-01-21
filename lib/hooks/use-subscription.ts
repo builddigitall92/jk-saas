@@ -143,20 +143,8 @@ export function useSubscription(): SubscriptionState {
         const ownerStatus = FORCE_PREMIUM_ACCESS || isOwnerEmail(user.email)
         setIsOwner(ownerStatus)
         
-        // Si mode owner activé ou email owner, donner directement le plan PREMIUM
-        if (ownerStatus) {
-          setSubscription({
-            plan: 'PREMIUM',
-            status: 'active',
-            periodEnd: null,
-            trialEndsAt: null,
-            stripeCustomerId: null,
-            stripeSubscriptionId: null,
-            hasUsedTrial: true,
-          })
-          setLoading(false)
-          return
-        }
+        // Note: On ne donne plus automatiquement PREMIUM aux owners
+        // Il faut vérifier s'ils ont vraiment un abonnement Stripe actif
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: profile } = await (supabase as any)
@@ -164,22 +152,6 @@ export function useSubscription(): SubscriptionState {
           .select('establishment_id, role')
           .eq('id', user.id)
           .single()
-
-        // Si c'est un admin, donner aussi le plan PREMIUM
-        if (profile?.role === 'admin') {
-          setIsOwner(true)
-          setSubscription({
-            plan: 'PREMIUM',
-            status: 'active',
-            periodEnd: null,
-            trialEndsAt: null,
-            stripeCustomerId: null,
-            stripeSubscriptionId: null,
-            hasUsedTrial: true,
-          })
-          setLoading(false)
-          return
-        }
 
         if (!profile?.establishment_id) {
           setSubscription({
@@ -211,9 +183,25 @@ export function useSubscription(): SubscriptionState {
           .single()
 
         if (establishment) {
+          // Si owner mais pas d'abonnement Stripe actif → traiter comme essai gratuit
+          const hasActiveStripeSubscription = establishment.stripe_subscription_id && 
+            (establishment.subscription_status === 'active' || establishment.subscription_status === 'trialing')
+          
+          const plan = hasActiveStripeSubscription 
+            ? (establishment.subscription_plan?.toUpperCase() || 'PREMIUM') as PlanId
+            : ownerStatus 
+              ? 'FREE' as PlanId // Owner sans abonnement = Essai gratuit
+              : (establishment.subscription_plan?.toUpperCase() || 'FREE') as PlanId
+          
+          const status = hasActiveStripeSubscription
+            ? (establishment.subscription_status || 'none') as SubscriptionStatus
+            : ownerStatus
+              ? 'trialing' as SubscriptionStatus // Essai pour owner
+              : (establishment.subscription_status || 'none') as SubscriptionStatus
+
           setSubscription({
-            plan: (establishment.subscription_plan?.toUpperCase() || 'FREE') as PlanId,
-            status: (establishment.subscription_status || 'none') as SubscriptionStatus,
+            plan,
+            status,
             periodEnd: establishment.subscription_period_end 
               ? new Date(establishment.subscription_period_end) 
               : null,

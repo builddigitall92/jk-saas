@@ -113,6 +113,8 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  
+  --animate-gradient-x: gradient-x 3s ease infinite;
 }
 
 @layer base {
@@ -122,4 +124,865 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+@keyframes gradient-x {
+  0%, 100% {
+    background-size: 200% 200%;
+    background-position: left center;
+  }
+  50% {
+    background-size: 200% 200%;
+    background-position: right center;
+  }
+}
+
+/* ============================================
+   MENU PAGE STYLES - RESPONSIVE
+   ============================================ */
+
+.menu-page {
+  @apply p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6;
+}
+
+.menu-page-loading {
+  @apply min-h-[60vh] flex flex-col items-center justify-center gap-4 text-slate-400;
+}
+
+/* Header */
+.menu-page-header {
+  @apply flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4;
+}
+
+.menu-page-header-left {
+  @apply flex-1;
+}
+
+.menu-page-header-right {
+  @apply flex flex-wrap items-center gap-2 sm:gap-3;
+}
+
+.menu-page-title-wrapper {
+  @apply flex items-center gap-3;
+}
+
+.menu-page-icon {
+  @apply w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400;
+}
+
+.menu-page-title {
+  @apply text-xl sm:text-2xl font-semibold text-white;
+}
+
+.menu-page-subtitle {
+  @apply text-xs sm:text-sm text-slate-400;
+}
+
+.menu-header-link {
+  @apply hidden sm:flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-slate-800/50 border border-white/10 text-slate-400 hover:text-white hover:bg-slate-800 transition-all text-sm;
+}
+
+.menu-create-btn {
+  @apply flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-all text-sm;
+}
+
+/* Stats Grid */
+.menu-stats-grid {
+  @apply grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 lg:gap-4;
+}
+
+.menu-stat-card {
+  @apply p-3 sm:p-4 rounded-xl transition-all;
+  background: linear-gradient(145deg, rgba(20, 27, 45, 0.8) 0%, rgba(15, 20, 35, 0.9) 100%);
+  border: 1px solid rgba(100, 130, 180, 0.15);
+}
+
+.menu-stat-card-icon {
+  @apply w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center mb-2 sm:mb-3;
+}
+
+.menu-stat-card-icon-blue {
+  @apply bg-blue-500/20 text-blue-400 border border-blue-500/30;
+}
+
+.menu-stat-card-icon-emerald {
+  @apply bg-emerald-500/20 text-emerald-400 border border-emerald-500/30;
+}
+
+.menu-stat-card-icon-amber {
+  @apply bg-amber-500/20 text-amber-400 border border-amber-500/30;
+}
+
+.menu-stat-card-icon-purple {
+  @apply bg-purple-500/20 text-purple-400 border border-purple-500/30;
+}
+
+.menu-stat-card-content {
+  @apply flex flex-col;
+}
+
+.menu-stat-card-value {
+  @apply text-lg sm:text-xl lg:text-2xl font-bold text-white;
+}
+
+.menu-stat-card-label {
+  @apply text-[10px] sm:text-xs text-slate-400;
+}
+
+/* Toolbar */
+.menu-toolbar {
+  @apply flex flex-col gap-3 sm:gap-4;
+}
+
+.menu-search-wrapper {
+  @apply relative;
+}
+
+.menu-search-icon {
+  @apply absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500;
+}
+
+.menu-search-input {
+  @apply w-full pl-10 pr-10 py-2.5 sm:py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all text-sm sm:text-base;
+}
+
+.menu-search-clear {
+  @apply absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all;
+}
+
+/* Categories */
+.menu-categories-scroll {
+  @apply flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide;
+  -webkit-overflow-scrolling: touch;
+}
+
+.menu-category-chip {
+  @apply flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all;
+  @apply bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:border-slate-600/50;
+}
+
+.menu-category-chip.active {
+  @apply bg-emerald-500/20 text-emerald-400 border-emerald-500/30;
+}
+
+/* Toolbar Actions */
+.menu-toolbar-actions {
+  @apply flex items-center gap-2;
+}
+
+.menu-filter-btn {
+  @apply flex items-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all;
+  @apply bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:border-slate-600/50;
+}
+
+.menu-filter-btn.active {
+  @apply bg-blue-500/20 text-blue-400 border-blue-500/30;
+}
+
+.menu-filter-badge {
+  @apply w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-blue-500 text-white text-[10px] sm:text-xs flex items-center justify-center;
+}
+
+.menu-view-toggle {
+  @apply flex items-center bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden;
+}
+
+.menu-view-btn {
+  @apply p-2 sm:p-2.5 text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all;
+}
+
+.menu-view-btn.active {
+  @apply bg-slate-700/50 text-white;
+}
+
+/* Filters Panel */
+.menu-filters-panel {
+  @apply p-3 sm:p-4 rounded-xl;
+  background: linear-gradient(145deg, rgba(20, 27, 45, 0.8) 0%, rgba(15, 20, 35, 0.9) 100%);
+  border: 1px solid rgba(100, 130, 180, 0.15);
+}
+
+.menu-filter-group label {
+  @apply block text-xs sm:text-sm text-slate-400 mb-2;
+}
+
+.menu-filter-options {
+  @apply flex flex-wrap gap-2;
+}
+
+.menu-filter-option {
+  @apply px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all;
+  @apply bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:border-slate-600/50;
+}
+
+.menu-filter-option.active {
+  @apply bg-emerald-500/20 text-emerald-400 border-emerald-500/30;
+}
+
+/* Items Grid */
+.menu-items-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4;
+}
+
+/* Item Card */
+.menu-item-card {
+  @apply relative p-3 sm:p-4 rounded-xl cursor-pointer transition-all hover:scale-[1.02];
+  background: linear-gradient(145deg, rgba(20, 27, 45, 0.8) 0%, rgba(15, 20, 35, 0.9) 100%);
+  border: 1px solid rgba(100, 130, 180, 0.15);
+}
+
+.menu-item-badges {
+  @apply absolute top-2 right-2 flex flex-col gap-1;
+}
+
+.menu-item-badge {
+  @apply flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium;
+}
+
+.menu-item-badge-top {
+  @apply bg-orange-500/20 text-orange-400 border border-orange-500/30;
+}
+
+.menu-item-badge-warning {
+  @apply bg-red-500/20 text-red-400 border border-red-500/30;
+}
+
+.menu-item-card-header {
+  @apply flex items-start gap-3 mb-3;
+}
+
+.menu-item-icon-wrapper {
+  @apply w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-slate-800/50 border border-white/10 flex items-center justify-center flex-shrink-0;
+}
+
+.menu-item-icon {
+  @apply text-lg sm:text-xl;
+}
+
+.menu-item-card-info {
+  @apply flex-1 min-w-0;
+}
+
+.menu-item-name {
+  @apply font-semibold text-white text-sm sm:text-base truncate;
+}
+
+.menu-item-category {
+  @apply inline-flex items-center gap-1 text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded-full mt-1;
+  @apply bg-slate-700/50 text-slate-400 border border-slate-600/30;
+}
+
+.menu-item-category-red { @apply bg-red-500/10 text-red-400 border-red-500/30; }
+.menu-item-category-amber { @apply bg-amber-500/10 text-amber-400 border-amber-500/30; }
+.menu-item-category-orange { @apply bg-orange-500/10 text-orange-400 border-orange-500/30; }
+.menu-item-category-green { @apply bg-green-500/10 text-green-400 border-green-500/30; }
+.menu-item-category-pink { @apply bg-pink-500/10 text-pink-400 border-pink-500/30; }
+.menu-item-category-cyan { @apply bg-cyan-500/10 text-cyan-400 border-cyan-500/30; }
+.menu-item-category-purple { @apply bg-purple-500/10 text-purple-400 border-purple-500/30; }
+
+.menu-item-stats {
+  @apply grid grid-cols-3 gap-2 sm:gap-3 mb-3;
+}
+
+.menu-item-stat {
+  @apply flex flex-col;
+}
+
+.menu-item-stat-label {
+  @apply text-[10px] text-slate-500;
+}
+
+.menu-item-stat-value {
+  @apply text-xs sm:text-sm font-semibold text-white;
+}
+
+.menu-item-margin-bar-container {
+  @apply flex items-center gap-2 mb-3;
+}
+
+.menu-item-margin-bar {
+  @apply flex-1 h-1.5 sm:h-2 rounded-full bg-slate-700/50 overflow-hidden;
+}
+
+.menu-item-margin-bar-fill {
+  @apply h-full rounded-full transition-all;
+}
+
+.menu-item-margin-percent {
+  @apply text-xs font-semibold;
+}
+
+.menu-item-ingredients-count {
+  @apply flex items-center gap-1.5 text-xs text-slate-500;
+}
+
+.menu-item-actions {
+  @apply absolute bottom-3 right-3 flex items-center gap-1.5 sm:gap-2;
+}
+
+.menu-item-action-btn {
+  @apply p-1.5 sm:p-2 rounded-lg bg-slate-800/80 border border-white/10 text-slate-400 hover:text-white hover:bg-slate-700 transition-all;
+}
+
+.menu-item-action-delete {
+  @apply text-red-400 hover:text-red-300 hover:bg-red-500/20 hover:border-red-500/30;
+}
+
+/* List View */
+.menu-items-list {
+  @apply rounded-xl overflow-hidden;
+  background: linear-gradient(145deg, rgba(20, 27, 45, 0.8) 0%, rgba(15, 20, 35, 0.9) 100%);
+  border: 1px solid rgba(100, 130, 180, 0.15);
+}
+
+.menu-list-header {
+  @apply hidden lg:grid grid-cols-[50px_1fr_80px_80px_70px_80px_70px] gap-3 px-4 py-3 border-b border-white/5 text-xs font-medium text-slate-500;
+}
+
+.menu-item-row {
+  @apply flex lg:grid lg:grid-cols-[50px_1fr_80px_80px_70px_80px_70px] items-center gap-3 px-3 sm:px-4 py-3 border-b border-white/5 hover:bg-slate-800/30 transition-all cursor-pointer;
+}
+
+.menu-item-row-icon {
+  @apply w-10 h-10 rounded-lg bg-slate-800/50 border border-white/10 flex items-center justify-center text-lg flex-shrink-0;
+}
+
+.menu-item-row-info {
+  @apply flex-1 min-w-0;
+}
+
+.menu-item-row-info h4 {
+  @apply font-medium text-white text-sm truncate;
+}
+
+.menu-item-row-price,
+.menu-item-row-cost,
+.menu-item-row-margin,
+.menu-item-row-popularity {
+  @apply hidden lg:flex items-center;
+}
+
+.menu-item-price-value {
+  @apply font-semibold text-white text-sm;
+}
+
+.menu-item-cost-value {
+  @apply text-slate-400 text-sm;
+}
+
+.menu-item-margin-badge {
+  @apply px-2 py-0.5 rounded-full text-xs font-medium;
+}
+
+.menu-item-margin-emerald { @apply bg-emerald-500/20 text-emerald-400; }
+.menu-item-margin-amber { @apply bg-amber-500/20 text-amber-400; }
+.menu-item-margin-red { @apply bg-red-500/20 text-red-400; }
+
+.menu-item-row-actions {
+  @apply flex items-center gap-1.5 ml-auto lg:ml-0;
+}
+
+.menu-item-row-actions button {
+  @apply p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all;
+}
+
+/* Empty State */
+.menu-empty-state {
+  @apply flex flex-col items-center justify-center py-12 sm:py-16 text-center;
+}
+
+.menu-empty-state h3 {
+  @apply text-lg font-semibold text-white mt-4 mb-2;
+}
+
+.menu-empty-state p {
+  @apply text-sm text-slate-400 mb-6 max-w-md;
+}
+
+.menu-empty-btn {
+  @apply flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-all;
+}
+
+/* Wizard Dialog */
+.menu-wizard-dialog {
+  @apply max-w-lg w-[95vw] sm:w-full p-4 sm:p-6 rounded-2xl !important;
+  background: linear-gradient(145deg, rgba(20, 27, 45, 0.98) 0%, rgba(15, 20, 35, 0.99) 100%) !important;
+  border: 1px solid rgba(100, 130, 180, 0.2) !important;
+}
+
+.menu-wizard-title {
+  @apply flex items-center gap-2 text-lg font-semibold text-white;
+}
+
+.menu-wizard-steps {
+  @apply flex items-center gap-2 sm:gap-4 my-4 overflow-x-auto pb-2;
+}
+
+.menu-wizard-step {
+  @apply flex items-center gap-2 flex-shrink-0;
+}
+
+.menu-wizard-step-indicator {
+  @apply w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium;
+  @apply bg-slate-700/50 text-slate-400 border border-slate-600/50;
+}
+
+.menu-wizard-step.active .menu-wizard-step-indicator {
+  @apply bg-emerald-500 text-white border-emerald-500;
+}
+
+.menu-wizard-step.completed .menu-wizard-step-indicator {
+  @apply bg-emerald-500/20 text-emerald-400 border-emerald-500/30;
+}
+
+.menu-wizard-step-content {
+  @apply hidden sm:flex flex-col;
+}
+
+.menu-wizard-step-title {
+  @apply text-sm font-medium text-white;
+}
+
+.menu-wizard-step-desc {
+  @apply text-xs text-slate-500;
+}
+
+.menu-wizard-step-line {
+  @apply w-6 sm:w-12 h-px bg-slate-700/50;
+}
+
+.menu-wizard-step-line.completed {
+  @apply bg-emerald-500/50;
+}
+
+.menu-wizard-error {
+  @apply flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm;
+}
+
+.menu-wizard-content {
+  @apply my-4 max-h-[50vh] overflow-y-auto;
+}
+
+.menu-wizard-form {
+  @apply space-y-4;
+}
+
+.menu-form-group {
+  @apply space-y-2;
+}
+
+.menu-form-group label {
+  @apply block text-sm font-medium text-slate-300;
+}
+
+.menu-form-input {
+  @apply w-full px-3 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all text-sm;
+}
+
+.menu-form-textarea {
+  @apply w-full px-3 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all text-sm resize-none;
+}
+
+.menu-category-selector {
+  @apply grid grid-cols-3 sm:grid-cols-4 gap-2;
+}
+
+.menu-category-btn {
+  @apply flex flex-col items-center gap-1 p-2 sm:p-3 rounded-xl text-xs font-medium transition-all;
+  @apply bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:border-slate-600/50;
+}
+
+.menu-category-btn.active {
+  @apply bg-emerald-500/20 text-emerald-400 border-emerald-500/30;
+}
+
+.menu-icon-selector {
+  @apply flex flex-wrap gap-2;
+}
+
+.menu-icon-btn {
+  @apply w-9 h-9 sm:w-10 sm:h-10 rounded-lg text-lg transition-all;
+  @apply bg-slate-800/50 border border-slate-700/50 hover:border-slate-600/50;
+}
+
+.menu-icon-btn.active {
+  @apply bg-emerald-500/20 border-emerald-500/30 ring-2 ring-emerald-500/50;
+}
+
+.menu-ingredient-search {
+  @apply relative flex items-center;
+}
+
+.menu-ingredient-search .menu-form-input {
+  @apply pl-10;
+}
+
+.menu-ingredient-dropdown {
+  @apply mt-2 max-h-48 overflow-y-auto rounded-xl border border-slate-700/50;
+  background: linear-gradient(145deg, rgba(20, 27, 45, 0.98) 0%, rgba(15, 20, 35, 0.99) 100%);
+}
+
+.menu-ingredient-option {
+  @apply w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-slate-700/30 transition-all text-sm disabled:opacity-50;
+}
+
+.menu-ingredient-option-icon {
+  @apply text-base;
+}
+
+.menu-ingredient-option-name {
+  @apply flex-1 text-white truncate;
+}
+
+.menu-ingredient-option-unit {
+  @apply text-xs text-slate-500;
+}
+
+.menu-ingredients-list {
+  @apply space-y-2;
+}
+
+.menu-ingredients-empty {
+  @apply flex flex-col items-center justify-center py-8 text-slate-400 text-center;
+}
+
+.menu-ingredients-items {
+  @apply space-y-2;
+}
+
+.menu-ingredient-item {
+  @apply flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl bg-slate-800/30 border border-white/5;
+}
+
+.menu-ingredient-item-info {
+  @apply flex items-center gap-2 flex-1 min-w-0;
+}
+
+.menu-ingredient-item-icon {
+  @apply text-base;
+}
+
+.menu-ingredient-item-name {
+  @apply text-sm text-white truncate;
+}
+
+.menu-ingredient-item-qty {
+  @apply flex items-center gap-1.5;
+}
+
+.menu-ingredient-qty-input {
+  @apply w-16 sm:w-20 px-2 py-1.5 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white text-sm text-center;
+}
+
+.menu-ingredient-item-unit {
+  @apply text-xs text-slate-500;
+}
+
+.menu-ingredient-remove {
+  @apply p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-all;
+}
+
+.menu-cost-preview {
+  @apply p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20;
+}
+
+.menu-cost-preview-row {
+  @apply flex items-center justify-between text-sm;
+}
+
+.menu-cost-preview-value {
+  @apply font-semibold text-emerald-400;
+}
+
+.menu-pricing-summary {
+  @apply flex items-center justify-between p-3 sm:p-4 rounded-xl bg-slate-800/30 border border-white/5 mb-4;
+}
+
+.menu-pricing-item-preview {
+  @apply flex items-center gap-3;
+}
+
+.menu-pricing-item-icon {
+  @apply text-2xl sm:text-3xl;
+}
+
+.menu-pricing-item-preview h4 {
+  @apply font-semibold text-white text-sm sm:text-base;
+}
+
+.menu-pricing-item-preview span {
+  @apply text-xs text-slate-400;
+}
+
+.menu-pricing-cost {
+  @apply text-right;
+}
+
+.menu-pricing-cost span:first-child {
+  @apply block text-xs text-slate-500;
+}
+
+.menu-pricing-cost-value {
+  @apply text-lg font-bold text-white;
+}
+
+.menu-price-input-wrapper {
+  @apply relative;
+}
+
+.menu-price-input {
+  @apply pr-8;
+}
+
+.menu-price-currency {
+  @apply absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm;
+}
+
+.menu-price-suggestion {
+  @apply mt-2 text-xs text-slate-400;
+}
+
+.menu-apply-suggestion {
+  @apply ml-2 text-emerald-400 hover:text-emerald-300 underline;
+}
+
+.menu-margin-slider {
+  @apply w-full h-2 rounded-full appearance-none cursor-pointer;
+  background: linear-gradient(to right, #ef4444 0%, #f59e0b 50%, #22c55e 100%);
+}
+
+.menu-margin-labels {
+  @apply flex justify-between text-xs text-slate-500 mt-1;
+}
+
+.menu-pricing-result {
+  @apply p-3 sm:p-4 rounded-xl bg-slate-800/30 border border-white/5 space-y-2;
+}
+
+.menu-pricing-result-row {
+  @apply flex items-center justify-between text-sm;
+}
+
+.menu-pricing-result-row span:first-child {
+  @apply text-slate-400;
+}
+
+.menu-pricing-result-row span:last-child {
+  @apply font-medium text-white;
+}
+
+.menu-pricing-result-row.total span:last-child {
+  @apply text-lg font-bold;
+}
+
+.menu-pricing-result-divider {
+  @apply border-t border-white/10 my-2;
+}
+
+.menu-pricing-warning {
+  @apply flex items-center gap-2 mt-2 text-xs text-red-400;
+}
+
+.menu-wizard-actions {
+  @apply flex items-center gap-3 mt-4 pt-4 border-t border-white/10;
+}
+
+.menu-wizard-btn-back {
+  @apply px-4 py-2 rounded-xl text-sm font-medium text-slate-400 bg-slate-800/50 border border-slate-700/50 hover:bg-slate-800 hover:text-white transition-all;
+}
+
+.menu-wizard-btn-next,
+.menu-wizard-btn-submit {
+  @apply flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-white transition-all;
+}
+
+/* Detail Dialog */
+.menu-detail-dialog {
+  @apply max-w-2xl w-[95vw] sm:w-full p-4 sm:p-6 rounded-2xl !important;
+  background: linear-gradient(145deg, rgba(20, 27, 45, 0.98) 0%, rgba(15, 20, 35, 0.99) 100%) !important;
+  border: 1px solid rgba(100, 130, 180, 0.2) !important;
+}
+
+.menu-detail-title {
+  @apply flex items-center gap-3;
+}
+
+.menu-detail-icon {
+  @apply text-3xl sm:text-4xl;
+}
+
+.menu-detail-title h2 {
+  @apply text-lg sm:text-xl font-semibold text-white;
+}
+
+.menu-detail-category {
+  @apply text-xs sm:text-sm text-slate-400;
+}
+
+.menu-detail-summary {
+  @apply grid grid-cols-1 sm:grid-cols-3 gap-3 my-4;
+}
+
+.menu-detail-summary-card {
+  @apply flex items-center gap-3 p-3 rounded-xl bg-slate-800/30 border border-white/5;
+}
+
+.menu-detail-summary-label {
+  @apply block text-xs text-slate-500;
+}
+
+.menu-detail-summary-value {
+  @apply text-base sm:text-lg font-semibold text-white;
+}
+
+.menu-detail-price-edit {
+  @apply flex items-center gap-2;
+}
+
+.menu-detail-price-input {
+  @apply w-24 px-2 py-1 bg-slate-800/50 border border-emerald-500/50 rounded-lg text-white text-sm;
+}
+
+.menu-detail-price-save {
+  @apply p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-all;
+}
+
+.menu-detail-price-cancel {
+  @apply p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all;
+}
+
+.menu-detail-tabs {
+  @apply flex gap-2 border-b border-white/10 pb-3;
+}
+
+.menu-detail-tab {
+  @apply flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all;
+  @apply text-slate-400 hover:text-white hover:bg-slate-800/50;
+}
+
+.menu-detail-tab.active {
+  @apply bg-emerald-500/20 text-emerald-400;
+}
+
+.menu-detail-content {
+  @apply py-4 max-h-[40vh] overflow-y-auto;
+}
+
+.menu-detail-recipe h4,
+.menu-detail-margin h4 {
+  @apply text-sm font-semibold text-white mb-3;
+}
+
+.menu-detail-ingredients {
+  @apply space-y-2;
+}
+
+.menu-detail-ingredient {
+  @apply flex items-center gap-3 p-2 rounded-lg bg-slate-800/30;
+}
+
+.menu-detail-ingredient-icon {
+  @apply text-base;
+}
+
+.menu-detail-ingredient-name {
+  @apply flex-1 text-sm text-white truncate;
+}
+
+.menu-detail-ingredient-qty {
+  @apply text-xs text-slate-400;
+}
+
+.menu-detail-ingredient-cost {
+  @apply text-sm font-medium text-emerald-400;
+}
+
+.menu-detail-cost-total {
+  @apply flex items-center justify-between mt-4 pt-3 border-t border-white/10 text-sm font-semibold;
+}
+
+.menu-detail-cost-total span:last-child {
+  @apply text-emerald-400;
+}
+
+.menu-detail-price-suggestions h4 {
+  @apply flex items-center gap-2;
+}
+
+.menu-detail-price-grid {
+  @apply grid grid-cols-3 gap-2 sm:gap-3;
+}
+
+.menu-detail-price-option {
+  @apply flex flex-col items-center p-3 rounded-xl bg-slate-800/30 border border-white/5 transition-all;
+}
+
+.menu-detail-price-option.active {
+  @apply bg-emerald-500/10 border-emerald-500/30;
+}
+
+.menu-detail-price-target {
+  @apply text-xs text-slate-500;
+}
+
+.menu-detail-price-suggested {
+  @apply text-lg font-bold text-white my-1;
+}
+
+.menu-detail-price-apply {
+  @apply text-xs text-emerald-400 hover:text-emerald-300 underline;
+}
+
+.menu-detail-quickwins {
+  @apply mt-6;
+}
+
+.menu-detail-quickwins h4 {
+  @apply flex items-center gap-2;
+}
+
+.menu-detail-quickwins-list {
+  @apply space-y-2;
+}
+
+.menu-detail-quickwin {
+  @apply flex items-center justify-between p-3 rounded-xl bg-amber-500/10 border border-amber-500/20;
+}
+
+.menu-detail-quickwin-info {
+  @apply flex flex-col;
+}
+
+.menu-detail-quickwin-desc {
+  @apply text-sm text-white;
+}
+
+.menu-detail-quickwin-action {
+  @apply text-xs text-slate-400;
+}
+
+.menu-detail-quickwin-impact {
+  @apply text-sm font-semibold text-amber-400;
+}
+
+.menu-detail-history-placeholder {
+  @apply flex flex-col items-center justify-center py-8 text-center;
+}
+
+.menu-detail-history-placeholder h4 {
+  @apply text-white mt-3 mb-1;
+}
+
+.menu-detail-history-placeholder p {
+  @apply text-xs text-slate-500 max-w-xs;
+}
+
+/* Scrollbar Hide Utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
