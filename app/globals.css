@@ -413,6 +413,7 @@ footer.fixed,
 /* Fallback avec system fonts similaires à SF Pro */
 :root {
   --font-sf-pro: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-editors-note: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
 }
 
 /* Mode Sombre (par défaut) */

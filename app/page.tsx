@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from "framer-motion"
 import { 
   Shield, 
@@ -643,8 +644,8 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00d4ff] to-[#0f3460] flex items-center justify-center">
-                <Shield className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-[#0a1929]">
+                <Image src="/icon.svg" alt="StockGuard" width={32} height={32} className="w-full h-full" />
               </div>
               <span className="text-lg font-normal tracking-tight">StockGuard</span>
             </Link>
@@ -712,10 +713,10 @@ export default function LandingPage() {
               
               {/* Title */}
               <motion.h1 variants={fadeInUp} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-normal leading-[1.1] mb-6 tracking-tight">
-                Transformez Vos Stocks
+                Rentabilisez chaque produit
                 <br />
-                <span className="bg-gradient-to-r from-[#00d4ff] via-[#e1f5fe] to-[#00d4ff] bg-clip-text text-transparent">
-                  Restaurant
+                <span className="bg-gradient-to-r from-[#00d4ff] via-[#e1f5fe] to-[#00d4ff] bg-clip-text text-transparent italic text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold inline-block leading-tight" style={{ fontFamily: "var(--font-editors-note)", letterSpacing: "-0.02em" }}>
+                  de votre stock
                 </span>
               </motion.h1>
 
@@ -1229,8 +1230,8 @@ export default function LandingPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
             <div>
               <Link href="/" className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00d4ff] to-[#0f3460] flex items-center justify-center">
-                  <Shield className="w-4 h-4 text-white" />
+                <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-[#0a1929]">
+                  <Image src="/icon.svg" alt="StockGuard" width={32} height={32} className="w-full h-full" />
                 </div>
                 <span className="font-normal">StockGuard</span>
               </Link>
