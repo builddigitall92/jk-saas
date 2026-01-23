@@ -35,6 +35,7 @@ import {
   Archive,
   RotateCcw,
   Camera,
+  Flame,
 } from "lucide-react"
 import { useRealtimeProducts } from "@/lib/hooks/use-realtime"
 import { useAuth } from "@/lib/hooks/use-auth"
@@ -528,735 +529,372 @@ function QuickActionCard({ label, icon: Icon, theme, href, index }: QuickActionC
 }
 
 // ============================================
-// STOCK HEALTH KPI CARD - Premium Glassmorphism
+// PRIORITY TO SELL CARD - Style Mood Tracking
 // ============================================
-interface StockHealthKPIProps {
-  wastePercent: number
-  salesGrowth: number
-  avgMargin: number
-  weakProduct?: { name: string; salesPercent: number; margin: number } | null
-  topProduct?: { name: string } | null
+interface PriorityToSellItem {
+  id: string
+  name: string
+  reason: 'expiring' | 'overstock' | 'low_margin' | 'slow_moving'
+  urgency: 'critical' | 'high' | 'medium'
+  daysLeft?: number
+  quantity?: number
+  value?: number
+  suggestion?: string
+}
+
+interface PriorityToSellCardProps {
+  items: PriorityToSellItem[]
   lastUpdated?: Date
 }
 
-function StockHealthKPI({ 
-  wastePercent, 
-  salesGrowth, 
-  avgMargin, 
-  weakProduct, 
-  topProduct,
-  lastUpdated 
-}: StockHealthKPIProps) {
+function PriorityToSellCard({ items, lastUpdated }: PriorityToSellCardProps) {
   const [isAnimated, setIsAnimated] = useState(false)
-  const [period, setPeriod] = useState<'monthly' | 'weekly'>('monthly')
-  const [isPeriodOpen, setIsPeriodOpen] = useState(false)
-  const [displayScore, setDisplayScore] = useState(0)
-  const [isHovered, setIsHovered] = useState(false)
-
-  // Calcul du score global selon la formule PRD
-  const wasteScore = Math.max(0, Math.min(100, (1 - wastePercent / 15) * 100))
-  const salesScore = Math.max(0, Math.min(100, (salesGrowth / 20) * 100))
-  const marginScore = Math.max(0, Math.min(100, (avgMargin / 60) * 100))
-  
-  const globalScore = Math.round(
-    0.5 * wasteScore + 
-    0.3 * salesScore + 
-    0.2 * marginScore
-  )
-
-  // Couleurs selon le score : Rouge < 50, Orange 50-69, Vert >= 70
-  const getScoreStatus = (score: number) => {
-    if (score >= 70) return 'success'
-    if (score >= 50) return 'warning'
-    return 'danger'
-  }
-
-  const scoreStatus = getScoreStatus(globalScore)
-
-  // Conseils actionnables et impactants
-  const getAdvice = (): { title: string; detail: string; action: string } => {
-    // Cas critique : gaspillage très élevé
-    if (wastePercent > 25) {
-      return {
-        title: "🚨 Alerte Gaspillage",
-        detail: `${wastePercent.toFixed(0)}% de perte — Tu perds de l'argent chaque jour`,
-        action: weakProduct 
-          ? `Réduis les commandes de ${weakProduct.name} de 30%`
-          : "Divise tes commandes par 2 cette semaine"
-      }
-    }
-
-    // Marge trop faible
-    if (avgMargin < 40) {
-      return {
-        title: "💰 Marge Critique",
-        detail: `Seulement ${avgMargin.toFixed(0)}% de marge — Objectif : 60%+`,
-        action: topProduct 
-          ? `Augmente le prix de ${topProduct.name} de +15%`
-          : "Augmente tes prix de 10-15% sur les bestsellers"
-      }
-    }
-
-    // Ventes en baisse
-    if (salesGrowth < 0) {
-      return {
-        title: "📉 Ventes en Baisse",
-        detail: `${Math.abs(salesGrowth).toFixed(0)}% de recul ce mois`,
-        action: topProduct 
-          ? `Lance une promo -20% sur ${topProduct.name}`
-          : "Crée un menu du jour à prix attractif"
-      }
-    }
-
-    // Ventes stagnantes
-    if (salesGrowth < 5) {
-      return {
-        title: "⚡ Boost Nécessaire",
-        detail: "Les ventes stagnent, il faut agir",
-        action: topProduct 
-          ? `Offre un dessert avec ${topProduct.name}`
-          : "Propose une formule midi à -15%"
-      }
-    }
-
-    // Gaspillage modéré
-    if (wastePercent > 15) {
-      return {
-        title: "♻️ Optimise le Stock",
-        detail: `${wastePercent.toFixed(0)}% de gaspillage — Économise ${Math.round(wastePercent * 10)}€/semaine`,
-        action: weakProduct 
-          ? `Retire ${weakProduct.name} du menu temporairement`
-          : "Réduis les portions ou ajuste les commandes"
-      }
-    }
-
-    // Marge améliorable
-    if (avgMargin < 55) {
-      return {
-        title: "📊 Améliore ta Marge",
-        detail: `${avgMargin.toFixed(0)}% actuellement — Tu peux faire mieux`,
-        action: weakProduct && weakProduct.margin < 30
-          ? `${weakProduct.name} à seulement ${weakProduct.margin.toFixed(0)}% de marge — Augmente son prix`
-          : "Négocie -10% avec tes fournisseurs"
-      }
-    }
-
-    // Tout va bien mais on peut optimiser
-    if (globalScore >= 70 && globalScore < 85) {
-      return {
-        title: "✨ Bonne Performance",
-        detail: `${avgMargin.toFixed(0)}% de marge, ${salesGrowth > 0 ? '+' : ''}${salesGrowth.toFixed(0)}% de ventes`,
-        action: topProduct 
-          ? `Pousse ${topProduct.name} en suggestion — C'est ton bestseller`
-          : "Continue sur cette lancée, tu es sur la bonne voie"
-      }
-    }
-
-    // Excellence
-    if (globalScore >= 85) {
-      return {
-        title: "🏆 Excellence",
-        detail: "Tu surperfomes ! Marge et ventes au top",
-        action: topProduct 
-          ? `${topProduct.name} cartonne — Augmente son prix de 5%`
-          : "Maintiens cette dynamique, c'est parfait"
-      }
-    }
-
-    // Par défaut
-    return {
-      title: "💡 Conseil du Jour",
-      detail: `Score global : ${globalScore}%`,
-      action: "Analyse tes produits les moins vendus cette semaine"
-    }
-  }
-
-  const advice = getAdvice()
 
   // Animation au montage
   useEffect(() => {
-    const timer = setTimeout(() => setIsAnimated(true), 200)
+    const timer = setTimeout(() => setIsAnimated(true), 300)
     return () => clearTimeout(timer)
   }, [])
 
-  // Animation fluide du compteur avec easing
-  useEffect(() => {
-    if (!isAnimated) return
-    const duration = 2000
-    const startTime = Date.now()
-    
-    const animate = () => {
-      const elapsed = Date.now() - startTime
-      const progress = Math.min(elapsed / duration, 1)
-      // Easing: easeOutExpo
-      const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress)
-      const current = Math.round(eased * globalScore)
-      setDisplayScore(current)
-      
-      if (progress < 1) {
-        requestAnimationFrame(animate)
-      }
-    }
-    requestAnimationFrame(animate)
-  }, [isAnimated, globalScore])
+  // Calcul du score basé sur le produit le plus urgent (celui avec le moins de jours)
+  // Trouver le produit qui expire le plus tôt parmi ceux qui ont une date d'expiration
+  const expiringItems = items.filter(i => i.reason === 'expiring' && i.daysLeft !== undefined)
+  const minDaysLeft = expiringItems.length > 0
+    ? Math.min(...expiringItems.map(i => i.daysLeft!))
+    : null
 
-  // Temps depuis dernière mise à jour
-  const getTimeAgo = () => {
-    if (!lastUpdated) return "À l'instant"
-    const diff = Date.now() - lastUpdated.getTime()
-    const hours = Math.floor(diff / (1000 * 60 * 60))
-    if (hours < 1) return "À l'instant"
-    if (hours === 1) return "Il y a 1h"
-    return `Il y a ${hours}h`
+  // Score basé sur le nombre de jours avant péremption du produit le plus urgent
+  const calculateScore = () => {
+    // Si aucun produit avec date d'expiration → Excellent
+    if (minDaysLeft === null) return 100
+
+    // Score selon les jours restants :
+    // Périmé (0 ou moins) → 10 (Critique)
+    // 1 jour → 30 (Urgent)
+    // 2 jours → 50 (Attention)
+    // 3 jours → 70 (Bon)
+    // > 3 jours → 90+ (Excellent)
+    if (minDaysLeft <= 0) return 10  // Périmé = Critique
+    if (minDaysLeft === 1) return 30 // 1 jour = Urgent
+    if (minDaysLeft === 2) return 50 // 2 jours = Attention
+    if (minDaysLeft === 3) return 70 // 3 jours = Bon
+    return 90 // > 3 jours = Excellent
   }
 
-  // Calcul pour la jauge - arc très fin
-  const radius = 58
-  const circumference = 2 * Math.PI * radius
-  const strokeDashoffset = circumference - (globalScore / 100) * circumference
+  const score = calculateScore()
 
-  // Position du point lumineux
-  const angle = (globalScore / 100) * 2 * Math.PI - Math.PI / 2
-  const dotX = 64 + radius * Math.cos(angle)
-  const dotY = 64 + radius * Math.sin(angle)
+  // Déterminer le niveau actif basé sur le score
+  const getActiveLevel = () => {
+    if (score <= 20) return 0 // Critique (périmé)
+    if (score <= 40) return 1 // Urgent (1 jour)
+    if (score <= 60) return 2 // Attention (2 jours)
+    if (score <= 80) return 3 // Bon (3 jours)
+    return 4 // Excellent (pas de produit expirant)
+  }
+
+  const activeLevel = getActiveLevel()
+
+  // Configuration des niveaux
+  const levels = [
+    { emoji: '🔥', label: 'Critique', color: '#ef4444' },   // Périmé
+    { emoji: '⚠️', label: 'Urgent', color: '#f97316' },     // 1 jour
+    { emoji: '📊', label: 'Attention', color: '#eab308' },  // 2 jours
+    { emoji: '✅', label: 'Bon', color: '#22c55e' },        // 3 jours
+    { emoji: '🌟', label: 'Excellent', color: '#10b981' },  // Pas de produit expirant
+  ]
+
+  // Top 3 produits à écouler
+  const topItems = items.slice(0, 3)
 
   return (
-    <div 
-      className="glass-kpi"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Reflet subtil en haut */}
-      <div className="glass-kpi-shine" />
-      
+    <div className="priority-card">
       {/* Header */}
-      <div className="glass-kpi-header">
-        <div className="glass-kpi-meta">
-          <span className="glass-kpi-time">{getTimeAgo()}</span>
+      <div className="priority-card-header">
+        <h3 className="priority-card-title">Priorité Écoulement</h3>
+        <p className="priority-card-subtitle">
+          Évaluez la santé de votre stock et identifiez les produits à écouler rapidement.
+        </p>
+      </div>
+
+      {/* Slider avec gradient */}
+      <div className="priority-slider-container">
+        <div className="priority-slider-track">
+          {/* Gradient background */}
+          <div className="priority-slider-gradient" />
+          
+          {/* Thumb/Indicator */}
+          <div 
+            className="priority-slider-thumb"
+            style={{ 
+              left: isAnimated ? `${score}%` : '0%',
+              background: levels[activeLevel].color,
+              boxShadow: `0 0 20px ${levels[activeLevel].color}80`
+            }}
+          />
+          
+          {/* Glow effect suivant le thumb */}
+          <div 
+            className="priority-slider-glow"
+            style={{ 
+              left: isAnimated ? `${score}%` : '0%',
+              background: `radial-gradient(circle, ${levels[activeLevel].color}40 0%, transparent 70%)`
+            }}
+          />
         </div>
-        <div className="glass-kpi-period">
-          <button 
-            onClick={() => setIsPeriodOpen(!isPeriodOpen)}
-            className="glass-kpi-period-btn"
+      </div>
+
+      {/* Indicateurs emoji */}
+      <div className="priority-levels">
+        {levels.map((level, index) => (
+          <div 
+            key={index}
+            className={`priority-level ${activeLevel === index ? 'active' : ''}`}
           >
-            <span>{period === 'monthly' ? 'Mensuel' : 'Hebdo'}</span>
-            <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isPeriodOpen ? 'rotate-180' : ''}`} />
-          </button>
-          {isPeriodOpen && (
-            <div className="glass-kpi-period-menu">
-              <button onClick={() => { setPeriod('monthly'); setIsPeriodOpen(false) }}>
-                Mensuel
-              </button>
-              <button onClick={() => { setPeriod('weekly'); setIsPeriodOpen(false) }}>
-                Hebdomadaire
-              </button>
+            <span 
+              className="priority-level-emoji"
+              style={{ 
+                filter: activeLevel === index ? 'none' : 'grayscale(0.7)',
+                transform: activeLevel === index ? 'scale(1.3)' : 'scale(1)'
+              }}
+            >
+              {level.emoji}
+            </span>
+            <span 
+              className="priority-level-label"
+              style={{ 
+                color: activeLevel === index ? level.color : 'rgba(148, 163, 184, 0.5)'
+              }}
+            >
+              {level.label}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Liste compacte des produits prioritaires */}
+      {topItems.length > 0 && (
+        <div className="priority-items-list">
+          <div className="priority-items-header">
+            <span className="priority-items-title">Top priorités</span>
+            <span className="priority-items-count">{items.length} produit{items.length > 1 ? 's' : ''}</span>
+          </div>
+          {topItems.map((item, index) => (
+            <div key={item.id} className="priority-item-row">
+              <span className="priority-item-number">{index + 1}</span>
+              <span className="priority-item-name">{item.name}</span>
+              <span 
+                className="priority-item-tag"
+                style={{ 
+                  color: item.urgency === 'critical' ? '#ef4444' : item.urgency === 'high' ? '#f97316' : '#eab308',
+                  background: item.urgency === 'critical' ? 'rgba(239, 68, 68, 0.15)' : item.urgency === 'high' ? 'rgba(249, 115, 22, 0.15)' : 'rgba(234, 179, 8, 0.15)'
+                }}
+              >
+                {item.daysLeft !== undefined
+                  ? (item.daysLeft === 0 ? 'PÉRIMÉ' : `${item.daysLeft}j`)
+                  : item.quantity !== undefined ? `${item.quantity}u` : '!'}
+              </span>
             </div>
-          )}
+          ))}
         </div>
-      </div>
-
-      {/* Zone centrale avec jauge */}
-      <div className="glass-kpi-gauge-area">
-        {/* Cercle externe décoratif */}
-        <div className={`glass-kpi-ring-outer ${isHovered ? 'hovered' : ''}`} />
-        
-        {/* Jauge SVG */}
-          <svg viewBox="0 0 128 128" className="glass-kpi-gauge-svg">
-            <defs>
-              {/* Gradient pour l'arc - couleur selon le score */}
-              <linearGradient id="gaugeArcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                {scoreStatus === 'success' && (
-                  <>
-                    <stop offset="0%" stopColor="#10b981" />
-                    <stop offset="50%" stopColor="#34d399" />
-                    <stop offset="100%" stopColor="#6ee7b7" />
-                  </>
-                )}
-                {scoreStatus === 'warning' && (
-                  <>
-                    <stop offset="0%" stopColor="#f59e0b" />
-                    <stop offset="50%" stopColor="#fbbf24" />
-                    <stop offset="100%" stopColor="#fcd34d" />
-                  </>
-                )}
-                {scoreStatus === 'danger' && (
-                  <>
-                    <stop offset="0%" stopColor="#dc2626" />
-                    <stop offset="50%" stopColor="#ef4444" />
-                    <stop offset="100%" stopColor="#f87171" />
-                  </>
-                )}
-              </linearGradient>
-            
-            {/* Glow pour l'arc */}
-            <filter id="arcGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3" result="blur1"/>
-              <feGaussianBlur stdDeviation="6" result="blur2"/>
-              <feMerge>
-                <feMergeNode in="blur2"/>
-                <feMergeNode in="blur1"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-            
-            {/* Glow intense pour le point */}
-            <filter id="dotGlow" x="-100%" y="-100%" width="300%" height="300%">
-              <feGaussianBlur stdDeviation="4" result="blur1"/>
-              <feGaussianBlur stdDeviation="8" result="blur2"/>
-              <feMerge>
-                <feMergeNode in="blur2"/>
-                <feMergeNode in="blur1"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-          </defs>
-          
-          {/* Cercle de fond - très subtil */}
-          <circle 
-            cx="64" cy="64" r={radius}
-            fill="none" 
-            stroke="rgba(148, 163, 184, 0.06)" 
-            strokeWidth="1"
-          />
-          
-          {/* Arc de progression - trait fin et lumineux */}
-          <circle 
-            cx="64" cy="64" r={radius}
-            fill="none"
-            stroke="url(#gaugeArcGrad)"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={isAnimated ? strokeDashoffset : circumference}
-            transform="rotate(-90 64 64)"
-            filter="url(#arcGlow)"
-            className="glass-kpi-arc"
-          />
-          
-            {/* Point lumineux au bout de l'arc */}
-            {isAnimated && globalScore > 0 && (
-              <g className="glass-kpi-dot-group">
-                {/* Halo externe */}
-                <circle 
-                  cx={dotX}
-                  cy={dotY}
-                  r="8"
-                  fill={scoreStatus === 'success' ? 'rgba(16, 185, 129, 0.2)' : scoreStatus === 'warning' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)'}
-                />
-                {/* Point central */}
-                <circle 
-                  cx={dotX}
-                  cy={dotY}
-                  r="4"
-                  fill={scoreStatus === 'success' ? '#34d399' : scoreStatus === 'warning' ? '#fbbf24' : '#f87171'}
-                  filter="url(#dotGlow)"
-                  className="glass-kpi-dot"
-                />
-              </g>
-            )}
-        </svg>
-
-        {/* Contenu central */}
-        <div className="glass-kpi-center">
-          <span className="glass-kpi-label">Santé</span>
-          <div className="glass-kpi-value">
-            <span className={`glass-kpi-number ${scoreStatus}`}>{displayScore}</span>
-            <span className={`glass-kpi-percent ${scoreStatus}`}>%</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer avec conseil actionnable */}
-      <div className="glass-kpi-footer">
-        <div className={`glass-kpi-advice-card ${scoreStatus}`}>
-          <div className="glass-kpi-advice-header">
-            <span className="glass-kpi-advice-title">{advice.title}</span>
-          </div>
-          <p className="glass-kpi-advice-detail">{advice.detail}</p>
-          <div className="glass-kpi-advice-action">
-            <span className="glass-kpi-advice-arrow">→</span>
-            <span>{advice.action}</span>
-          </div>
-        </div>
-      </div>
+      )}
 
       <style jsx>{`
-        .glass-kpi {
+        .priority-card {
           position: relative;
           width: 100%;
+          height: 100%;
+          min-height: 380px;
           background: linear-gradient(
-            135deg,
-            rgba(15, 23, 42, 0.8) 0%,
-            rgba(15, 23, 42, 0.6) 50%,
-            rgba(15, 23, 42, 0.8) 100%
+            145deg,
+            rgba(15, 15, 20, 0.95) 0%,
+            rgba(10, 10, 15, 0.98) 100%
           );
           backdrop-filter: blur(40px);
           -webkit-backdrop-filter: blur(40px);
-          border-radius: 28px;
-          border: 1px solid rgba(148, 163, 184, 0.08);
+          border-radius: 24px;
+          border: 1px solid rgba(255, 255, 255, 0.06);
           box-shadow: 
-            0 4px 24px -1px rgba(0, 0, 0, 0.3),
-            0 0 0 1px rgba(255, 255, 255, 0.03) inset,
-            0 1px 0 rgba(255, 255, 255, 0.04) inset;
+            0 4px 30px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(255, 255, 255, 0.02) inset;
           overflow: hidden;
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
         }
 
-        .glass-kpi:hover {
-          border-color: rgba(59, 130, 246, 0.15);
-          box-shadow: 
-            0 8px 40px -4px rgba(59, 130, 246, 0.15),
-            0 0 0 1px rgba(255, 255, 255, 0.05) inset,
-            0 1px 0 rgba(255, 255, 255, 0.06) inset;
+        .priority-card-header {
+          margin-bottom: 28px;
         }
 
-        .glass-kpi-shine {
+        .priority-card-title {
+          font-size: 18px;
+          font-weight: 600;
+          color: #ffffff;
+          margin: 0 0 8px 0;
+          letter-spacing: -0.02em;
+        }
+
+        .priority-card-subtitle {
+          font-size: 13px;
+          color: rgba(148, 163, 184, 0.6);
+          margin: 0;
+          line-height: 1.5;
+        }
+
+        /* Slider Container */
+        .priority-slider-container {
+          margin-bottom: 20px;
+          padding: 0 4px;
+        }
+
+        .priority-slider-track {
+          position: relative;
+          height: 8px;
+          border-radius: 100px;
+          background: rgba(30, 30, 40, 0.8);
+          overflow: visible;
+        }
+
+        .priority-slider-gradient {
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 50%;
+          inset: 0;
+          border-radius: 100px;
           background: linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.03) 0%,
-            transparent 100%
+            90deg,
+            #ef4444 0%,
+            #f97316 25%,
+            #eab308 50%,
+            #22c55e 75%,
+            #10b981 100%
           );
+          opacity: 0.9;
+        }
+
+        .priority-slider-thumb {
+          position: absolute;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          border: 3px solid rgba(255, 255, 255, 0.9);
+          transition: left 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+          z-index: 10;
+        }
+
+        .priority-slider-glow {
+          position: absolute;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          transition: left 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+          z-index: 5;
           pointer-events: none;
         }
 
-        .glass-kpi-header {
+        /* Niveaux avec emojis */
+        .priority-levels {
+          display: flex;
+          justify-content: space-between;
+          padding: 0 4px;
+          margin-bottom: 24px;
+        }
+
+        .priority-level {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+          flex: 1;
+        }
+
+        .priority-level-emoji {
+          font-size: 22px;
+          transition: all 0.4s ease;
+        }
+
+        .priority-level-label {
+          font-size: 10px;
+          font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          transition: color 0.3s ease;
+        }
+
+        /* Liste des produits prioritaires */
+        .priority-items-list {
+          flex: 1;
+          background: rgba(255, 255, 255, 0.02);
+          border-radius: 16px;
+          border: 1px solid rgba(255, 255, 255, 0.04);
+          padding: 14px;
+          overflow: hidden;
+        }
+
+        .priority-items-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 20px 24px 0;
-          position: relative;
-          z-index: 10;
+          margin-bottom: 12px;
         }
 
-        .glass-kpi-meta {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .glass-kpi-time {
-          font-size: 13px;
-          font-weight: 450;
-          color: rgba(148, 163, 184, 0.6);
-          letter-spacing: -0.01em;
-        }
-
-        .glass-kpi-period {
-          position: relative;
-        }
-
-        .glass-kpi-period-btn {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 7px 12px;
-          background: rgba(255, 255, 255, 0.04);
-          border: 1px solid rgba(148, 163, 184, 0.08);
-          border-radius: 100px;
-          color: rgba(226, 232, 240, 0.8);
+        .priority-items-title {
           font-size: 12px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.25s ease;
-        }
-
-        .glass-kpi-period-btn:hover {
-          background: rgba(255, 255, 255, 0.06);
-          border-color: rgba(148, 163, 184, 0.12);
-          color: rgba(226, 232, 240, 0.95);
-        }
-
-        .glass-kpi-period-menu {
-          position: absolute;
-          top: calc(100% + 8px);
-          right: 0;
-          min-width: 140px;
-          background: rgba(15, 23, 42, 0.95);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(148, 163, 184, 0.1);
-          border-radius: 16px;
-          padding: 6px;
-          z-index: 100;
-          box-shadow: 
-            0 20px 40px rgba(0, 0, 0, 0.4),
-            0 0 0 1px rgba(255, 255, 255, 0.03) inset;
-          animation: fadeInScale 0.2s ease;
-        }
-
-        @keyframes fadeInScale {
-          from {
-            opacity: 0;
-            transform: scale(0.95) translateY(-4px);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
-        }
-
-        .glass-kpi-period-menu button {
-          display: block;
-          width: 100%;
-          padding: 10px 14px;
-          background: transparent;
-          border: none;
-          border-radius: 10px;
-          color: rgba(226, 232, 240, 0.7);
-          font-size: 13px;
-          font-weight: 450;
-          text-align: left;
-          cursor: pointer;
-          transition: all 0.15s ease;
-        }
-
-        .glass-kpi-period-menu button:hover {
-          background: rgba(59, 130, 246, 0.1);
-          color: white;
-        }
-
-        .glass-kpi-gauge-area {
-          position: relative;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          padding: 32px 0;
-        }
-
-        .glass-kpi-ring-outer {
-          position: absolute;
-          width: 180px;
-          height: 180px;
-          border-radius: 50%;
-          border: 1px solid rgba(148, 163, 184, 0.04);
-          transition: all 0.5s ease;
-        }
-
-        .glass-kpi-ring-outer.hovered {
-          border-color: rgba(59, 130, 246, 0.08);
-          transform: scale(1.02);
-        }
-
-        .glass-kpi-gauge-svg {
-          width: 160px;
-          height: 160px;
-          position: relative;
-          z-index: 2;
-        }
-
-        .glass-kpi-arc {
-          transition: stroke-dashoffset 2s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .glass-kpi-dot {
-          animation: dotPulse 3s ease-in-out infinite;
-        }
-
-        .glass-kpi-dot-group {
-          animation: dotFadeIn 0.5s ease 1.8s both;
-        }
-
-        @keyframes dotFadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        @keyframes dotPulse {
-          0%, 100% { 
-            opacity: 1;
-            transform: scale(1);
-          }
-          50% { 
-            opacity: 0.7;
-            transform: scale(1.1);
-          }
-        }
-
-        .glass-kpi-center {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          text-align: center;
-          z-index: 5;
-        }
-
-        .glass-kpi-label {
-          display: block;
-          font-size: 11px;
-          font-weight: 500;
-          color: rgba(148, 163, 184, 0.5);
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.7);
           text-transform: uppercase;
-          letter-spacing: 0.12em;
-          margin-bottom: 4px;
+          letter-spacing: 0.05em;
         }
 
-        .glass-kpi-value {
+        .priority-items-count {
+          font-size: 11px;
+          color: rgba(148, 163, 184, 0.5);
+        }
+
+        .priority-item-row {
           display: flex;
-          align-items: baseline;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 0;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .priority-item-row:last-child {
+          border-bottom: none;
+        }
+
+        .priority-item-number {
+          width: 20px;
+          height: 20px;
+          border-radius: 6px;
+          background: rgba(255, 255, 255, 0.05);
+          display: flex;
+          align-items: center;
           justify-content: center;
-          gap: 2px;
-        }
-
-        .glass-kpi-number {
-          font-size: 44px;
+          font-size: 11px;
           font-weight: 600;
-          line-height: 1;
-          letter-spacing: -2px;
-          font-feature-settings: 'tnum';
-          transition: color 0.5s ease, text-shadow 0.5s ease;
-        }
-
-        .glass-kpi-number.success {
-          color: #34d399;
-          text-shadow: 0 2px 20px rgba(16, 185, 129, 0.4);
-        }
-
-        .glass-kpi-number.warning {
-          color: #fbbf24;
-          text-shadow: 0 2px 20px rgba(245, 158, 11, 0.4);
-        }
-
-        .glass-kpi-number.danger {
-          color: #f87171;
-          text-shadow: 0 2px 20px rgba(239, 68, 68, 0.4);
-          animation: dangerPulse 2s ease-in-out infinite;
-        }
-
-        @keyframes dangerPulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
-        }
-
-        .glass-kpi-percent {
-          font-size: 18px;
-          font-weight: 500;
-          margin-left: 1px;
-          transition: color 0.5s ease;
-        }
-
-        .glass-kpi-percent.success {
-          color: rgba(52, 211, 153, 0.6);
-        }
-
-        .glass-kpi-percent.warning {
-          color: rgba(251, 191, 36, 0.6);
-        }
-
-        .glass-kpi-percent.danger {
-          color: rgba(248, 113, 113, 0.6);
-        }
-
-        .glass-kpi-footer {
-          padding: 0 20px 20px;
-          position: relative;
-          z-index: 10;
-        }
-
-        .glass-kpi-advice-card {
-          padding: 16px;
-          border-radius: 16px;
-          border: 1px solid;
-          transition: all 0.3s ease;
-        }
-
-        .glass-kpi-advice-card.success {
-          background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.03) 100%);
-          border-color: rgba(16, 185, 129, 0.15);
-        }
-
-        .glass-kpi-advice-card.warning {
-          background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(245, 158, 11, 0.03) 100%);
-          border-color: rgba(245, 158, 11, 0.15);
-        }
-
-        .glass-kpi-advice-card.danger {
-          background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.03) 100%);
-          border-color: rgba(239, 68, 68, 0.15);
-        }
-
-        .glass-kpi:hover .glass-kpi-advice-card.success {
-          border-color: rgba(16, 185, 129, 0.25);
-          box-shadow: 0 4px 20px rgba(16, 185, 129, 0.1);
-        }
-
-        .glass-kpi:hover .glass-kpi-advice-card.warning {
-          border-color: rgba(245, 158, 11, 0.25);
-          box-shadow: 0 4px 20px rgba(245, 158, 11, 0.1);
-        }
-
-        .glass-kpi:hover .glass-kpi-advice-card.danger {
-          border-color: rgba(239, 68, 68, 0.25);
-          box-shadow: 0 4px 20px rgba(239, 68, 68, 0.1);
-        }
-
-        .glass-kpi-advice-header {
-          margin-bottom: 8px;
-        }
-
-        .glass-kpi-advice-title {
-          font-size: 13px;
-          font-weight: 600;
-          letter-spacing: -0.01em;
-        }
-
-        .glass-kpi-advice-card.success .glass-kpi-advice-title {
-          color: #34d399;
-        }
-
-        .glass-kpi-advice-card.warning .glass-kpi-advice-title {
-          color: #fbbf24;
-        }
-
-        .glass-kpi-advice-card.danger .glass-kpi-advice-title {
-          color: #f87171;
-        }
-
-        .glass-kpi-advice-detail {
-          font-size: 12px;
-          font-weight: 400;
-          color: rgba(148, 163, 184, 0.7);
-          margin: 0 0 10px;
-          line-height: 1.4;
-        }
-
-        .glass-kpi-advice-action {
-          display: flex;
-          align-items: flex-start;
-          gap: 8px;
-          padding: 10px 12px;
-          background: rgba(255, 255, 255, 0.03);
-          border-radius: 10px;
-          border: 1px solid rgba(255, 255, 255, 0.04);
-        }
-
-        .glass-kpi-advice-arrow {
-          font-size: 12px;
-          font-weight: 600;
+          color: rgba(255, 255, 255, 0.5);
           flex-shrink: 0;
         }
 
-        .glass-kpi-advice-card.success .glass-kpi-advice-arrow {
-          color: #10b981;
-        }
-
-        .glass-kpi-advice-card.warning .glass-kpi-advice-arrow {
-          color: #f59e0b;
-        }
-
-        .glass-kpi-advice-card.danger .glass-kpi-advice-arrow {
-          color: #ef4444;
-        }
-
-        .glass-kpi-advice-action span:last-child {
-          font-size: 12px;
+        .priority-item-name {
+          flex: 1;
+          font-size: 13px;
           font-weight: 500;
-          color: rgba(226, 232, 240, 0.85);
-          line-height: 1.4;
+          color: rgba(255, 255, 255, 0.85);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .priority-item-tag {
+          padding: 4px 8px;
+          border-radius: 6px;
+          font-size: 10px;
+          font-weight: 700;
+          flex-shrink: 0;
         }
       `}</style>
     </div>
@@ -1266,7 +904,7 @@ function StockHealthKPI({
 // ============================================
 // SECTION 3 - BUSINESS TRENDS + ACTIONS RAPIDES
 // ============================================
-function TrendsAndActionsSection({ chartData, hasData, caJour, caMois, stockHealthData }: { chartData: any[], hasData: boolean, caJour: number, caMois: number, stockHealthData: StockHealthKPIProps }) {
+function TrendsAndActionsSection({ chartData, hasData, caJour, caMois, priorityItems }: { chartData: any[], hasData: boolean, caJour: number, caMois: number, priorityItems: PriorityToSellItem[] }) {
   const [period, setPeriod] = useState("30")
   const [chartKey, setChartKey] = useState(0)
   const [isPeriodDropdownOpen, setIsPeriodDropdownOpen] = useState(false)
@@ -1477,9 +1115,9 @@ function TrendsAndActionsSection({ chartData, hasData, caJour, caMois, stockHeal
           </div>
         </div>
 
-        {/* Stock Health KPI Card */}
+        {/* Priority To Sell Card */}
         <div className="w-full lg:w-[320px] flex-shrink-0">
-          <StockHealthKPI {...stockHealthData} />
+          <PriorityToSellCard items={priorityItems} lastUpdated={new Date()} />
         </div>
       </div>
     </section>
@@ -1837,48 +1475,109 @@ export default function ManagerDashboard() {
   ].slice(0, 5)
 
   // ============================================
-  // CALCULS POUR LE KPI SANTÉ STOCKS
+  // CALCULS POUR LES PRODUITS À ÉCOULER EN PRIORITÉ
   // ============================================
   
-  // Pourcentage de gaspillage (coût gaspillage / CA mensuel * 100)
-  const wastePercent = caMois > 0 ? (wasteData.cost / caMois) * 100 : 0
+  // Créer la liste des produits à écouler en priorité
+  const priorityToSellItems: PriorityToSellItem[] = []
   
-  // Croissance des ventes (comparaison avec période précédente)
-  // Pour l'instant, estimation basée sur les données disponibles
-  // En production, comparer avec le mois précédent
-  const salesGrowthEstimate = caMois > 0 ? Math.min(25, Math.max(-10, ((caMois - stockValue) / stockValue) * 100)) : 0
+  // 1. Produits qui expirent bientôt ou déjà périmés (CRITIQUE si périmé ou <= 1 jour, HIGH si 2 jours, MEDIUM si 3 jours)
+  stocks.forEach(stock => {
+    if (!stock.expiry_date) return
+    const expiry = new Date(stock.expiry_date)
+    const today = new Date()
+    const daysLeft = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+    // Inclure les produits périmés (daysLeft <= 0) et ceux qui expirent dans 3 jours ou moins
+    if (daysLeft <= 3) {
+      // Déterminer l'urgence selon les jours restants
+      let urgency: 'critical' | 'high' | 'medium' = 'medium'
+      if (daysLeft <= 1) {
+        urgency = 'critical' // Périmé ou expire demain
+      } else if (daysLeft === 2) {
+        urgency = 'high' // Expire dans 2 jours
+      } else {
+        urgency = 'medium' // Expire dans 3 jours
+      }
+
+      // Générer la suggestion et le label selon l'état
+      const isExpired = daysLeft <= 0
+      const displayDays = isExpired ? 0 : daysLeft
+
+      priorityToSellItems.push({
+        id: `exp-${stock.id}`,
+        name: stock.product?.name || 'Produit inconnu',
+        reason: 'expiring',
+        urgency,
+        daysLeft: displayDays,
+        quantity: Number(stock.quantity) || 0,
+        suggestion: isExpired
+          ? `⚠️ PÉRIMÉ - Retirer ${stock.product?.name || 'ce produit'} immédiatement !`
+          : daysLeft === 1
+            ? `🔥 URGENT - Promo flash -50% sur ${stock.product?.name || 'ce produit'} !`
+            : `Promo -30% sur ${stock.product?.name || 'ce produit'} avant expiration`
+      })
+    }
+  })
   
-  // Trouver le produit le plus faible (moins vendu avec faible marge)
-  const totalSales = topSellingProducts.reduce((sum, p) => sum + p.quantity, 0)
-  const weakProduct = topSellingProducts.length > 0 
-    ? (() => {
-        // Prendre le produit le moins vendu
-        const leastSold = [...topSellingProducts].sort((a, b) => a.quantity - b.quantity)[0]
-        const menuItem = menuItems.find(m => m.name === leastSold.name)
-        const salesPercent = totalSales > 0 ? (leastSold.quantity / totalSales) * 100 : 0
-        const margin = menuItem?.actual_margin_percent || 30
-        return salesPercent < 10 ? { 
-          name: leastSold.name, 
-          salesPercent, 
-          margin 
-        } : null
-      })()
-    : null
+  // 2. Produits en surstock (quantité > 2x le seuil min ou > 50 unités sans seuil)
+  dormantStocks.forEach(stock => {
+    const qty = Number(stock.quantity) || 0
+    const minThreshold = Number(stock.product?.min_stock_threshold) || 0
+    const isOverstocked = minThreshold > 0 ? qty > minThreshold * 3 : qty > 30
+    
+    if (isOverstocked) {
+      const value = qty * (Number(stock.unit_price) || 0)
+      priorityToSellItems.push({
+        id: `over-${stock.id}`,
+        name: stock.product?.name || 'Produit inconnu',
+        reason: 'overstock',
+        urgency: qty > (minThreshold > 0 ? minThreshold * 5 : 50) ? 'high' : 'medium',
+        quantity: qty,
+        value,
+        suggestion: `Réduis les prochaines commandes de ${stock.product?.name || 'ce produit'}`
+      })
+    }
+  })
   
-  // Trouver le meilleur produit
-  const topProduct = topSellingProducts.length > 0 
-    ? { name: topSellingProducts[0].name }
-    : null
+  // 3. Produits à faible marge (< 40% de marge)
+  menuItems
+    .filter(item => item.actual_margin_percent > 0 && item.actual_margin_percent < 40)
+    .slice(0, 3)
+    .forEach(item => {
+      priorityToSellItems.push({
+        id: `margin-${item.id}`,
+        name: item.name,
+        reason: 'low_margin',
+        urgency: item.actual_margin_percent < 25 ? 'high' : 'medium',
+        suggestion: `Augmente le prix de ${item.name} de +15%`
+      })
+    })
   
-  // Données pour le KPI Santé Stocks
-  const stockHealthData: StockHealthKPIProps = {
-    wastePercent,
-    salesGrowth: salesGrowthEstimate,
-    avgMargin: marginPercent,
-    weakProduct,
-    topProduct,
-    lastUpdated: new Date()
+  // 4. Produits à ventes lentes (les moins vendus)
+  if (topSellingProducts.length > 3) {
+    const slowMoving = [...topSellingProducts]
+      .sort((a, b) => a.quantity - b.quantity)
+      .slice(0, 2)
+    
+    slowMoving.forEach(product => {
+      // Éviter les doublons
+      if (!priorityToSellItems.find(p => p.name === product.name)) {
+        priorityToSellItems.push({
+          id: `slow-${product.name}`,
+          name: product.name,
+          reason: 'slow_moving',
+          urgency: 'medium',
+          quantity: product.quantity,
+          suggestion: `Propose ${product.name} en formule ou menu`
+        })
+      }
+    })
   }
+  
+  // Trier par urgence (critical > high > medium)
+  const urgencyOrder = { critical: 0, high: 1, medium: 2 }
+  priorityToSellItems.sort((a, b) => urgencyOrder[a.urgency] - urgencyOrder[b.urgency])
 
   // Données du graphique (basées sur des estimations à partir des données réelles)
   // Si pas de données, afficher des valeurs à 0
@@ -3264,8 +2963,8 @@ export default function ManagerDashboard() {
           expiringCount={expiringItems.length + expiredItems.length}
         />
 
-        {/* Section 3 - Business Trends + KPI Santé Stocks */}
-        <TrendsAndActionsSection chartData={chartData} hasData={menuItems.length > 0} caJour={caJour} caMois={caMois} stockHealthData={stockHealthData} />
+        {/* Section 3 - Business Trends + Produits à Écouler */}
+        <TrendsAndActionsSection chartData={chartData} hasData={menuItems.length > 0} caJour={caJour} caMois={caMois} priorityItems={priorityToSellItems} />
 
         {/* Section 4 - Top Produits */}
         <TopProductsSection
