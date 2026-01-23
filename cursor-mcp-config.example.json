@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "gemini-design": {
+      "command": "node",
+      "args": [
+        "C:\\Users\\JK\\AppData\\Roaming\\npm\\node_modules\\gemini-design-mcp\\build\\index.js"
+      ],
+      "env": {
+        "GEMINI_API_KEY": "VOTRE_CLÉ_API_GEMINI_ICI"
+      }
+    }
+  }
+}
