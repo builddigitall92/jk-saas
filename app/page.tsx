@@ -953,23 +953,22 @@ export default function LandingPage() {
             </motion.p>
           </motion.div>
 
-          {/* Pricing Cards Container - 2 cards */}
+          {/* Pricing Cards Container - 3 cards */}
           <motion.div
             initial={{ opacity: 0, y: 60 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            className="relative flex flex-col lg:flex-row items-center lg:items-stretch justify-center gap-8 perspective-1000"
+            className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto"
           >
-            {/* Premium Mensuel - Left card with rotation */}
+            {/* Premium Mensuel */}
             <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
-              whileHover={{ scale: 1.03, rotateY: 0 }}
-              className="w-full max-w-sm lg:w-[380px] lg:transform lg:rotate-y-[-6deg] z-10"
-              style={{ transformStyle: 'preserve-3d' }}
+              whileHover={{ scale: 1.02 }}
+              className="w-full"
             >
               <div className="relative h-full p-[1px] rounded-3xl bg-gradient-to-b from-white/25 via-white/10 to-transparent overflow-hidden group">
                 {/* Glass card inner */}
@@ -1024,15 +1023,14 @@ export default function LandingPage() {
               </div>
             </motion.div>
 
-            {/* Premium Annuel - Right card with rotation (featured) */}
+            {/* Premium Annuel - Featured */}
             <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.3 }}
-              whileHover={{ scale: 1.03, rotateY: 0 }}
-              className="w-full max-w-sm lg:w-[380px] lg:transform lg:rotate-y-[6deg] z-10"
-              style={{ transformStyle: 'preserve-3d' }}
+              whileHover={{ scale: 1.02 }}
+              className="w-full"
             >
               <div className="relative h-full p-[1px] rounded-3xl bg-gradient-to-b from-[#00d4ff]/50 via-[#00d4ff]/20 to-transparent overflow-hidden group shadow-2xl shadow-[#00d4ff]/20">
                 {/* Animated border glow */}
@@ -1097,6 +1095,73 @@ export default function LandingPage() {
                     <p className="text-center text-white/30 text-xs mt-4 font-light">
                       14 jours d'essai gratuit • Aucune carte requise
                     </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Sur Mesure */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4 }}
+              whileHover={{ scale: 1.02 }}
+              className="w-full"
+            >
+              <div className="relative h-full p-[1px] rounded-3xl bg-gradient-to-b from-[#8b5cf6]/50 via-[#8b5cf6]/20 to-transparent overflow-hidden group shadow-xl shadow-[#8b5cf6]/10">
+                {/* Animated border glow */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[#8b5cf6]/0 via-[#8b5cf6]/20 to-[#8b5cf6]/0 animate-pulse" />
+
+                {/* Glass card inner */}
+                <div className="relative h-full bg-[#0a0c14]/90 backdrop-blur-xl rounded-3xl p-8 border border-[#8b5cf6]/20">
+                  {/* Top glow */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-[#8b5cf6]/15 blur-3xl rounded-full" />
+
+                  {/* Subtle inner glow */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#8b5cf6]/10 via-transparent to-transparent opacity-50 rounded-3xl" />
+
+                  <div className="relative z-10">
+                    {/* Plan name */}
+                    <p className="text-[#8b5cf6] text-sm font-medium mb-2">Sur Mesure</p>
+
+                    {/* Price */}
+                    <div className="mb-4">
+                      <span className="text-5xl font-light text-white">Devis</span>
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-white/40 text-sm font-light mb-8 leading-relaxed">
+                      Solution adaptée aux besoins spécifiques de votre établissement ou groupe.
+                    </p>
+
+                    {/* Features */}
+                    <div className="space-y-4 mb-8">
+                      {[
+                        "Produits illimités",
+                        "Multi-établissements",
+                        "Alertes intelligentes (ruptures, dates, surstock)",
+                        "Inventaires rapides & historiques",
+                        "Suivi des pertes & des gaspillages",
+                        "Suggestions d'achat basées sur vos usages",
+                        "Tableau de bord temps réel (KPIs & tendances)",
+                        "Accès équipe + rôles & permissions"
+                      ].map((feature, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <div className="w-5 h-5 rounded-full bg-[#8b5cf6]/20 flex items-center justify-center flex-shrink-0">
+                            <Check className="w-3 h-3 text-[#8b5cf6]" />
+                          </div>
+                          <span className="text-white/70 text-sm font-light">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* CTA Button */}
+                    <Link href="/contact">
+                      <button className="w-full py-4 rounded-full bg-gradient-to-r from-[#8b5cf6] to-[#7c3aed] text-white text-sm font-semibold hover:opacity-90 transition-all duration-300 shadow-lg shadow-[#8b5cf6]/30">
+                        Contacter nous
+                      </button>
+                    </Link>
                   </div>
                 </div>
               </div>
