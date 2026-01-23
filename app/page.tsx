@@ -124,6 +124,78 @@ function Counter({ value, suffix = "", duration = 2 }: { value: number; suffix?:
   return <span ref={ref}>{count.toLocaleString('fr-FR')}{suffix}</span>
 }
 
+// Slide-In Button Component (CTA avec effet de vague)
+function SlideInButton({
+  children,
+  icon: Icon = ArrowRight,
+  className = "",
+  variant = "primary",
+  size = "default"
+}: {
+  children: React.ReactNode
+  icon?: React.ElementType
+  className?: string
+  variant?: "primary" | "secondary" | "outline" | "purple"
+  size?: "default" | "large" | "small"
+}) {
+  const baseClasses = "slide-in-button relative inline-flex items-center justify-center cursor-pointer overflow-hidden transition-all duration-300"
+
+  const sizeClasses = {
+    small: "h-11 px-6 text-sm rounded-lg gap-3",
+    default: "h-12 sm:h-14 px-8 sm:px-10 text-base sm:text-lg rounded-xl gap-3",
+    large: "h-14 sm:h-16 px-10 sm:px-12 text-lg sm:text-xl rounded-2xl gap-4"
+  }
+
+  const variantClasses = {
+    primary: "bg-white text-[#050508] font-semibold shadow-lg shadow-white/20 hover:shadow-2xl hover:shadow-cyan-400/40",
+    secondary: "bg-gradient-to-r from-[#00d4ff] to-[#00a8cc] text-[#050508] font-semibold shadow-lg shadow-[#00d4ff]/30 hover:shadow-2xl hover:shadow-[#00d4ff]/50",
+    outline: "bg-transparent border-2 border-white/30 text-white font-semibold hover:border-[#00d4ff]",
+    purple: "bg-gradient-to-r from-[#8b5cf6] to-[#7c3aed] text-white font-semibold shadow-lg shadow-[#8b5cf6]/30 hover:shadow-2xl hover:shadow-[#8b5cf6]/50"
+  }
+
+  const fillColors = {
+    primary: "from-cyan-400 via-cyan-300 to-cyan-400",
+    secondary: "from-white via-[#e1f5fe] to-white",
+    outline: "from-[#00d4ff] via-[#00b4d8] to-[#00d4ff]",
+    purple: "from-[#a78bfa] via-[#c4b5fd] to-[#a78bfa]"
+  }
+
+  const textHoverColor = {
+    primary: "group-hover:text-[#050508]",
+    secondary: "group-hover:text-[#050508]",
+    outline: "group-hover:text-[#050508]",
+    purple: "group-hover:text-[#050508]"
+  }
+
+  return (
+    <motion.button
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className={`${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]} ${className} group`}
+    >
+      {/* Fond de remplissage qui slide de gauche à droite */}
+      <span
+        className={`absolute inset-0 w-0 group-hover:w-full bg-gradient-to-r ${fillColors[variant]} transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] z-[1]`}
+      />
+
+      {/* Vague brillante qui traverse */}
+      <span
+        className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-600 ease-[cubic-bezier(0.4,0,0.2,1)] delay-100 z-[1]"
+      />
+
+      {/* Texte qui slide vers la gauche */}
+      <span className={`button-text relative z-[2] transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:-translate-x-full group-hover:opacity-0 ${textHoverColor[variant]}`}>
+        {children}
+      </span>
+
+      {/* Icône qui apparaît depuis la droite */}
+      <span className={`icon absolute z-[2] opacity-0 translate-x-5 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${textHoverColor[variant]}`}>
+        <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+      </span>
+    </motion.button>
+  )
+}
+
 // Glass Card Component
 function GlassCard({ children, className = "", hover = true }: { children: React.ReactNode; className?: string; hover?: boolean }) {
   return (
@@ -325,12 +397,9 @@ function FeatureTabs() {
                 </ul>
 
                 <Link href="/login">
-                  <Button 
-                    className="mt-4 bg-white/10 hover:bg-white/15 text-white border border-white/10 font-normal"
-                  >
+                  <SlideInButton variant="outline" size="small" icon={ArrowRight} className="variant-outline mt-4">
                     Découvrir
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
+                  </SlideInButton>
                 </Link>
               </div>
 
@@ -727,97 +796,18 @@ export default function LandingPage() {
 
               {/* CTAs */}
               <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-                {/* Bouton Essai Gratuit - réduit */}
+                {/* Bouton Essai Gratuit */}
                 <Link href="/login">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="relative h-12 sm:h-14 px-8 sm:px-10 bg-white text-[#050508] font-semibold text-base sm:text-lg rounded-xl overflow-hidden group transition-all duration-300 shadow-lg shadow-white/20 hover:shadow-2xl hover:shadow-cyan-400/40"
-                  >
-                    {/* Fond de vague - remplissage principal */}
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-cyan-300 to-cyan-400"
-                      initial={{ x: "-100%", scaleX: 1.5 }}
-                      whileHover={{ x: "0%", scaleX: 1 }}
-                      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                    />
-                    
-                    {/* Vague animée - effet de mouvement */}
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent"
-                      initial={{ x: "-200%" }}
-                      whileHover={{ x: "200%" }}
-                      transition={{ duration: 0.6, ease: "easeInOut", delay: 0.1 }}
-                    />
-                    
-                    {/* Deuxième vague pour effet de profondeur */}
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-200/50 to-transparent"
-                      initial={{ x: "-150%" }}
-                      whileHover={{ x: "150%" }}
-                      transition={{ duration: 0.5, ease: "easeInOut", delay: 0.2 }}
-                    />
-                    
-                    {/* Glow effect externe */}
-                    <motion.div
-                      className="absolute -inset-2 bg-gradient-to-r from-cyan-400 via-cyan-300 to-cyan-400 rounded-xl blur-xl opacity-0 group-hover:opacity-70 -z-10"
-                      initial={{ scale: 0.8 }}
-                      whileHover={{ scale: 1.1 }}
-                      transition={{ duration: 0.3 }}
-                    />
-                    
-                    {/* Texte - change de couleur au survol */}
-                    <span className="relative z-10 inline-flex items-center gap-2 group-hover:text-[#050508] transition-colors duration-300">
-                      Essai Gratuit 14 jours
-                      <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </span>
-                  </motion.button>
+                  <SlideInButton variant="primary" icon={ArrowRight} className="variant-primary">
+                    Essai Gratuit 14 jours
+                  </SlideInButton>
                 </Link>
 
                 {/* Bouton Contactez-nous */}
                 <Link href="/contact">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="relative h-12 sm:h-14 px-8 sm:px-10 bg-transparent border-2 border-white/30 text-white font-semibold text-base sm:text-lg rounded-xl overflow-hidden group transition-all duration-300 hover:border-[#00d4ff]"
-                  >
-                    {/* Fond de vague - remplissage principal */}
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-[#00d4ff] via-[#00b4d8] to-[#00d4ff]"
-                      initial={{ x: "-100%", scaleX: 1.5 }}
-                      whileHover={{ x: "0%", scaleX: 1 }}
-                      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                    />
-                    
-                    {/* Vague animée - effet de mouvement */}
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent"
-                      initial={{ x: "-200%" }}
-                      whileHover={{ x: "200%" }}
-                      transition={{ duration: 0.6, ease: "easeInOut", delay: 0.1 }}
-                    />
-                    
-                    {/* Deuxième vague pour effet de profondeur */}
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-[#90e0ef]/50 to-transparent"
-                      initial={{ x: "-150%" }}
-                      whileHover={{ x: "150%" }}
-                      transition={{ duration: 0.5, ease: "easeInOut", delay: 0.2 }}
-                    />
-                    
-                    {/* Glow effect externe */}
-                    <motion.div
-                      className="absolute -inset-2 bg-gradient-to-r from-[#00d4ff] via-[#00b4d8] to-[#00d4ff] rounded-xl blur-xl opacity-0 group-hover:opacity-60 -z-10"
-                      initial={{ scale: 0.8 }}
-                      whileHover={{ scale: 1.1 }}
-                      transition={{ duration: 0.3 }}
-                    />
-                    
-                    {/* Texte - change de couleur au survol */}
-                    <span className="relative z-10 inline-flex items-center gap-2 group-hover:text-[#050508] transition-colors duration-300">
-                      Contactez-nous
-                    </span>
-                  </motion.button>
+                  <SlideInButton variant="outline" icon={ArrowRight} className="variant-outline">
+                    Contactez-nous
+                  </SlideInButton>
                 </Link>
               </motion.div>
 
@@ -1078,20 +1068,10 @@ export default function LandingPage() {
                     </div>
                     
                     {/* CTA Button */}
-                    <Link href="/login">
-                      <motion.button 
-                        className="w-full py-4 rounded-full border border-white/20 text-white text-sm font-semibold"
-                        whileHover={{ 
-                          scale: 1.05,
-                          backgroundColor: "rgba(255, 255, 255, 0.1)",
-                          borderColor: "rgba(0, 212, 255, 0.5)",
-                          color: "#00d4ff",
-                          boxShadow: "0 10px 25px -5px rgba(0, 212, 255, 0.2)"
-                        }}
-                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                      >
+                    <Link href="/login" className="block">
+                      <SlideInButton variant="outline" icon={ArrowRight} className="variant-outline w-full rounded-full">
                         Choisir ce plan
-                      </motion.button>
+                      </SlideInButton>
                     </Link>
                   </div>
                 </motion.div>
@@ -1198,19 +1178,12 @@ export default function LandingPage() {
                     </div>
                     
                     {/* CTA Button */}
-                    <Link href="/login">
-                      <motion.button 
-                        className="w-full py-4 rounded-full bg-gradient-to-r from-[#00d4ff] to-[#00a8cc] text-[#050508] text-sm font-semibold shadow-lg shadow-[#00d4ff]/30"
-                        whileHover={{ 
-                          scale: 1.05,
-                          boxShadow: "0 20px 40px -10px rgba(0, 212, 255, 0.5)"
-                        }}
-                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                      >
+                    <Link href="/login" className="block">
+                      <SlideInButton variant="secondary" icon={ArrowRight} className="variant-secondary w-full rounded-full">
                         Choisir ce plan
-                      </motion.button>
+                      </SlideInButton>
                     </Link>
-                    
+
                     <p className="text-center text-white/30 text-xs mt-4 font-normal">
                       14 jours d'essai gratuit • Aucune carte requise
                     </p>
@@ -1313,17 +1286,10 @@ export default function LandingPage() {
                     </div>
 
                     {/* CTA Button */}
-                    <Link href="/contact">
-                      <motion.button 
-                        className="w-full py-4 rounded-full bg-gradient-to-r from-[#8b5cf6] to-[#7c3aed] text-white text-sm font-semibold shadow-lg shadow-[#8b5cf6]/30"
-                        whileHover={{ 
-                          scale: 1.05,
-                          boxShadow: "0 20px 40px -10px rgba(139, 92, 246, 0.5)"
-                        }}
-                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                      >
+                    <Link href="/contact" className="block">
+                      <SlideInButton variant="purple" icon={ArrowRight} className="variant-purple w-full rounded-full">
                         Contacter nous
-                      </motion.button>
+                      </SlideInButton>
                     </Link>
                   </div>
                 </motion.div>
@@ -1438,14 +1404,15 @@ export default function LandingPage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/login">
-                  <Button className="h-14 px-10 bg-white text-[#050508] hover:bg-white/90 font-semibold text-base rounded-xl">
+                  <SlideInButton variant="primary" icon={Rocket} className="variant-primary">
                     Commencer gratuitement
-                    <Rocket className="w-4 h-4 ml-2" />
-                  </Button>
+                  </SlideInButton>
                 </Link>
-                <Button variant="ghost" className="h-14 px-10 text-white/70 hover:text-white hover:bg-white/5 font-normal rounded-xl">
-                  Nous contacter
-                </Button>
+                <Link href="/contact">
+                  <SlideInButton variant="outline" icon={ArrowRight} className="variant-outline">
+                    Nous contacter
+                  </SlideInButton>
+                </Link>
               </div>
             </div>
           </GlassCard>
@@ -1503,37 +1470,113 @@ export default function LandingPage() {
           animation: scroll 20s linear infinite;
           will-change: transform;
         }
-        
+
         /* GPU Acceleration for animations */
         [data-framer-component] {
           transform: translate3d(0, 0, 0);
           backface-visibility: hidden;
           perspective: 1000px;
         }
-        
+
         /* Optimize motion components */
         [data-framer-motion] {
           will-change: transform, opacity;
         }
-        
+
         /* Perspective for 3D pricing cards */
         .perspective-1000 {
           perspective: 1000px;
         }
-        
+
         .rotate-y-\\[-8deg\\] {
           transform: rotateY(-8deg);
         }
-        
+
         .rotate-y-\\[8deg\\] {
           transform: rotateY(8deg);
         }
-        
+
         @media (max-width: 1024px) {
           .rotate-y-\\[-8deg\\],
           .rotate-y-\\[8deg\\] {
             transform: rotateY(0deg);
           }
+        }
+
+        /* Slide-in Button Animation */
+        .slide-in-button {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          cursor: pointer;
+          overflow: hidden;
+        }
+
+        .slide-in-button .button-text {
+          position: relative;
+          z-index: 2;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .slide-in-button:hover .button-text {
+          transform: translateX(-100%);
+          opacity: 0;
+        }
+
+        .slide-in-button .icon {
+          position: absolute;
+          opacity: 0;
+          transform: translateX(20px);
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: 2;
+        }
+
+        .slide-in-button:hover .icon {
+          transform: translateX(0);
+          opacity: 1;
+        }
+
+        .slide-in-button::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 0;
+          height: 100%;
+          transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: 1;
+        }
+
+        .slide-in-button:hover::before {
+          width: 100%;
+        }
+
+        /* Variante Primary (blanc -> cyan) */
+        .slide-in-button.variant-primary::before {
+          background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+        }
+
+        /* Variante Secondary (cyan -> blanc) */
+        .slide-in-button.variant-secondary::before {
+          background: linear-gradient(135deg, #ffffff 0%, #e0f7fa 100%);
+        }
+
+        /* Variante Outline (transparent -> cyan) */
+        .slide-in-button.variant-outline::before {
+          background: linear-gradient(135deg, #00d4ff 0%, #00b4d8 100%);
+        }
+
+        /* Variante Purple */
+        .slide-in-button.variant-purple::before {
+          background: linear-gradient(135deg, #a78bfa 0%, #c4b5fd 100%);
+        }
+
+        /* Custom durations for Tailwind */
+        .duration-400 {
+          transition-duration: 400ms;
+        }
+        .duration-600 {
+          transition-duration: 600ms;
         }
       `}</style>
     </div>
