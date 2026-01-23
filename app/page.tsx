@@ -55,7 +55,7 @@ const fadeInUp = {
   visible: { 
     opacity: 1, 
     y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+    transition: { type: "spring", stiffness: 100, damping: 20 }
   }
 }
 
@@ -63,7 +63,7 @@ const fadeIn = {
   hidden: { opacity: 0 },
   visible: { 
     opacity: 1,
-    transition: { duration: 0.5 }
+    transition: { type: "spring", stiffness: 200, damping: 25 }
   }
 }
 
@@ -71,7 +71,7 @@ const staggerContainer = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 }
+    transition: { staggerChildren: 0.06, delayChildren: 0.08, type: "spring", stiffness: 100, damping: 20 }
   }
 }
 
@@ -80,18 +80,18 @@ const scaleIn = {
   visible: { 
     scale: 1, 
     opacity: 1,
-    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+    transition: { type: "spring", stiffness: 150, damping: 20 }
   }
 }
 
 const slideInLeft = {
   hidden: { x: -50, opacity: 0 },
-  visible: { x: 0, opacity: 1, transition: { duration: 0.5 } }
+  visible: { x: 0, opacity: 1, transition: { type: "spring", stiffness: 100, damping: 20 } }
 }
 
 const slideInRight = {
   hidden: { x: 50, opacity: 0 },
-  visible: { x: 0, opacity: 1, transition: { duration: 0.5 } }
+  visible: { x: 0, opacity: 1, transition: { type: "spring", stiffness: 100, damping: 20 } }
 }
 
 // ============================================
@@ -192,7 +192,7 @@ function PipelineProgress() {
               )}
             </div>
             <div className="text-left sm:text-center">
-              <p className={`text-sm font-medium ${step.status === 'pending' ? 'text-white/40' : 'text-white'}`}>
+              <p className={`text-sm font-semibold ${step.status === 'pending' ? 'text-white/40' : 'text-white'}`}>
                 {step.label}
               </p>
               <p className={`text-xs ${step.status === 'complete' ? 'text-emerald-400' : step.status === 'current' ? 'text-[#00d4ff]' : 'text-white/30'}`}>
@@ -262,7 +262,7 @@ function FeatureTabs() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className={`
-              relative px-4 sm:px-6 py-3 rounded-xl font-light text-sm
+              relative px-4 sm:px-6 py-3 rounded-xl font-normal text-sm
               transition-all duration-300 flex items-center gap-2
               ${activeTab === i 
                 ? 'bg-white/10 border-white/20 text-white shadow-lg shadow-[#00d4ff]/10' 
@@ -289,18 +289,18 @@ function FeatureTabs() {
             <div className="grid lg:grid-cols-2 gap-8 items-center">
               <div className="space-y-6">
                 <div 
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
                   style={{ backgroundColor: `${currentTab.color}15`, color: currentTab.color }}
                 >
                   <currentTab.icon className="w-3.5 h-3.5" />
                   {currentTab.label}
                 </div>
                 
-                <h3 className="text-2xl sm:text-3xl font-light text-white">
+                <h3 className="text-2xl sm:text-3xl font-normal text-white">
                   {currentTab.title}
                 </h3>
                 
-                <p className="text-white/60 font-light leading-relaxed">
+                <p className="text-white/60 font-normal leading-relaxed">
                   {currentTab.description}
                 </p>
 
@@ -311,7 +311,7 @@ function FeatureTabs() {
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.1 }}
-                      className="flex items-center gap-3 text-white/80 font-light"
+                      className="flex items-center gap-3 text-white/80 font-normal"
                     >
                       <div 
                         className="w-5 h-5 rounded-full flex items-center justify-center"
@@ -326,7 +326,7 @@ function FeatureTabs() {
 
                 <Link href="/login">
                   <Button 
-                    className="mt-4 bg-white/10 hover:bg-white/15 text-white border border-white/10 font-light"
+                    className="mt-4 bg-white/10 hover:bg-white/15 text-white border border-white/10 font-normal"
                   >
                     Découvrir
                     <ArrowRight className="w-4 h-4 ml-2" />
@@ -366,7 +366,7 @@ function InventoryMockup() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between mb-4">
-        <span className="text-white/80 text-sm font-light">Stock actuel</span>
+        <span className="text-white/80 text-sm font-normal">Stock actuel</span>
         <span className="text-xs text-white/40">Mis à jour il y a 2 min</span>
       </div>
       {items.map((item, i) => (
@@ -382,7 +382,7 @@ function InventoryMockup() {
               item.status === 'ok' ? 'bg-emerald-400' : 
               item.status === 'low' ? 'bg-amber-400' : 'bg-red-400'
             }`} />
-            <span className="text-white/80 text-sm font-light">{item.name}</span>
+            <span className="text-white/80 text-sm font-normal">{item.name}</span>
           </div>
           <span className="text-white/60 text-sm">{item.qty}</span>
         </motion.div>
@@ -395,7 +395,7 @@ function PredictionMockup() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-white/80 text-sm font-light">Prévisions 7 jours</span>
+        <span className="text-white/80 text-sm font-normal">Prévisions 7 jours</span>
         <span className="text-xs text-[#8b5cf6]">IA Active</span>
       </div>
       <div className="flex items-end gap-1.5 h-32">
@@ -439,7 +439,7 @@ function ReportsMockup() {
             className="p-3 rounded-lg bg-white/5 border border-white/5"
           >
             <p className="text-white/40 text-[10px] uppercase tracking-wider">{stat.label}</p>
-            <p className="text-white font-medium mt-1">{stat.value}</p>
+            <p className="text-white font-semibold mt-1">{stat.value}</p>
             <p className="text-emerald-400 text-xs">{stat.change}</p>
           </motion.div>
         ))}
@@ -452,8 +452,8 @@ function PipelineMockup() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-white/80 text-sm font-light">Votre progression</span>
-        <span className="text-[#f59e0b] text-xs font-medium">Level 12</span>
+        <span className="text-white/80 text-sm font-normal">Votre progression</span>
+        <span className="text-[#f59e0b] text-xs font-semibold">Level 12</span>
       </div>
       
       <div className="p-4 rounded-xl bg-gradient-to-r from-[#f59e0b]/10 to-transparent border border-[#f59e0b]/20">
@@ -462,7 +462,7 @@ function PipelineMockup() {
             <Crown className="w-5 h-5 text-[#f59e0b]" />
           </div>
           <div>
-            <p className="text-white text-sm font-medium">Stock Master</p>
+            <p className="text-white text-sm font-semibold">Stock Master</p>
             <p className="text-white/50 text-xs">2,450 / 3,000 XP</p>
           </div>
         </div>
@@ -505,15 +505,15 @@ function TestimonialCard({ testimonial, isActive }: { testimonial: any; isActive
           <Star key={i} className="w-4 h-4 text-[#f59e0b] fill-[#f59e0b]" />
         ))}
       </div>
-      <p className="text-white/80 font-light leading-relaxed mb-6 italic">
+      <p className="text-white/80 font-normal leading-relaxed mb-6 italic">
         "{testimonial.quote}"
       </p>
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00d4ff] to-[#8b5cf6] flex items-center justify-center text-white font-medium text-sm">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00d4ff] to-[#8b5cf6] flex items-center justify-center text-white font-semibold text-sm">
           {testimonial.avatar}
         </div>
         <div>
-          <p className="text-white font-medium text-sm">{testimonial.name}</p>
+          <p className="text-white font-semibold text-sm">{testimonial.name}</p>
           <p className="text-white/50 text-xs">{testimonial.role}</p>
         </div>
       </div>
@@ -531,7 +531,7 @@ function LogoTicker() {
         {[...logos, ...logos].map((logo, i) => (
           <div key={i} className="flex items-center gap-2 text-white/30 hover:text-white/50 transition-colors whitespace-nowrap">
             <div className="w-6 h-6 rounded bg-white/10" />
-            <span className="font-light text-sm">{logo}</span>
+            <span className="font-normal text-sm">{logo}</span>
           </div>
         ))}
       </div>
@@ -568,7 +568,7 @@ function FAQItem({ question, answer, index }: { question: string; answer: string
           onClick={() => setIsOpen(!isOpen)}
           className="w-full px-6 sm:px-8 py-6 flex items-center justify-between gap-4 text-left relative z-10"
         >
-          <span className="text-white font-medium text-base sm:text-lg pr-8">
+          <span className="text-white font-semibold text-base sm:text-lg pr-8">
             {question}
           </span>
           <motion.div
@@ -590,7 +590,7 @@ function FAQItem({ question, answer, index }: { question: string; answer: string
               className="overflow-hidden"
             >
               <div className="px-6 sm:px-8 pb-6 pt-0 border-t border-white/[0.05] relative z-10">
-                <p className="text-white/60 font-light leading-relaxed text-sm sm:text-base pt-4">
+                <p className="text-white/60 font-normal leading-relaxed text-sm sm:text-base pt-4">
                   {answer}
                 </p>
               </div>
@@ -631,7 +631,7 @@ export default function LandingPage() {
   const price = billingPeriod === "monthly" ? 199 : 1393
 
   return (
-    <div className="min-h-screen bg-[#050508] text-white overflow-x-hidden font-light">
+    <div className="min-h-screen bg-[#050508] text-white overflow-x-hidden font-normal">
       {/* Background Gradient */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a12] via-[#050508] to-[#050508]" />
@@ -652,7 +652,7 @@ export default function LandingPage() {
 
             <div className="hidden md:flex items-center gap-8">
               {["Fonctionnalités", "Tarifs", "Témoignages", "FAQ"].map((item) => (
-                <a key={item} href={`#${item.toLowerCase()}`} className="text-sm text-white/50 hover:text-white transition-colors font-light">
+                <a key={item} href={`#${item.toLowerCase()}`} className="text-sm text-white/50 hover:text-white transition-colors font-normal">
                   {item}
                 </a>
               ))}
@@ -664,7 +664,7 @@ export default function LandingPage() {
                 En ligne
               </div>
               <Link href="/login">
-                <Button className="bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/10 text-white font-light px-5">
+                <Button className="bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/10 text-white font-normal px-5">
                   Connexion
                 </Button>
               </Link>
@@ -687,16 +687,16 @@ export default function LandingPage() {
             >
               <div className="px-4 py-6 space-y-4">
                 {["Fonctionnalités", "Tarifs", "Témoignages", "FAQ"].map((item) => (
-                  <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsMobileMenuOpen(false)} className="block text-white/70 hover:text-white py-2 font-light">
+                  <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsMobileMenuOpen(false)} className="block text-white/70 hover:text-white py-2 font-normal">
                     {item}
                   </a>
                 ))}
                 <div className="pt-4 flex flex-col gap-3">
                   <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button className="w-full bg-white/10 border border-white/10 text-white font-light">Connexion</Button>
+                    <Button className="w-full bg-white/10 border border-white/10 text-white font-normal">Connexion</Button>
                   </Link>
                   <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button className="w-full bg-[#00d4ff] hover:bg-[#00d4ff]/90 text-black font-medium">Essai gratuit</Button>
+                    <Button className="w-full bg-[#00d4ff] hover:bg-[#00d4ff]/90 text-black font-semibold">Essai gratuit</Button>
                   </Link>
                 </div>
               </div>
@@ -721,64 +721,108 @@ export default function LandingPage() {
               </motion.h1>
 
               {/* Subtitle */}
-              <motion.p variants={fadeInUp} className="text-base sm:text-lg md:text-xl text-white/50 font-light max-w-2xl mx-auto mb-10 leading-relaxed">
+              <motion.p variants={fadeInUp} className="text-base sm:text-lg md:text-xl text-white/60 font-normal max-w-2xl mx-auto mb-10 leading-relaxed">
                 Suivi temps réel, prévisions IA, 0 perte. Boostez vos marges et simplifiez votre gestion avec notre plateforme tout-en-un.
               </motion.p>
 
               {/* CTAs */}
-              <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+              <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+                {/* Bouton Essai Gratuit - réduit */}
                 <Link href="/login">
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="relative h-16 sm:h-18 px-12 sm:px-16 bg-white text-[#050508] font-semibold text-lg sm:text-xl rounded-xl overflow-hidden group transition-all duration-300 shadow-lg shadow-white/20 hover:shadow-2xl hover:shadow-white/40"
+                    className="relative h-12 sm:h-14 px-8 sm:px-10 bg-white text-[#050508] font-semibold text-base sm:text-lg rounded-xl overflow-hidden group transition-all duration-300 shadow-lg shadow-white/20 hover:shadow-2xl hover:shadow-cyan-400/40"
                   >
-                    {/* Effet de remplissage au survol - animation de gauche à droite */}
+                    {/* Fond de vague - remplissage principal */}
                     <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-cyan-400/30 to-cyan-300/40"
-                      initial={{ x: "-100%", opacity: 0 }}
-                      whileHover={{ x: "0%", opacity: 1 }}
-                      transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                      className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-cyan-300 to-cyan-400"
+                      initial={{ x: "-100%", scaleX: 1.5 }}
+                      whileHover={{ x: "0%", scaleX: 1 }}
+                      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                     />
                     
-                    {/* Deuxième couche de remplissage pour plus d'intensité */}
+                    {/* Vague animée - effet de mouvement */}
                     <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                      initial={{ x: "-100%" }}
-                      whileHover={{ x: "100%" }}
-                      transition={{ duration: 0.6, ease: "easeInOut" }}
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent"
+                      initial={{ x: "-200%" }}
+                      whileHover={{ x: "200%" }}
+                      transition={{ duration: 0.6, ease: "easeInOut", delay: 0.1 }}
                     />
                     
-                    {/* Glow effect - ombre externe qui grandit */}
+                    {/* Deuxième vague pour effet de profondeur */}
                     <motion.div
-                      className="absolute -inset-1 bg-gradient-to-r from-cyan-400 via-cyan-300 to-white rounded-xl blur-xl opacity-0 group-hover:opacity-70 -z-10"
-                      animate={{
-                        scale: [1, 1.1, 1],
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        repeatType: "reverse",
-                      }}
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-200/50 to-transparent"
+                      initial={{ x: "-150%" }}
+                      whileHover={{ x: "150%" }}
+                      transition={{ duration: 0.5, ease: "easeInOut", delay: 0.2 }}
                     />
                     
-                    {/* Texte avec z-index pour rester au-dessus */}
-                    <span className="relative z-10 inline-flex items-center gap-2.5">
+                    {/* Glow effect externe */}
+                    <motion.div
+                      className="absolute -inset-2 bg-gradient-to-r from-cyan-400 via-cyan-300 to-cyan-400 rounded-xl blur-xl opacity-0 group-hover:opacity-70 -z-10"
+                      initial={{ scale: 0.8 }}
+                      whileHover={{ scale: 1.1 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                    
+                    {/* Texte - change de couleur au survol */}
+                    <span className="relative z-10 inline-flex items-center gap-2 group-hover:text-[#050508] transition-colors duration-300">
                       Essai Gratuit 14 jours
-                      <motion.div
-                        animate={{ x: 0 }}
-                        whileHover={{ x: 4 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
-                      </motion.div>
+                      <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </span>
+                  </motion.button>
+                </Link>
+
+                {/* Bouton Contactez-nous */}
+                <Link href="/contact">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="relative h-12 sm:h-14 px-8 sm:px-10 bg-transparent border-2 border-white/30 text-white font-semibold text-base sm:text-lg rounded-xl overflow-hidden group transition-all duration-300 hover:border-[#00d4ff]"
+                  >
+                    {/* Fond de vague - remplissage principal */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-[#00d4ff] via-[#00b4d8] to-[#00d4ff]"
+                      initial={{ x: "-100%", scaleX: 1.5 }}
+                      whileHover={{ x: "0%", scaleX: 1 }}
+                      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    />
+                    
+                    {/* Vague animée - effet de mouvement */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent"
+                      initial={{ x: "-200%" }}
+                      whileHover={{ x: "200%" }}
+                      transition={{ duration: 0.6, ease: "easeInOut", delay: 0.1 }}
+                    />
+                    
+                    {/* Deuxième vague pour effet de profondeur */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-[#90e0ef]/50 to-transparent"
+                      initial={{ x: "-150%" }}
+                      whileHover={{ x: "150%" }}
+                      transition={{ duration: 0.5, ease: "easeInOut", delay: 0.2 }}
+                    />
+                    
+                    {/* Glow effect externe */}
+                    <motion.div
+                      className="absolute -inset-2 bg-gradient-to-r from-[#00d4ff] via-[#00b4d8] to-[#00d4ff] rounded-xl blur-xl opacity-0 group-hover:opacity-60 -z-10"
+                      initial={{ scale: 0.8 }}
+                      whileHover={{ scale: 1.1 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                    
+                    {/* Texte - change de couleur au survol */}
+                    <span className="relative z-10 inline-flex items-center gap-2 group-hover:text-[#050508] transition-colors duration-300">
+                      Contactez-nous
                     </span>
                   </motion.button>
                 </Link>
               </motion.div>
 
               {/* Trust Badges */}
-              <motion.div variants={fadeInUp} className="flex flex-wrap justify-center gap-6 sm:gap-10 text-sm text-white/40 font-light">
+              <motion.div variants={fadeInUp} className="flex flex-wrap justify-center gap-6 sm:gap-10 text-sm text-white/50 font-normal">
                 {[
                   { icon: Zap, text: "4-6 semaines déploiement" },
                   { icon: Eye, text: "Tarifs transparents" },
@@ -827,7 +871,7 @@ export default function LandingPage() {
                   <div className="p-4 sm:p-8 space-y-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="text-white font-medium">Tableau de bord</h3>
+                        <h3 className="text-white font-semibold">Tableau de bord</h3>
                         <p className="text-white/40 text-sm">Janvier 2026</p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -852,7 +896,7 @@ export default function LandingPage() {
                           className="p-4 rounded-xl bg-white/[0.03] border border-white/5"
                         >
                           <p className="text-white/40 text-xs uppercase tracking-wider">{stat.label}</p>
-                          <p className="text-white text-xl sm:text-2xl font-light mt-1">{stat.value}</p>
+                          <p className="text-white text-xl sm:text-2xl font-normal mt-1">{stat.value}</p>
                           <p className={`text-xs mt-1 ${
                             stat.color === 'emerald' ? 'text-emerald-400' : 
                             stat.color === 'amber' ? 'text-amber-400' : 
@@ -895,13 +939,13 @@ export default function LandingPage() {
       <section id="fonctionnalités" className="py-24 sm:py-32 px-4 relative z-10">
         <div className="max-w-7xl mx-auto">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="text-center mb-16">
-            <motion.p variants={fadeInUp} className="text-[#00d4ff] text-sm uppercase tracking-widest mb-4 font-light">
+            <motion.p variants={fadeInUp} className="text-[#00d4ff] text-sm uppercase tracking-widest mb-4 font-normal">
               Pourquoi StockGuard
             </motion.p>
-            <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl lg:text-5xl font-extralight mb-4">
-              Libérez le Potentiel de <span className="italic font-light text-[#00d4ff]">Votre Restaurant</span>
+            <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl lg:text-5xl font-normal mb-4">
+              Libérez le Potentiel de <span className="italic font-normal text-[#00d4ff]">Votre Restaurant</span>
             </motion.h2>
-            <motion.p variants={fadeInUp} className="text-white/50 font-light max-w-2xl mx-auto">
+            <motion.p variants={fadeInUp} className="text-white/60 font-normal max-w-2xl mx-auto">
               Notre solution SaaS vous donne les outils et insights nécessaires pour piloter votre croissance et votre efficacité.
             </motion.p>
           </motion.div>
@@ -918,8 +962,8 @@ export default function LandingPage() {
                   <div className="w-12 h-12 rounded-xl bg-[#00d4ff]/10 flex items-center justify-center mb-6">
                     <feature.icon className="w-6 h-6 text-[#00d4ff]" />
                   </div>
-                  <h3 className="text-lg font-medium text-white mb-2">{feature.title}</h3>
-                  <p className="text-white/50 font-light leading-relaxed text-sm">{feature.desc}</p>
+                  <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
+                  <p className="text-white/60 font-normal leading-relaxed text-sm">{feature.desc}</p>
                 </GlassCard>
               </motion.div>
             ))}
@@ -942,53 +986,73 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto relative">
           {/* Header */}
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="text-center mb-16">
-            <motion.p variants={fadeInUp} className="text-[#00d4ff] text-sm uppercase tracking-widest mb-4 font-light">
+            <motion.p variants={fadeInUp} className="text-[#00d4ff] text-sm uppercase tracking-widest mb-4 font-normal">
               Tarifs
             </motion.p>
-            <motion.h2 variants={fadeInUp} className="text-4xl sm:text-5xl lg:text-6xl font-extralight mb-4">
+            <motion.h2 variants={fadeInUp} className="text-4xl sm:text-5xl lg:text-6xl font-normal mb-4">
               <span className="text-white/30">Pricing</span>
             </motion.h2>
-            <motion.p variants={fadeInUp} className="text-white/50 font-light max-w-xl mx-auto">
+            <motion.p variants={fadeInUp} className="text-white/60 font-normal max-w-xl mx-auto">
               Un seul plan Premium, toutes les fonctionnalités incluses
             </motion.p>
           </motion.div>
 
-          {/* Pricing Cards Container - 2 cards */}
+          {/* Pricing Cards Container - 3 cards */}
           <motion.div
             initial={{ opacity: 0, y: 60 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            className="relative flex flex-col lg:flex-row items-center lg:items-stretch justify-center gap-8 perspective-1000"
+            className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto"
           >
-            {/* Premium Mensuel - Left card with rotation */}
+            {/* Premium Mensuel */}
             <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              whileHover={{ scale: 1.03, rotateY: 0 }}
-              className="w-full max-w-sm lg:w-[380px] lg:transform lg:rotate-y-[-6deg] z-10"
-              style={{ transformStyle: 'preserve-3d' }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 100, damping: 20 }}
+              whileHover={{ scale: 1.05, y: -12 }}
+              className="w-full cursor-pointer"
+              style={{ willChange: "transform" }}
             >
-              <div className="relative h-full p-[1px] rounded-3xl bg-gradient-to-b from-white/25 via-white/10 to-transparent overflow-hidden group">
+              <motion.div 
+                className="relative h-full p-[1px] rounded-3xl bg-gradient-to-b from-white/25 via-white/10 to-transparent overflow-hidden"
+                whileHover={{ boxShadow: "0 25px 50px -12px rgba(0, 212, 255, 0.25)" }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              >
                 {/* Glass card inner */}
-                <div className="relative h-full bg-[#0a0c14]/80 backdrop-blur-xl rounded-3xl p-8 border border-white/[0.1]">
-                  {/* Subtle cyan glow on hover */}
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-24 bg-[#00d4ff]/10 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <motion.div 
+                  className="relative h-full bg-[#0a0c14]/80 backdrop-blur-xl rounded-3xl p-8 border border-white/[0.1]"
+                  whileHover={{ borderColor: "rgba(0, 212, 255, 0.4)", backgroundColor: "rgba(10, 12, 20, 0.9)" }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                >
+                  {/* Enhanced cyan glow on hover */}
+                  <motion.div 
+                    className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-32 bg-[#00d4ff]/20 blur-3xl rounded-full"
+                    initial={{ opacity: 0 }}
+                    whileHover={{ opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                  {/* Shimmer effect */}
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+                    initial={{ x: "-100%" }}
+                    whileHover={{ x: "100%" }}
+                    transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+                  />
                   
                   <div className="relative z-10">
                     {/* Plan name */}
-                    <p className="text-[#00d4ff] text-sm font-medium mb-2">Premium</p>
+                    <p className="text-[#00d4ff] text-sm font-semibold mb-2">Premium</p>
                     
                     {/* Price */}
                     <div className="mb-4">
-                      <span className="text-5xl font-light text-white">199€</span>
-                      <span className="text-white/40 text-lg font-light">/mois</span>
+                      <span className="text-5xl font-normal text-white">199€</span>
+                      <span className="text-white/40 text-lg font-normal">/mois</span>
                     </div>
                     
                     {/* Description */}
-                    <p className="text-white/40 text-sm font-light mb-8 leading-relaxed">
+                    <p className="text-white/40 text-sm font-normal mb-8 leading-relaxed">
                       Le plan complet pour reprendre le contrôle du stock, réduire le gaspillage et protéger vos marges.
                     </p>
                     
@@ -1008,61 +1072,107 @@ export default function LandingPage() {
                           <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
                             <Check className="w-3 h-3 text-white/70" />
                           </div>
-                          <span className="text-white/70 text-sm font-light">{feature}</span>
+                          <span className="text-white/70 text-sm font-normal">{feature}</span>
                         </div>
                       ))}
                     </div>
                     
                     {/* CTA Button */}
                     <Link href="/login">
-                      <button className="w-full py-4 rounded-full border border-white/20 text-white text-sm font-medium hover:bg-white/5 hover:border-white/40 transition-all duration-300">
+                      <motion.button 
+                        className="w-full py-4 rounded-full border border-white/20 text-white text-sm font-semibold"
+                        whileHover={{ 
+                          scale: 1.05,
+                          backgroundColor: "rgba(255, 255, 255, 0.1)",
+                          borderColor: "rgba(0, 212, 255, 0.5)",
+                          color: "#00d4ff",
+                          boxShadow: "0 10px 25px -5px rgba(0, 212, 255, 0.2)"
+                        }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                      >
                         Choisir ce plan
-                      </button>
+                      </motion.button>
                     </Link>
                   </div>
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             </motion.div>
 
-            {/* Premium Annuel - Right card with rotation (featured) */}
+            {/* Premium Annuel - Featured */}
             <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.3 }}
-              whileHover={{ scale: 1.03, rotateY: 0 }}
-              className="w-full max-w-sm lg:w-[380px] lg:transform lg:rotate-y-[6deg] z-10"
-              style={{ transformStyle: 'preserve-3d' }}
+              transition={{ delay: 0.3, type: "spring", stiffness: 100, damping: 20 }}
+              whileHover={{ scale: 1.05, y: -12 }}
+              className="w-full cursor-pointer"
+              style={{ willChange: "transform" }}
             >
-              <div className="relative h-full p-[1px] rounded-3xl bg-gradient-to-b from-[#00d4ff]/50 via-[#00d4ff]/20 to-transparent overflow-hidden group shadow-2xl shadow-[#00d4ff]/20">
-                {/* Animated border glow */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#00d4ff]/0 via-[#00d4ff]/30 to-[#00d4ff]/0 animate-pulse" />
+              <motion.div 
+                className="relative h-full p-[1px] rounded-3xl bg-gradient-to-b from-[#00d4ff]/50 via-[#00d4ff]/20 to-transparent overflow-hidden shadow-2xl shadow-[#00d4ff]/20"
+                whileHover={{ boxShadow: "0 25px 50px -12px rgba(0, 212, 255, 0.4)" }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              >
+                {/* Enhanced animated border glow */}
+                <motion.div 
+                  className="absolute inset-0 bg-gradient-to-r from-[#00d4ff]/0 via-[#00d4ff]/50 to-[#00d4ff]/0"
+                  animate={{ 
+                    background: [
+                      "linear-gradient(to right, rgba(0, 212, 255, 0), rgba(0, 212, 255, 0.5), rgba(0, 212, 255, 0))",
+                      "linear-gradient(to right, rgba(0, 212, 255, 0), rgba(0, 212, 255, 0.7), rgba(0, 212, 255, 0))",
+                      "linear-gradient(to right, rgba(0, 212, 255, 0), rgba(0, 212, 255, 0.5), rgba(0, 212, 255, 0))"
+                    ]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                />
                 
                 {/* Glass card inner */}
-                <div className="relative h-full bg-[#0a0c14]/90 backdrop-blur-xl rounded-3xl p-8 border border-[#00d4ff]/20">
-                  {/* Top glow */}
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-[#00d4ff]/20 blur-3xl rounded-full" />
+                <motion.div 
+                  className="relative h-full bg-[#0a0c14]/90 backdrop-blur-xl rounded-3xl p-8 border border-[#00d4ff]/20"
+                  whileHover={{ borderColor: "rgba(0, 212, 255, 0.5)", backgroundColor: "rgba(10, 12, 20, 0.95)" }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                >
+                  {/* Enhanced top glow */}
+                  <motion.div 
+                    className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-40 bg-[#00d4ff]/30 blur-3xl rounded-full"
+                    initial={{ opacity: 0.5 }}
+                    whileHover={{ opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
                   
-                  {/* Subtle inner glow */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#00d4ff]/10 via-transparent to-transparent opacity-50 rounded-3xl" />
+                  {/* Enhanced inner glow */}
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-br from-[#00d4ff]/15 via-transparent to-transparent rounded-3xl"
+                    initial={{ opacity: 0.5 }}
+                    whileHover={{ opacity: 0.8 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                  
+                  {/* Shimmer effect */}
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                    initial={{ x: "-100%" }}
+                    whileHover={{ x: "100%" }}
+                    transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+                  />
                   
                   <div className="relative z-10">
                     {/* Best value badge */}
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-[#00d4ff] text-sm font-medium">Premium</p>
-                      <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-medium border border-emerald-500/30">
+                      <p className="text-[#00d4ff] text-sm font-semibold">Premium</p>
+                      <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-semibold border border-emerald-500/30">
                         -41% économisé
                       </span>
                     </div>
                     
                     {/* Price */}
                     <div className="mb-4">
-                      <span className="text-5xl font-light text-white">1393€</span>
-                      <span className="text-white/40 text-lg font-light">/an</span>
+                      <span className="text-5xl font-normal text-white">1393€</span>
+                      <span className="text-white/40 text-lg font-normal">/an</span>
                     </div>
                     
                     {/* Description */}
-                    <p className="text-white/50 text-sm font-light mb-8 leading-relaxed">
+                    <p className="text-white/50 text-sm font-normal mb-8 leading-relaxed">
                       Le meilleur rapport qualité-prix pour piloter votre stock toute l’année, sans compromis.
                     </p>
                     
@@ -1082,24 +1192,142 @@ export default function LandingPage() {
                           <div className="w-5 h-5 rounded-full bg-[#00d4ff]/20 flex items-center justify-center flex-shrink-0">
                             <Check className="w-3 h-3 text-[#00d4ff]" />
                           </div>
-                          <span className="text-white/80 text-sm font-light">{feature}</span>
+                          <span className="text-white/80 text-sm font-normal">{feature}</span>
                         </div>
                       ))}
                     </div>
                     
                     {/* CTA Button */}
                     <Link href="/login">
-                      <button className="w-full py-4 rounded-full bg-gradient-to-r from-[#00d4ff] to-[#00a8cc] text-[#050508] text-sm font-semibold hover:opacity-90 transition-all duration-300 shadow-lg shadow-[#00d4ff]/30">
+                      <motion.button 
+                        className="w-full py-4 rounded-full bg-gradient-to-r from-[#00d4ff] to-[#00a8cc] text-[#050508] text-sm font-semibold shadow-lg shadow-[#00d4ff]/30"
+                        whileHover={{ 
+                          scale: 1.05,
+                          boxShadow: "0 20px 40px -10px rgba(0, 212, 255, 0.5)"
+                        }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                      >
                         Choisir ce plan
-                      </button>
+                      </motion.button>
                     </Link>
                     
-                    <p className="text-center text-white/30 text-xs mt-4 font-light">
+                    <p className="text-center text-white/30 text-xs mt-4 font-normal">
                       14 jours d'essai gratuit • Aucune carte requise
                     </p>
                   </div>
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
+            </motion.div>
+
+            {/* Sur Mesure */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4, type: "spring", stiffness: 100, damping: 20 }}
+              whileHover={{ scale: 1.05, y: -12 }}
+              className="w-full cursor-pointer"
+              style={{ willChange: "transform" }}
+            >
+              <motion.div 
+                className="relative h-full p-[1px] rounded-3xl bg-gradient-to-b from-[#8b5cf6]/50 via-[#8b5cf6]/20 to-transparent overflow-hidden shadow-xl shadow-[#8b5cf6]/10"
+                whileHover={{ boxShadow: "0 25px 50px -12px rgba(139, 92, 246, 0.3)" }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              >
+                {/* Enhanced animated border glow */}
+                <motion.div 
+                  className="absolute inset-0 bg-gradient-to-r from-[#8b5cf6]/0 via-[#8b5cf6]/40 to-[#8b5cf6]/0"
+                  animate={{ 
+                    background: [
+                      "linear-gradient(to right, rgba(139, 92, 246, 0), rgba(139, 92, 246, 0.4), rgba(139, 92, 246, 0))",
+                      "linear-gradient(to right, rgba(139, 92, 246, 0), rgba(139, 92, 246, 0.6), rgba(139, 92, 246, 0))",
+                      "linear-gradient(to right, rgba(139, 92, 246, 0), rgba(139, 92, 246, 0.4), rgba(139, 92, 246, 0))"
+                    ]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                />
+
+                {/* Glass card inner */}
+                <motion.div 
+                  className="relative h-full bg-[#0a0c14]/90 backdrop-blur-xl rounded-3xl p-8 border border-[#8b5cf6]/20"
+                  whileHover={{ borderColor: "rgba(139, 92, 246, 0.5)", backgroundColor: "rgba(10, 12, 20, 0.95)" }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                >
+                  {/* Enhanced top glow */}
+                  <motion.div 
+                    className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-40 bg-[#8b5cf6]/25 blur-3xl rounded-full"
+                    initial={{ opacity: 0.5 }}
+                    whileHover={{ opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+
+                  {/* Enhanced inner glow */}
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-br from-[#8b5cf6]/15 via-transparent to-transparent rounded-3xl"
+                    initial={{ opacity: 0.5 }}
+                    whileHover={{ opacity: 0.8 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                  
+                  {/* Shimmer effect */}
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                    initial={{ x: "-100%" }}
+                    whileHover={{ x: "100%" }}
+                    transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+                  />
+
+                  <div className="relative z-10">
+                    {/* Plan name */}
+                    <p className="text-[#8b5cf6] text-sm font-semibold mb-2">Sur Mesure</p>
+
+                    {/* Price */}
+                    <div className="mb-4">
+                      <span className="text-5xl font-normal text-white">Devis</span>
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-white/40 text-sm font-normal mb-8 leading-relaxed">
+                      Solution adaptée aux besoins spécifiques de votre établissement ou groupe.
+                    </p>
+
+                    {/* Features */}
+                    <div className="space-y-4 mb-8">
+                      {[
+                        "Produits illimités",
+                        "Multi-établissements",
+                        "Alertes intelligentes (ruptures, dates, surstock)",
+                        "Inventaires rapides & historiques",
+                        "Suivi des pertes & des gaspillages",
+                        "Suggestions d'achat basées sur vos usages",
+                        "Tableau de bord temps réel (KPIs & tendances)",
+                        "Accès équipe + rôles & permissions"
+                      ].map((feature, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <div className="w-5 h-5 rounded-full bg-[#8b5cf6]/20 flex items-center justify-center flex-shrink-0">
+                            <Check className="w-3 h-3 text-[#8b5cf6]" />
+                          </div>
+                          <span className="text-white/70 text-sm font-normal">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* CTA Button */}
+                    <Link href="/contact">
+                      <motion.button 
+                        className="w-full py-4 rounded-full bg-gradient-to-r from-[#8b5cf6] to-[#7c3aed] text-white text-sm font-semibold shadow-lg shadow-[#8b5cf6]/30"
+                        whileHover={{ 
+                          scale: 1.05,
+                          boxShadow: "0 20px 40px -10px rgba(139, 92, 246, 0.5)"
+                        }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                      >
+                        Contacter nous
+                      </motion.button>
+                    </Link>
+                  </div>
+                </motion.div>
+              </motion.div>
             </motion.div>
           </motion.div>
         </div>
@@ -1109,11 +1337,11 @@ export default function LandingPage() {
       <section id="témoignages" className="py-24 sm:py-32 px-4 relative z-10">
         <div className="max-w-7xl mx-auto">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="text-center mb-12">
-            <motion.p variants={fadeInUp} className="text-[#00d4ff] text-sm uppercase tracking-widest mb-4 font-light">
+            <motion.p variants={fadeInUp} className="text-[#00d4ff] text-sm uppercase tracking-widest mb-4 font-normal">
               Témoignages
             </motion.p>
-            <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl lg:text-5xl font-extralight">
-              Ils nous font <span className="italic text-[#00d4ff] font-medium">confiance</span>
+            <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl lg:text-5xl font-normal">
+              Ils nous font <span className="italic text-[#00d4ff] font-semibold">confiance</span>
             </motion.h2>
           </motion.div>
 
@@ -1143,13 +1371,13 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto relative">
           {/* Header */}
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="text-center mb-16">
-            <motion.p variants={fadeInUp} className="text-[#00d4ff] text-sm uppercase tracking-widest mb-4 font-light">
+            <motion.p variants={fadeInUp} className="text-[#00d4ff] text-sm uppercase tracking-widest mb-4 font-normal">
               FAQ
             </motion.p>
-            <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl lg:text-5xl font-extralight mb-4">
-              Questions <span className="italic text-[#00d4ff] font-medium">fréquentes</span>
+            <motion.h2 variants={fadeInUp} className="text-3xl sm:text-4xl lg:text-5xl font-normal mb-4">
+              Questions <span className="italic text-[#00d4ff] font-semibold">fréquentes</span>
             </motion.h2>
-            <motion.p variants={fadeInUp} className="text-white/50 font-light max-w-xl mx-auto">
+            <motion.p variants={fadeInUp} className="text-white/60 font-normal max-w-xl mx-auto">
               Tout ce que vous devez savoir sur StockGuard
             </motion.p>
           </motion.div>
@@ -1202,20 +1430,20 @@ export default function LandingPage() {
           <GlassCard className="p-8 sm:p-16 text-center relative overflow-hidden" hover={false}>
             <div className="absolute inset-0 bg-gradient-to-r from-[#00d4ff]/5 via-[#8b5cf6]/5 to-[#00d4ff]/5" />
             <div className="relative">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extralight mb-6">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-normal mb-6">
                 Prêt à <span className="text-[#00d4ff]">transformer</span> votre gestion ?
               </h2>
-              <p className="text-white/50 font-light max-w-xl mx-auto mb-10">
+              <p className="text-white/60 font-normal max-w-xl mx-auto mb-10">
                 Rejoignez les centaines de restaurateurs qui ont déjà optimisé leur stock avec StockGuard.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/login">
-                  <Button className="h-14 px-10 bg-white text-[#050508] hover:bg-white/90 font-medium text-base rounded-xl">
+                  <Button className="h-14 px-10 bg-white text-[#050508] hover:bg-white/90 font-semibold text-base rounded-xl">
                     Commencer gratuitement
                     <Rocket className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
-                <Button variant="ghost" className="h-14 px-10 text-white/70 hover:text-white hover:bg-white/5 font-light rounded-xl">
+                <Button variant="ghost" className="h-14 px-10 text-white/70 hover:text-white hover:bg-white/5 font-normal rounded-xl">
                   Nous contacter
                 </Button>
               </div>
@@ -1235,7 +1463,7 @@ export default function LandingPage() {
                 </div>
                 <span className="font-normal">StockGuard</span>
               </Link>
-              <p className="text-white/40 text-sm font-light leading-relaxed">
+              <p className="text-white/40 text-sm font-normal leading-relaxed">
                 La solution complète pour la gestion de stock des restaurants.
               </p>
             </div>
@@ -1246,11 +1474,11 @@ export default function LandingPage() {
               { title: "Légal", links: ["Mentions légales", "Confidentialité", "CGU", "Cookies"] }
             ].map((col, i) => (
               <div key={i}>
-                <h4 className="font-medium text-white mb-4 text-sm">{col.title}</h4>
+                <h4 className="font-semibold text-white mb-4 text-sm">{col.title}</h4>
                 <ul className="space-y-3">
                   {col.links.map((link, j) => (
                     <li key={j}>
-                      <a href="#" className="text-white/40 hover:text-white/70 transition-colors text-sm font-light">{link}</a>
+                      <a href="#" className="text-white/40 hover:text-white/70 transition-colors text-sm font-normal">{link}</a>
                     </li>
                   ))}
                 </ul>
@@ -1259,8 +1487,8 @@ export default function LandingPage() {
           </div>
 
           <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-white/30 text-xs font-light">© {new Date().getFullYear()} StockGuard. Tous droits réservés.</p>
-            <p className="text-white/30 text-xs font-light">Fait avec ❤️ en France</p>
+            <p className="text-white/30 text-xs font-normal">© {new Date().getFullYear()} StockGuard. Tous droits réservés.</p>
+            <p className="text-white/30 text-xs font-normal">Fait avec ❤️ en France</p>
           </div>
         </div>
       </footer>
@@ -1268,11 +1496,24 @@ export default function LandingPage() {
       {/* Custom Styles */}
       <style jsx global>{`
         @keyframes scroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-50%, 0, 0); }
         }
         .animate-scroll {
           animation: scroll 20s linear infinite;
+          will-change: transform;
+        }
+        
+        /* GPU Acceleration for animations */
+        [data-framer-component] {
+          transform: translate3d(0, 0, 0);
+          backface-visibility: hidden;
+          perspective: 1000px;
+        }
+        
+        /* Optimize motion components */
+        [data-framer-motion] {
+          will-change: transform, opacity;
         }
         
         /* Perspective for 3D pricing cards */
