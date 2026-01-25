@@ -71,6 +71,11 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(route)
   )
 
+  // Éviter les boucles de redirection - si on est sur billing/block, ne pas retraiter
+  if (request.nextUrl.pathname.startsWith("/billing")) {
+    return supabaseResponse
+  }
+
   if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone()
     url.pathname = "/login"

@@ -81,22 +81,37 @@ export default function BillingBlockPage() {
 
         const { data: establishment } = await supabase
           .from("establishments")
-          .select("subscription_status, subscription_plan")
+          .select("subscription_status, subscription_plan, stripe_subscription_id")
           .eq("id", profile.establishment_id)
           .single()
 
-        if (!establishment?.subscription_status || !establishment?.subscription_plan || establishment.subscription_plan === "free") {
+        // Normaliser les valeurs
+        const status = (establishment?.subscription_status || 'none').toLowerCase()
+        const plan = (establishment?.subscription_plan || 'free').toLowerCase()
+        const hasStripeSubscription = !!establishment?.stripe_subscription_id
+        
+        // Vérifier si l'accès est valide (même logique que le middleware)
+        const hasValidStatus = status === 'active' || status === 'trialing'
+        const isPaidPlan = plan !== 'free' && plan !== ''
+        const hasValidAccess = hasValidStatus && (isPaidPlan || hasStripeSubscription)
+        
+        console.log('[BillingBlock] Vérification:', { status, plan, hasStripeSubscription, hasValidAccess })
+        
+        // Si l'accès est valide, rediriger vers le dashboard
+        if (hasValidAccess) {
+          console.log('[BillingBlock] Accès valide, redirection vers /manager')
+          window.location.replace("/manager")
+          return
+        }
+        
+        // Déterminer la raison du blocage
+        if (!establishment?.subscription_status || !establishment?.subscription_plan || plan === "free") {
           setBlockReason("no_subscription")
-        } else if (establishment.subscription_status === "canceled" || establishment.subscription_status === "incomplete_expired") {
+        } else if (status === "canceled" || status === "incomplete_expired") {
           setBlockReason("canceled")
-        } else if (establishment.subscription_status === "past_due" || establishment.subscription_status === "unpaid") {
+        } else if (status === "past_due" || status === "unpaid") {
           setBlockReason("payment_failed")
         } else {
-          // Si le statut est active ou trialing, rediriger vers le dashboard
-          if (establishment.subscription_status === "active" || establishment.subscription_status === "trialing") {
-            window.location.href = "/manager"
-            return
-          }
           setBlockReason("expired")
         }
       } catch (error) {
