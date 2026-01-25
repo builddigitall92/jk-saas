@@ -1,16 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { 
-  Copy, 
-  Check, 
-  Building2, 
-  Users, 
-  Key, 
+import {
+  Copy,
+  Check,
+  Building2,
+  Users,
+  Key,
   RefreshCw,
   Mail,
   Phone,
@@ -29,7 +28,10 @@ import {
   Crown,
   ExternalLink,
   AlertTriangle,
-  UserMinus
+  UserMinus,
+  Sparkles,
+  Zap,
+  Shield
 } from "lucide-react"
 import { createClient } from "@/utils/supabase/client"
 import { useAuth } from "@/lib/hooks/use-auth"
@@ -71,12 +73,48 @@ const DEFAULT_CHECK_ITEMS = [
   { item_code: "materiel", item_label: "Matériel fonctionnel", icon: "Utensils" },
 ]
 
+// Glass Card Component
+function GlassCard({
+  children,
+  className = "",
+  gradient = false,
+  gradientColor = "cyan"
+}: {
+  children: React.ReactNode
+  className?: string
+  gradient?: boolean
+  gradientColor?: "cyan" | "purple" | "emerald" | "orange" | "blue"
+}) {
+  const gradientColors = {
+    cyan: "from-cyan-500/10 via-transparent to-transparent",
+    purple: "from-purple-500/10 via-transparent to-transparent",
+    emerald: "from-emerald-500/10 via-transparent to-transparent",
+    orange: "from-orange-500/10 via-transparent to-transparent",
+    blue: "from-blue-500/10 via-transparent to-transparent"
+  }
+
+  return (
+    <div className={`
+      relative overflow-hidden
+      bg-white/[0.03] backdrop-blur-xl
+      border border-white/[0.08]
+      rounded-2xl
+      shadow-[0_8px_32px_rgba(0,0,0,0.12)]
+      hover:bg-white/[0.05] hover:border-white/[0.12]
+      transition-all duration-300
+      ${gradient ? `bg-gradient-to-br ${gradientColors[gradientColor]}` : ''}
+      ${className}
+    `}>
+      {children}
+    </div>
+  )
+}
+
 export default function SettingsPage() {
   const { profile } = useAuth()
   const { subscription, currentPlan, isTrialing, isPastDue, openBillingPortal, loading: subLoading, trialDaysRemaining } = useSubscription()
   const [establishment, setEstablishment] = useState<Establishment | null>(null)
   const [openingPortal, setOpeningPortal] = useState(false)
-  const [syncingSubscription, setSyncingSubscription] = useState(false)
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -102,7 +140,7 @@ export default function SettingsPage() {
     if (!profile?.establishment_id) return
 
     const supabase = createClient()
-    
+
     // Charger l'établissement
     const { data: estData } = await supabase
       .from("establishments")
@@ -146,7 +184,7 @@ export default function SettingsPage() {
 
   async function initializeDefaultCheckItems(establishmentId: string) {
     const supabase = createClient()
-    
+
     const itemsToInsert = DEFAULT_CHECK_ITEMS.map((item, index) => ({
       establishment_id: establishmentId,
       item_code: item.item_code,
@@ -235,7 +273,7 @@ export default function SettingsPage() {
         throw new Error(result.error || 'Erreur lors de la suppression')
       }
 
-      console.log('✅ Membre retiré:', result)
+      console.log('Membre retiré:', result)
 
       // Mettre à jour la liste locale
       setTeamMembers(prev => prev.filter(m => m.id !== memberToRemove.id))
@@ -249,7 +287,7 @@ export default function SettingsPage() {
 
   async function copyCode() {
     if (!establishment?.code) return
-    
+
     await navigator.clipboard.writeText(establishment.code)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
@@ -257,12 +295,12 @@ export default function SettingsPage() {
 
   async function regenerateCode() {
     if (!establishment?.id) return
-    
+
     const supabase = createClient()
-    
+
     // Générer un nouveau code
     const newCode = Math.random().toString(36).substring(2, 8).toUpperCase()
-    
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("establishments")
@@ -276,10 +314,10 @@ export default function SettingsPage() {
 
   async function saveChanges() {
     if (!establishment?.id) return
-    
+
     setSaving(true)
     const supabase = createClient()
-    
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("establishments")
@@ -301,120 +339,155 @@ export default function SettingsPage() {
         description: "Une erreur est survenue. Veuillez réessayer.",
       })
     }
-    
+
     setSaving(false)
   }
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center mx-auto animate-pulse">
+              <Shield className="w-8 h-8 text-cyan-400" />
+            </div>
+            <div className="absolute inset-0 rounded-2xl bg-cyan-500/20 blur-xl animate-pulse" />
+          </div>
+          <p className="text-white/60 text-sm">Chargement des paramètres...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Paramètres</h1>
-        <p className="text-sm sm:text-base text-muted-foreground mt-1">
-          Gérez votre établissement et invitez votre équipe
-        </p>
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8">
+      {/* Header avec gradient */}
+      <div className="mb-8 lg:mb-10">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/25">
+            <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent">
+              Paramètres
+            </h1>
+            <p className="text-sm sm:text-base text-white/50">
+              Gérez votre établissement et configurez votre équipe
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Code d'invitation */}
-        <Card className="border-orange-500/20 bg-gradient-to-br from-orange-500/5 to-transparent">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Key className="h-5 w-5 text-orange-500" />
-              Code d'invitation
-            </CardTitle>
-            <CardDescription>
-              Partagez ce code avec vos employés pour qu'ils rejoignent votre établissement
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="flex-1 bg-background border-2 border-dashed border-orange-500/30 rounded-lg p-3 sm:p-4 text-center">
-                <span className="text-2xl sm:text-3xl font-mono font-bold tracking-widest text-orange-500">
-                  {establishment?.code || "------"}
-                </span>
+        <GlassCard gradient gradientColor="cyan" className="group">
+          <div className="p-5 sm:p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <Key className="w-5 h-5 text-cyan-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Code d'invitation</h3>
+                <p className="text-sm text-white/50">Partagez ce code avec vos employés</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex-1 relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-xl blur-lg opacity-50" />
+                <div className="relative bg-[#0a0a0a]/80 border-2 border-dashed border-cyan-500/40 rounded-xl p-4 text-center">
+                  <span className="text-2xl sm:text-3xl lg:text-4xl font-mono font-black tracking-[0.3em] bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                    {establishment?.code || "------"}
+                  </span>
+                </div>
               </div>
               <div className="flex flex-col gap-2">
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={copyCode}
-                  className="h-10 w-10 sm:h-12 sm:w-12"
+                  className="h-11 w-11 border-white/10 bg-white/5 hover:bg-cyan-500/20 hover:border-cyan-500/30 transition-all"
                 >
                   {copied ? (
-                    <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
+                    <Check className="h-5 w-5 text-emerald-400" />
                   ) : (
-                    <Copy className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <Copy className="h-5 w-5 text-white/70" />
                   )}
                 </Button>
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={regenerateCode}
-                  className="h-10 w-10 sm:h-12 sm:w-12"
+                  className="h-11 w-11 border-white/10 bg-white/5 hover:bg-cyan-500/20 hover:border-cyan-500/30 transition-all"
                   title="Générer un nouveau code"
                 >
-                  <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <RefreshCw className="h-5 w-5 text-white/70" />
                 </Button>
               </div>
             </div>
-            
-            <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground mb-2">Comment ça marche ?</p>
-              <ol className="list-decimal list-inside space-y-1">
-                <li>L'employé crée un compte sur l'application</li>
-                <li>Il choisit "Rejoindre une équipe"</li>
-                <li>Il entre ce code : <strong className="text-orange-500">{establishment?.code}</strong></li>
-                <li>Il est automatiquement ajouté à votre équipe</li>
+
+            <div className="bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
+              <p className="font-medium text-white/80 mb-3 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-cyan-400" />
+                Comment ça marche ?
+              </p>
+              <ol className="space-y-2 text-sm text-white/50">
+                <li className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs flex items-center justify-center shrink-0 mt-0.5">1</span>
+                  <span>L'employé crée un compte sur l'application</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs flex items-center justify-center shrink-0 mt-0.5">2</span>
+                  <span>Il choisit "Rejoindre une équipe"</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs flex items-center justify-center shrink-0 mt-0.5">3</span>
+                  <span>Il entre le code : <strong className="text-cyan-400">{establishment?.code}</strong></span>
+                </li>
               </ol>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </GlassCard>
 
         {/* Équipe */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-500" />
-              Équipe ({teamMembers.length})
-            </CardTitle>
-            <CardDescription>
-              Les membres de votre établissement
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+        <GlassCard gradient gradientColor="blue">
+          <div className="p-5 sm:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Équipe</h3>
+                  <p className="text-sm text-white/50">{teamMembers.length} membre{teamMembers.length > 1 ? 's' : ''}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2 max-h-[280px] overflow-y-auto custom-scrollbar pr-1">
               {teamMembers.map((member) => (
                 <div
                   key={member.id}
-                  className="flex items-center justify-between gap-2 p-2 sm:p-3 rounded-lg bg-muted/50 group"
+                  className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] transition-all group"
                 >
-                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                    <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0">
-                      <span className="text-white font-medium text-sm sm:text-base">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
+                      <span className="text-white font-semibold text-sm">
                         {member.first_name?.[0]}{member.last_name?.[0]}
                       </span>
                     </div>
                     <div className="min-w-0">
-                      <p className="font-medium text-sm sm:text-base truncate">
+                      <p className="font-medium text-white truncate text-sm">
                         {member.first_name} {member.last_name}
                       </p>
-                      <p className="text-xs text-muted-foreground capitalize">
+                      <p className="text-xs text-white/40 capitalize">
                         {member.role === "manager" ? "Manager" : "Employé"}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {member.id === profile?.id ? (
-                      <span className="text-xs bg-orange-500/10 text-orange-500 px-2 py-1 rounded">
+                      <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2.5 py-1 rounded-full font-medium">
                         Vous
                       </span>
                     ) : (
@@ -422,7 +495,7 @@ export default function SettingsPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setMemberToRemove(member)}
-                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8 p-0"
                       >
                         <UserMinus className="h-4 w-4" />
                       </Button>
@@ -430,42 +503,47 @@ export default function SettingsPage() {
                   </div>
                 </div>
               ))}
-              
+
               {teamMembers.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>Aucun membre dans l'équipe</p>
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 rounded-xl bg-white/[0.03] flex items-center justify-center mx-auto mb-3">
+                    <Users className="h-6 w-6 text-white/30" />
+                  </div>
+                  <p className="text-white/40 text-sm">Aucun membre dans l'équipe</p>
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </GlassCard>
 
         {/* Abonnement */}
-        <Card className="lg:col-span-2 border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-purple-500" />
-              Abonnement
-            </CardTitle>
-            <CardDescription>
-              Gérez votre plan et vos informations de facturation
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        <GlassCard gradient gradientColor="purple" className="lg:col-span-2">
+          <div className="p-5 sm:p-6 lg:p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                <Crown className="w-5 h-5 text-purple-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Abonnement</h3>
+                <p className="text-sm text-white/50">Gérez votre plan et vos informations de facturation</p>
+              </div>
+            </div>
+
             {subLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-purple-500" />
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-purple-400" />
               </div>
             ) : (
               <div className="space-y-6">
                 {/* Alerte si impayé */}
                 {isPastDue && (
-                  <div className="p-3 sm:p-4 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-2 sm:gap-3">
-                    <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-semibold text-destructive text-sm sm:text-base">Paiement en retard</p>
-                      <p className="text-xs sm:text-sm text-muted-foreground">
+                  <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center shrink-0">
+                      <AlertTriangle className="h-5 w-5 text-red-400" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-red-400">Paiement en retard</p>
+                      <p className="text-sm text-white/50 mt-1">
                         Veuillez mettre à jour vos informations de paiement pour continuer à utiliser toutes les fonctionnalités.
                       </p>
                     </div>
@@ -473,27 +551,29 @@ export default function SettingsPage() {
                 )}
 
                 {/* Plan actuel */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 rounded-xl bg-muted/50">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-purple-500/10 via-transparent to-transparent border border-purple-500/20">
                   <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
-                      <Crown className="h-6 w-6 sm:h-7 sm:w-7 text-purple-500" />
+                    <div className="relative">
+                      <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                        <Crown className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
+                      </div>
+                      <div className="absolute -inset-1 rounded-2xl bg-purple-500/20 blur-lg -z-10" />
                     </div>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-lg sm:text-xl font-bold text-foreground">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <h3 className="text-xl sm:text-2xl font-bold text-white">
                           {currentPlan?.name || 'Gratuit'}
                         </h3>
                         {isTrialing && (
-                          <span className="text-xs bg-orange-500/10 text-orange-500 px-2 py-1 rounded">
+                          <span className="text-xs bg-orange-500/20 text-orange-400 px-2.5 py-1 rounded-full font-medium">
                             Essai gratuit
                           </span>
                         )}
-                        {/* Badge de statut */}
                         {subscription?.status && subscription.status !== 'active' && subscription.status !== 'trialing' && (
-                          <span className={`text-xs px-2 py-1 rounded ${
+                          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
                             subscription.status === 'past_due' || subscription.status === 'unpaid'
-                              ? 'bg-red-500/10 text-red-500'
-                              : 'bg-amber-500/10 text-amber-500'
+                              ? 'bg-red-500/20 text-red-400'
+                              : 'bg-amber-500/20 text-amber-400'
                           }`}>
                             {subscription.status === 'past_due' ? 'Impayé' :
                              subscription.status === 'canceled' ? 'Annulé' :
@@ -501,50 +581,41 @@ export default function SettingsPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-white/50">
                         {currentPlan?.price === 0
                           ? 'Plan gratuit'
                           : `${currentPlan?.price}€/mois`}
                       </p>
                       {subscription?.periodEnd && (
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-white/40 mt-1">
                           Prochain renouvellement: {subscription.periodEnd.toLocaleDateString('fr-FR')}
                         </p>
                       )}
                       {isTrialing && subscription?.trialEndsAt && (
-                        <p className="text-xs text-orange-500 mt-1 font-medium">
+                        <p className="text-xs text-orange-400 mt-1 font-medium">
                           Fin de l'essai: {subscription.trialEndsAt.toLocaleDateString('fr-FR')} ({trialDaysRemaining !== null ? `${trialDaysRemaining} jours restants` : ''})
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 sm:shrink-0">
-                    {/* Bouton Gérer l'abonnement / Portail Stripe */}
-                    {/* Afficher si : plan payant OU essai OU a un ID Stripe (même si plan = free) */}
+                  <div className="flex flex-col sm:flex-row gap-3 lg:shrink-0">
                     {(() => {
                       const hasActiveSubscription = subscription?.plan && subscription.plan !== 'FREE'
                       const hasStripeAccount = subscription?.stripeCustomerId || subscription?.stripeSubscriptionId
                       const shouldShowManageButton = hasActiveSubscription || isTrialing || hasStripeAccount
-                      
+
                       return shouldShowManageButton ? (
                         <>
                           <Button
-                            variant="default"
                             onClick={async (e) => {
                               e.preventDefault()
                               e.stopPropagation()
-                              console.log('Bouton cliqué, ouverture du portail...')
                               setOpeningPortal(true)
                               try {
-                                console.log('Appel openBillingPortal...')
                                 await openBillingPortal()
-                                console.log('Portail ouvert avec succès')
                               } catch (error) {
-                                console.error('Erreur portail:', error)
-                                // Si pas de customer Stripe, rediriger vers pricing pour créer un abonnement
                                 const errorMessage = error instanceof Error ? error.message : String(error)
-                                console.error('Message d\'erreur:', errorMessage)
                                 if (errorMessage.includes('customer') || errorMessage.includes('abonnement') || errorMessage.includes('Aucun') || errorMessage.includes('non trouvé')) {
                                   if (confirm('Vous n\'avez pas encore d\'abonnement actif. Souhaitez-vous vous abonner maintenant ?')) {
                                     window.location.href = '/pricing'
@@ -557,76 +628,26 @@ export default function SettingsPage() {
                               }
                             }}
                             disabled={openingPortal}
-                            className="gap-2 bg-purple-600 hover:bg-purple-700 text-white w-full"
+                            className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white border-0 shadow-lg shadow-purple-500/25"
                             type="button"
                           >
                             {openingPortal ? (
                               <>
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                Ouverture...
+                                <span className="hidden sm:inline">Ouverture...</span>
                               </>
                             ) : (
                               <>
                                 <CreditCard className="h-4 w-4" />
-                                Gérer ou annuler l'abonnement
-                              </>
-                            )}
-                          </Button>
-                          {/* Bouton de synchronisation */}
-                          <Button
-                            variant="outline"
-                            onClick={async (e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              setSyncingSubscription(true)
-                              try {
-                                const response = await fetch('/api/stripe/sync', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                })
-                                const data = await response.json()
-                                
-                                if (data.success) {
-                                  toast.success("Abonnement synchronisé", {
-                                    description: data.message,
-                                  })
-                                  // Recharger la page pour mettre à jour les données
-                                  window.location.reload()
-                                } else {
-                                  toast.error("Synchronisation échouée", {
-                                    description: data.message || data.error,
-                                  })
-                                }
-                              } catch (error) {
-                                console.error('Erreur sync:', error)
-                                toast.error("Erreur de synchronisation", {
-                                  description: "Impossible de synchroniser l'abonnement. Veuillez réessayer.",
-                                })
-                              } finally {
-                                setSyncingSubscription(false)
-                              }
-                            }}
-                            disabled={syncingSubscription}
-                            className="gap-2 w-full border-blue-500/30 text-blue-600 hover:bg-blue-500/10"
-                            type="button"
-                          >
-                            {syncingSubscription ? (
-                              <>
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                Synchronisation...
-                              </>
-                            ) : (
-                              <>
-                                <RefreshCw className="h-4 w-4" />
-                                Synchroniser l'abonnement
+                                <span className="hidden sm:inline">Gérer l'abonnement</span>
+                                <span className="sm:hidden">Gérer</span>
                               </>
                             )}
                           </Button>
                         </>
                       ) : (
-                        /* Bouton pour s'abonner si pas d'abonnement */
                         <Link href="/pricing">
-                          <Button className="w-full bg-purple-500 hover:bg-purple-600 gap-2">
+                          <Button className="w-full sm:w-auto gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white border-0 shadow-lg shadow-purple-500/25">
                             <Crown className="h-4 w-4" />
                             S'abonner
                           </Button>
@@ -636,19 +657,21 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Info importante pour l'essai */}
+                {/* Info pour l'essai */}
                 {isTrialing && subscription?.stripeSubscriptionId && (
-                  <div className="p-3 sm:p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
-                    <div className="flex items-start gap-2 sm:gap-3">
-                      <AlertTriangle className="h-5 w-5 text-orange-500 mt-0.5 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-orange-600 dark:text-orange-400 mb-1 text-sm sm:text-base">
+                  <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center shrink-0">
+                        <AlertTriangle className="h-5 w-5 text-orange-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-orange-400 mb-1">
                           Période d'essai en cours
                         </p>
-                        <p className="text-xs sm:text-sm text-muted-foreground mb-3">
+                        <p className="text-sm text-white/50 mb-3">
                           Vous pouvez annuler votre abonnement à tout moment depuis le portail Stripe.
                           {subscription?.trialEndsAt && (
-                            <> L'essai se termine le <strong>{subscription.trialEndsAt.toLocaleDateString('fr-FR')}</strong>.</>
+                            <> L'essai se termine le <strong className="text-white/70">{subscription.trialEndsAt.toLocaleDateString('fr-FR')}</strong>.</>
                           )}
                         </p>
                         <Button
@@ -666,14 +689,14 @@ export default function SettingsPage() {
                             }
                           }}
                           disabled={openingPortal}
-                          className="gap-2 border-orange-500/30 text-orange-600 hover:bg-orange-500/10 text-xs sm:text-sm"
+                          className="gap-2 border-orange-500/30 text-orange-400 hover:bg-orange-500/10"
                         >
                           {openingPortal ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
                             <ExternalLink className="h-3 w-3" />
                           )}
-                          <span className="hidden sm:inline">Annuler l'essai ou l'abonnement</span>
+                          <span className="hidden sm:inline">Annuler l'essai</span>
                           <span className="sm:hidden">Annuler</span>
                         </Button>
                       </div>
@@ -681,16 +704,18 @@ export default function SettingsPage() {
                   </div>
                 )}
 
-                {/* Info pour les abonnements actifs */}
+                {/* Info pour abonnement actif */}
                 {!isTrialing && subscription?.stripeSubscriptionId && subscription?.plan !== 'FREE' && (
-                  <div className="p-3 sm:p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                    <div className="flex items-start gap-2 sm:gap-3">
-                      <CreditCard className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-blue-600 dark:text-blue-400 mb-1 text-sm sm:text-base">
+                  <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/20">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center shrink-0">
+                        <CreditCard className="h-5 w-5 text-cyan-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-cyan-400 mb-1">
                           Abonnement actif
                         </p>
-                        <p className="text-xs sm:text-sm text-muted-foreground mb-3">
+                        <p className="text-sm text-white/50 mb-3">
                           Gérez votre abonnement, mettez à jour votre moyen de paiement ou annulez depuis le portail client Stripe sécurisé.
                         </p>
                         <Button
@@ -708,15 +733,15 @@ export default function SettingsPage() {
                             }
                           }}
                           disabled={openingPortal}
-                          className="gap-2 border-blue-500/30 text-blue-600 hover:bg-blue-500/10 text-xs sm:text-sm"
+                          className="gap-2 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
                         >
                           {openingPortal ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
                             <ExternalLink className="h-3 w-3" />
                           )}
-                          <span className="hidden sm:inline">Ouvrir le portail de gestion</span>
-                          <span className="sm:hidden">Gérer</span>
+                          <span className="hidden sm:inline">Ouvrir le portail</span>
+                          <span className="sm:hidden">Portail</span>
                         </Button>
                       </div>
                     </div>
@@ -724,75 +749,79 @@ export default function SettingsPage() {
                 )}
 
                 {/* Features du plan */}
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {currentPlan?.features.map((feature, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-purple-500" />
-                      <span className="text-foreground">{feature}</span>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {currentPlan?.features.slice(0, 8).map((feature, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-sm p-3 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                      <Check className="h-4 w-4 text-purple-400 shrink-0" />
+                      <span className="text-white/70">{feature}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </GlassCard>
 
         {/* Configuration du Check-in */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <ClipboardCheck className="h-5 w-5 text-green-500" />
-                  Configuration du Check-in
-                </CardTitle>
-                <CardDescription>
-                  Définissez les points à vérifier par vos employés avant le service
-                </CardDescription>
+        <GlassCard gradient gradientColor="emerald" className="lg:col-span-2">
+          <div className="p-5 sm:p-6 lg:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                  <ClipboardCheck className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Configuration du Check-in</h3>
+                  <p className="text-sm text-white/50">Points à vérifier avant le service</p>
+                </div>
               </div>
-              <Button onClick={() => setShowAddCheckItem(true)} variant="outline" className="gap-2 w-full sm:w-auto">
+              <Button
+                onClick={() => setShowAddCheckItem(true)}
+                className="gap-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30"
+              >
                 <Plus className="h-4 w-4" />
-                Ajouter un point
+                <span className="hidden sm:inline">Ajouter un point</span>
+                <span className="sm:hidden">Ajouter</span>
               </Button>
             </div>
-          </CardHeader>
-          <CardContent>
+
             {/* Formulaire d'ajout */}
             {showAddCheckItem && (
-              <div className="mb-6 p-4 rounded-xl bg-green-500/5 border border-green-500/20">
+              <div className="mb-6 p-5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-medium text-foreground flex items-center gap-2">
-                    <Plus className="h-4 w-4 text-green-500" />
+                  <h4 className="font-medium text-white flex items-center gap-2">
+                    <Plus className="h-4 w-4 text-emerald-400" />
                     Nouveau point de contrôle
                   </h4>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="icon"
                     onClick={() => setShowAddCheckItem(false)}
+                    className="h-8 w-8 hover:bg-white/10"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-4 w-4 text-white/60" />
                   </Button>
                 </div>
-                
+
                 <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
                   <div className="flex-1">
-                    <Label htmlFor="checkItemLabel">Libellé du point</Label>
+                    <Label htmlFor="checkItemLabel" className="text-white/70 text-sm">Libellé du point</Label>
                     <Input
                       id="checkItemLabel"
                       value={newCheckItem.item_label}
                       onChange={(e) => setNewCheckItem({ ...newCheckItem, item_label: e.target.value })}
                       placeholder="Ex: Vérifier les dates de péremption"
-                      className="mt-1"
+                      className="mt-1.5 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-emerald-500/50"
                     />
                   </div>
 
-                  <div className="flex gap-3 sm:gap-4 items-end">
-                    <div className="flex-1 sm:flex-initial">
-                      <Label>Icône</Label>
+                  <div className="flex gap-3 items-end">
+                    <div className="flex-1 sm:flex-initial sm:w-36">
+                      <Label className="text-white/70 text-sm">Icône</Label>
                       <select
                         value={newCheckItem.icon}
                         onChange={(e) => setNewCheckItem({ ...newCheckItem, icon: e.target.value })}
-                        className="w-full h-10 mt-1 rounded-lg border border-border bg-background px-3"
+                        className="w-full h-10 mt-1.5 rounded-lg border border-white/10 bg-white/5 text-white px-3"
                       >
                         <option value="Package">📦 Stock</option>
                         <option value="ThermometerSun">🌡️ Température</option>
@@ -804,7 +833,7 @@ export default function SettingsPage() {
                     <Button
                       onClick={addCheckItem}
                       disabled={!newCheckItem.item_label.trim() || savingCheckItem}
-                      className="bg-green-500 hover:bg-green-600 shrink-0"
+                      className="bg-emerald-500 hover:bg-emerald-600 text-white h-10 px-4"
                     >
                       {savingCheckItem ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -819,31 +848,31 @@ export default function SettingsPage() {
 
             {/* Liste des items */}
             {checkItems.length > 0 ? (
-              <div className="space-y-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {checkItems.map((item, index) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between gap-2 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors group"
+                    className="flex items-center justify-between gap-3 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] transition-colors group"
                   >
-                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                      <div className="text-muted-foreground hidden sm:block">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="hidden sm:flex text-white/20">
                         <GripVertical className="h-4 w-4" />
                       </div>
-                      <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
-                        {item.icon === 'Package' && <Package className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />}
-                        {item.icon === 'ThermometerSun' && <ThermometerSun className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />}
-                        {item.icon === 'ClipboardCheck' && <ClipboardCheck className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />}
-                        {item.icon === 'Utensils' && <Utensils className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />}
+                      <div className="h-10 w-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+                        {item.icon === 'Package' && <Package className="h-5 w-5 text-emerald-400" />}
+                        {item.icon === 'ThermometerSun' && <ThermometerSun className="h-5 w-5 text-emerald-400" />}
+                        {item.icon === 'ClipboardCheck' && <ClipboardCheck className="h-5 w-5 text-emerald-400" />}
+                        {item.icon === 'Utensils' && <Utensils className="h-5 w-5 text-emerald-400" />}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{item.item_label}</p>
-                        <p className="text-xs text-muted-foreground">Point #{index + 1}</p>
+                        <p className="font-medium text-white text-sm truncate">{item.item_label}</p>
+                        <p className="text-xs text-white/40">Point #{index + 1}</p>
                       </div>
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all shrink-0"
+                      className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all shrink-0 h-8 w-8"
                       onClick={() => deleteCheckItem(item.id)}
                       disabled={deletingCheckItem === item.id}
                     >
@@ -857,44 +886,51 @@ export default function SettingsPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8">
-                <ClipboardCheck className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-4" />
-                <p className="text-muted-foreground mb-4">Aucun point de contrôle défini</p>
-                <Button onClick={() => setShowAddCheckItem(true)} variant="outline">
-                  <Plus className="h-4 w-4 mr-2" />
+              <div className="text-center py-12">
+                <div className="w-16 h-16 rounded-2xl bg-white/[0.03] flex items-center justify-center mx-auto mb-4">
+                  <ClipboardCheck className="h-8 w-8 text-white/20" />
+                </div>
+                <p className="text-white/40 mb-4">Aucun point de contrôle défini</p>
+                <Button
+                  onClick={() => setShowAddCheckItem(true)}
+                  className="gap-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30"
+                >
+                  <Plus className="h-4 w-4" />
                   Créer votre premier point
                 </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </GlassCard>
 
         {/* Informations de l'établissement */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-purple-500" />
-              Informations de l'établissement
-            </CardTitle>
-            <CardDescription>
-              Modifiez les informations de votre établissement
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-6 md:grid-cols-2">
+        <GlassCard className="lg:col-span-2">
+          <div className="p-5 sm:p-6 lg:p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-white/70" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Informations de l'établissement</h3>
+                <p className="text-sm text-white/50">Modifiez les informations de votre établissement</p>
+              </div>
+            </div>
+
+            <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="name">Nom de l'établissement</Label>
+                <Label htmlFor="name" className="text-white/70 text-sm">Nom de l'établissement</Label>
                 <Input
                   id="name"
                   value={editedEstablishment.name || ""}
                   onChange={(e) => setEditedEstablishment({ ...editedEstablishment, name: e.target.value })}
                   placeholder="Ex: Le Burger Gourmet"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-cyan-500/50"
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="email">
-                  <Mail className="h-4 w-4 inline mr-1" />
+                <Label htmlFor="email" className="text-white/70 text-sm flex items-center gap-1.5">
+                  <Mail className="h-3.5 w-3.5" />
                   Email
                 </Label>
                 <Input
@@ -903,12 +939,13 @@ export default function SettingsPage() {
                   value={editedEstablishment.email || ""}
                   onChange={(e) => setEditedEstablishment({ ...editedEstablishment, email: e.target.value })}
                   placeholder="contact@restaurant.com"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-cyan-500/50"
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="phone">
-                  <Phone className="h-4 w-4 inline mr-1" />
+                <Label htmlFor="phone" className="text-white/70 text-sm flex items-center gap-1.5">
+                  <Phone className="h-3.5 w-3.5" />
                   Téléphone
                 </Label>
                 <Input
@@ -916,12 +953,13 @@ export default function SettingsPage() {
                   value={editedEstablishment.phone || ""}
                   onChange={(e) => setEditedEstablishment({ ...editedEstablishment, phone: e.target.value })}
                   placeholder="+33 1 23 45 67 89"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-cyan-500/50"
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="address">
-                  <MapPin className="h-4 w-4 inline mr-1" />
+                <Label htmlFor="address" className="text-white/70 text-sm flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5" />
                   Adresse
                 </Label>
                 <Input
@@ -929,113 +967,142 @@ export default function SettingsPage() {
                   value={editedEstablishment.address || ""}
                   onChange={(e) => setEditedEstablishment({ ...editedEstablishment, address: e.target.value })}
                   placeholder="123 Rue de Paris, 75001 Paris"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-cyan-500/50"
                 />
               </div>
             </div>
-            
+
             <div className="mt-6 flex justify-end">
-              <Button onClick={saveChanges} disabled={saving}>
+              <Button
+                onClick={saveChanges}
+                disabled={saving}
+                className="gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white shadow-lg shadow-cyan-500/25"
+              >
                 {saving ? (
                   <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Enregistrement...
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="hidden sm:inline">Enregistrement...</span>
+                    <span className="sm:hidden">Saving...</span>
                   </>
                 ) : (
                   <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Enregistrer les modifications
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Modal de confirmation de suppression de membre */}
-      {memberToRemove && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-          {/* Overlay */}
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => !isRemovingMember && setMemberToRemove(null)}
-          />
-
-          {/* Modal */}
-          <div className="relative w-full max-w-md rounded-2xl p-4 sm:p-6 bg-background border shadow-xl">
-            {/* Bouton fermer */}
-            <button
-              onClick={() => !isRemovingMember && setMemberToRemove(null)}
-              disabled={isRemovingMember}
-              className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 rounded-lg hover:bg-muted transition-all disabled:opacity-50"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            {/* Icône d'alerte */}
-            <div className="flex justify-center mb-3 sm:mb-4">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-red-500/10 flex items-center justify-center">
-                <AlertTriangle className="h-7 w-7 sm:h-8 sm:w-8 text-red-500" />
-              </div>
-            </div>
-
-            {/* Titre */}
-            <h3 className="text-lg sm:text-xl font-bold text-center mb-2">
-              Retirer ce membre ?
-            </h3>
-
-            {/* Description */}
-            <p className="text-sm sm:text-base text-muted-foreground text-center mb-4">
-              Vous êtes sur le point de retirer{' '}
-              <span className="text-foreground font-semibold">
-                {memberToRemove.first_name} {memberToRemove.last_name}
-              </span>{' '}
-              de votre établissement.
-            </p>
-
-            {/* Info sur les conséquences */}
-            <div className="p-3 sm:p-4 rounded-xl bg-red-500/10 border border-red-500/20 mb-4 sm:mb-6">
-              <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-                <span>
-                  Cette personne sera <strong>immédiatement déconnectée</strong> de l'établissement
-                  et ne pourra plus y accéder.
-                </span>
-              </p>
-            </div>
-
-            {/* Boutons */}
-            <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setMemberToRemove(null)}
-                disabled={isRemovingMember}
-                className="flex-1"
-              >
-                Annuler
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleRemoveMember}
-                disabled={isRemovingMember}
-                className="flex-1"
-              >
-                {isRemovingMember ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Suppression...
-                  </>
-                ) : (
-                  <>
-                    <UserMinus className="h-4 w-4 mr-2" />
-                    Retirer
+                    <Save className="h-4 w-4" />
+                    <span className="hidden sm:inline">Enregistrer les modifications</span>
+                    <span className="sm:hidden">Enregistrer</span>
                   </>
                 )}
               </Button>
             </div>
           </div>
+        </GlassCard>
+      </div>
+
+      {/* Modal de confirmation de suppression de membre */}
+      {memberToRemove && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Overlay */}
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => !isRemovingMember && setMemberToRemove(null)}
+          />
+
+          {/* Modal */}
+          <div className="relative w-full max-w-md">
+            <GlassCard className="p-6">
+              {/* Bouton fermer */}
+              <button
+                onClick={() => !isRemovingMember && setMemberToRemove(null)}
+                disabled={isRemovingMember}
+                className="absolute top-4 right-4 p-2 rounded-lg hover:bg-white/10 transition-all disabled:opacity-50"
+              >
+                <X className="h-4 w-4 text-white/60" />
+              </button>
+
+              {/* Icône d'alerte */}
+              <div className="flex justify-center mb-4">
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-2xl bg-red-500/20 flex items-center justify-center">
+                    <AlertTriangle className="h-8 w-8 text-red-400" />
+                  </div>
+                  <div className="absolute -inset-2 rounded-2xl bg-red-500/10 blur-xl -z-10" />
+                </div>
+              </div>
+
+              {/* Titre */}
+              <h3 className="text-xl font-bold text-center text-white mb-2">
+                Retirer ce membre ?
+              </h3>
+
+              {/* Description */}
+              <p className="text-white/50 text-center mb-4">
+                Vous êtes sur le point de retirer{' '}
+                <span className="text-white font-semibold">
+                  {memberToRemove.first_name} {memberToRemove.last_name}
+                </span>{' '}
+                de votre établissement.
+              </p>
+
+              {/* Info sur les conséquences */}
+              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 mb-6">
+                <p className="text-sm text-red-400 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>
+                    Cette personne sera <strong>immédiatement déconnectée</strong> de l'établissement
+                    et ne pourra plus y accéder.
+                  </span>
+                </p>
+              </div>
+
+              {/* Boutons */}
+              <div className="flex flex-col-reverse sm:flex-row gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setMemberToRemove(null)}
+                  disabled={isRemovingMember}
+                  className="flex-1 border-white/10 text-white hover:bg-white/10"
+                >
+                  Annuler
+                </Button>
+                <Button
+                  onClick={handleRemoveMember}
+                  disabled={isRemovingMember}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+                >
+                  {isRemovingMember ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Suppression...
+                    </>
+                  ) : (
+                    <>
+                      <UserMinus className="h-4 w-4 mr-2" />
+                      Retirer
+                    </>
+                  )}
+                </Button>
+              </div>
+            </GlassCard>
+          </div>
         </div>
       )}
+
+      {/* Custom scrollbar styles */}
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.02);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.2);
+        }
+      `}</style>
     </div>
   )
 }
