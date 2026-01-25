@@ -6,8 +6,8 @@ import { createClient } from '@/utils/supabase/client'
 // ============================================
 // MODE OWNER - Accès Premium automatique pour le propriétaire du SaaS
 // ============================================
-// Mettre à true pour avoir accès Premium automatique (développement/owner)
-const FORCE_PREMIUM_ACCESS = true
+// ⚠️ IMPORTANT: Mettre à false en production !
+const FORCE_PREMIUM_ACCESS = process.env.NODE_ENV === 'development' && process.env.FORCE_PREMIUM_ACCESS === 'true'
 
 // Emails avec accès Premium automatique (backup)
 const OWNER_EMAILS = [
@@ -166,39 +166,39 @@ export function useSubscription(): SubscriptionState {
           // Normaliser les valeurs en minuscules pour comparaison
           const rawStatus = (establishment.subscription_status || 'none').toLowerCase()
           const rawPlan = (establishment.subscription_plan || 'free').toLowerCase()
-          
+
           console.log('[useSubscription] Données brutes:', {
             rawStatus,
             rawPlan,
             stripeSubscriptionId: establishment.stripe_subscription_id,
             stripeCustomerId: establishment.stripe_customer_id
           })
-          
-          // Vérifier si abonnement Stripe actif
-          const hasActiveStripeSubscription = establishment.stripe_subscription_id && 
-            (rawStatus === 'active' || rawStatus === 'trialing')
-          
-          // Déterminer le plan (mapper vers FREE ou PREMIUM)
+
+          // ============================================
+          // LOGIQUE SIMPLIFIÉE : Si status = active/trialing → accès OK
+          // ============================================
+          const hasValidStatus = rawStatus === 'active' || rawStatus === 'trialing'
+
+          // Déterminer le plan - Si status valide, on considère PREMIUM
           let plan: PlanId = 'FREE'
-          if (hasActiveStripeSubscription) {
-            plan = mapPlanToNew(rawPlan || 'premium')
+          if (hasValidStatus) {
+            // Si status active/trialing → PREMIUM (peu importe le champ plan)
+            plan = 'PREMIUM'
+          } else if (rawPlan !== 'free' && rawPlan !== '') {
+            // Sinon, mapper selon le plan en DB
+            plan = mapPlanToNew(rawPlan)
           } else if (ownerStatus) {
-            plan = 'FREE' // Owner sans abonnement = Essai gratuit
-          } else {
-            plan = mapPlanToNew(rawPlan || 'free')
+            plan = 'PREMIUM' // Owner = accès premium
           }
-          
-          // Déterminer le statut
-          let status: SubscriptionStatus = 'none'
-          if (hasActiveStripeSubscription) {
-            status = rawStatus as SubscriptionStatus
-          } else if (ownerStatus) {
-            status = 'trialing' // Essai pour owner
-          } else {
-            status = rawStatus as SubscriptionStatus
+
+          // Déterminer le statut - On prend directement celui de la DB
+          let status: SubscriptionStatus = rawStatus as SubscriptionStatus
+          if (ownerStatus && !hasValidStatus) {
+            status = 'trialing' // Owner sans abonnement = essai
+            plan = 'PREMIUM'
           }
-          
-          console.log('[useSubscription] Résultat:', { plan, status, hasActiveStripeSubscription })
+
+          console.log('[useSubscription] Résultat:', { plan, status, hasValidStatus })
 
           setSubscription({
             plan,

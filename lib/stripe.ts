@@ -15,7 +15,7 @@ export const stripe = stripeSecretKey
 export const isStripeConfigured = () => !!stripeSecretKey
 
 // Type de facturation
-export type BillingType = 'monthly' | 'annual'
+export type BillingType = 'monthly' | 'annual' | 'lifetime'
 
 // Plans simplifiés : FREE et PREMIUM uniquement
 export const PLANS = {
@@ -26,6 +26,7 @@ export const PLANS = {
     price: 0,
     priceIdMonthly: null,
     priceIdAnnual: null,
+    priceIdLifetime: null,
     features: [
       'Toutes les fonctionnalités Premium',
       'Essai de 14 jours',
@@ -44,6 +45,7 @@ export const PLANS = {
     price: 99,
     priceIdMonthly: process.env.STRIPE_PREMIUM_PRICE_ID_MONTHLY || 'price_premium_monthly',
     priceIdAnnual: process.env.STRIPE_PREMIUM_PRICE_ID_ANNUAL || 'price_premium_annual',
+    priceIdLifetime: process.env.STRIPE_PREMIUM_PRICE_ID_LIFETIME || null,
     features: [
       'Gestion de stock complète',
       'Menu & recettes',
@@ -85,11 +87,16 @@ export function getPlanFromPriceId(priceId: string): PlanId {
 export function getPriceIdForPlan(planId: PlanId, billingType: BillingType): string | null {
   const plan = PLANS[planId]
   if (!plan) return null
-  
-  if (billingType === 'monthly') {
-    return plan.priceIdMonthly
-  } else {
-    return plan.priceIdAnnual
+
+  switch (billingType) {
+    case 'monthly':
+      return plan.priceIdMonthly
+    case 'annual':
+      return plan.priceIdAnnual
+    case 'lifetime':
+      return plan.priceIdLifetime
+    default:
+      return plan.priceIdMonthly
   }
 }
 

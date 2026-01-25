@@ -2,52 +2,121 @@
 
 import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import {
-  Check,
-  Sparkles,
-  Zap,
-  Crown,
+import { motion } from "framer-motion"
+import { 
+  Check, 
+  ArrowRight, 
+  Shield, 
   Loader2,
-  ArrowRight,
-  Shield,
-  Brain,
-  ShieldCheck,
+  Sparkles,
+  Crown,
+  Zap,
+  Clock,
   HelpCircle,
   ChevronDown,
-  CheckCircle,
-  X
+  X,
+  CheckCircle
 } from "lucide-react"
 import Link from "next/link"
 import { getStripe } from "@/lib/stripe-client"
-import { PRICING_PLANS, type BillingPeriod } from "@/lib/pricing-config"
 import { PublicHeader } from "@/components/public-header"
 import { createClient } from "@/utils/supabase/client"
+
+// Animation variants
+const fadeInUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { type: "spring", stiffness: 100, damping: 20 }
+  }
+}
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.1 }
+  }
+}
+
+// Slide-In Button Component
+function SlideInButton({
+  children,
+  icon: Icon = ArrowRight,
+  className = "",
+  variant = "primary",
+  disabled = false,
+  onClick,
+}: {
+  children: React.ReactNode
+  icon?: React.ElementType
+  className?: string
+  variant?: "primary" | "secondary" | "outline"
+  disabled?: boolean
+  onClick?: () => void
+}) {
+  const variantClasses = {
+    primary: "bg-white text-[#050508] font-semibold shadow-lg shadow-white/20 hover:shadow-2xl hover:shadow-cyan-400/40",
+    secondary: "bg-gradient-to-r from-[#00d4ff] to-[#00a8cc] text-[#050508] font-semibold shadow-lg shadow-[#00d4ff]/30 hover:shadow-2xl hover:shadow-[#00d4ff]/50",
+    outline: "bg-transparent border-2 border-white/30 text-white font-semibold hover:border-[#00d4ff]"
+  }
+
+  const fillColors = {
+    primary: "from-cyan-400 via-cyan-300 to-cyan-400",
+    secondary: "from-white via-[#e1f5fe] to-white",
+    outline: "from-[#00d4ff] via-[#00b4d8] to-[#00d4ff]"
+  }
+
+  return (
+    <motion.button
+      whileHover={{ scale: disabled ? 1 : 1.02 }}
+      whileTap={{ scale: disabled ? 1 : 0.98 }}
+      disabled={disabled}
+      onClick={onClick}
+      className={`relative inline-flex items-center justify-center cursor-pointer overflow-hidden transition-all duration-300 h-14 px-8 text-base rounded-full gap-3 ${variantClasses[variant]} ${className} group disabled:opacity-50 disabled:cursor-not-allowed`}
+    >
+      <span className={`absolute inset-0 w-0 group-hover:w-full bg-gradient-to-r ${fillColors[variant]} transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] z-[1]`} />
+      <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-600 ease-[cubic-bezier(0.4,0,0.2,1)] delay-100 z-[1]" />
+      <span className="relative z-[2] transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:-translate-x-full group-hover:opacity-0">
+        {children}
+      </span>
+      <span className="icon absolute z-[2] opacity-0 translate-x-5 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]">
+        {disabled ? <Loader2 className="w-5 h-5 animate-spin" /> : <Icon className="w-5 h-5" />}
+      </span>
+    </motion.button>
+  )
+}
 
 // FAQ Item Component
 function FAQItem({ question, answer, isOpen, onClick }: {
   question: string; answer: string; isOpen: boolean; onClick: () => void
 }) {
   return (
-    <div className="border border-white/10 rounded-2xl overflow-hidden bg-white/[0.02] backdrop-blur-sm">
-      <button
-        onClick={onClick}
-        className="w-full p-6 text-left flex items-center justify-between gap-4 hover:bg-white/5 transition-colors"
-      >
-        <span className="text-lg font-semibold text-white">{question}</span>
-        <ChevronDown className={`h-5 w-5 text-gray-400 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-      <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-96' : 'max-h-0'}`}>
-        <p className="px-6 pb-6 text-gray-400 leading-relaxed">{answer}</p>
+    <motion.div 
+      className="relative p-[1px] rounded-2xl bg-gradient-to-b from-white/10 via-white/5 to-transparent overflow-hidden"
+      whileHover={{ scale: 1.01 }}
+    >
+      <div className="bg-[#0a0c14]/80 backdrop-blur-xl rounded-2xl overflow-hidden">
+        <button
+          onClick={onClick}
+          className="w-full p-6 text-left flex items-center justify-between gap-4 hover:bg-white/5 transition-colors"
+        >
+          <span className="text-lg font-medium text-white">{question}</span>
+          <ChevronDown className={`h-5 w-5 text-[#00d4ff] shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+        <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-96' : 'max-h-0'}`}>
+          <p className="px-6 pb-6 text-white/60 leading-relaxed">{answer}</p>
+        </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
-// Composant interne qui utilise useSearchParams (doit être dans Suspense)
+// Pricing Content Component
 function PricingContent() {
   const [loading, setLoading] = useState<string | null>(null)
-  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("annual")
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("annual")
   const [openFAQ, setOpenFAQ] = useState<number | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [authLoading, setAuthLoading] = useState(true)
@@ -55,15 +124,12 @@ function PricingContent() {
 
   const searchParams = useSearchParams()
 
-  // Vérifier l'authentification et les params
   useEffect(() => {
     const checkAuth = async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       setIsAuthenticated(!!user)
       setAuthLoading(false)
-
-      // Afficher la bannière de bienvenue si venant de l'onboarding
       if (searchParams.get("onboarding") === "complete") {
         setShowWelcomeBanner(true)
       }
@@ -71,29 +137,23 @@ function PricingContent() {
     checkAuth()
   }, [searchParams])
 
-  const handleSubscribe = async (planId: string) => {
-    setLoading(planId)
-
-    // Convertir planId en majuscules pour l'API (STARTER, PRO, PREMIUM)
-    const apiPlanId = planId.toUpperCase()
-
+  const handleSubscribe = async (planType: "monthly" | "annual") => {
+    setLoading(planType)
     try {
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId: apiPlanId, billingType: billingPeriod }),
+        body: JSON.stringify({ planId: 'PREMIUM', billingType: planType }),
       })
 
       const data = await response.json()
 
       if (data.error) {
         if (response.status === 401) {
-          window.location.href = `/login?redirect=/pricing&plan=${planId}`
+          window.location.href = `/login?redirect=/pricing`
           return
         }
-        const errorMessage = data.error || 'Une erreur est survenue lors de la création du paiement'
-        alert(errorMessage)
-        console.error('Erreur checkout:', data)
+        alert(data.error)
         return
       }
 
@@ -113,14 +173,26 @@ function PricingContent() {
     }
   }
 
+  const features = [
+    "Produits illimités",
+    "Multi-établissements",
+    "Alertes intelligentes (ruptures, dates, surstock)",
+    "Inventaires rapides & historiques",
+    "Suivi des pertes & des gaspillages",
+    "Suggestions d'achat basées sur vos usages",
+    "Tableau de bord temps réel (KPIs & tendances)",
+    "Accès équipe + rôles & permissions",
+    "Support prioritaire"
+  ]
+
   const faqs = [
     {
       question: "Puis-je changer de plan à tout moment ?",
-      answer: "Oui, vous pouvez upgrader ou downgrader votre plan à tout moment. Les changements prennent effet immédiatement et sont proratisés."
+      answer: "Oui, vous pouvez passer du mensuel à l'annuel à tout moment. Les changements prennent effet immédiatement et sont proratisés."
     },
     {
       question: "Comment fonctionne l'essai gratuit ?",
-      answer: "Vous avez 14 jours pour tester toutes les fonctionnalités du plan choisi. Aucune carte bancaire requise pour commencer. Vous ne serez facturé qu'à la fin de l'essai."
+      answer: "Vous avez 14 jours pour tester toutes les fonctionnalités Premium. Aucune carte bancaire requise pour commencer. Vous ne serez facturé qu'à la fin de l'essai si vous décidez de continuer."
     },
     {
       question: "Quels moyens de paiement acceptez-vous ?",
@@ -132,474 +204,421 @@ function PricingContent() {
     },
     {
       question: "Y a-t-il un engagement ?",
-      answer: "Non, aucun engagement. L'abonnement annuel offre simplement une réduction. Vous pouvez annuler quand vous voulez, sans frais cachés."
+      answer: "Non, aucun engagement. L'abonnement annuel offre simplement une réduction de 41%. Vous pouvez annuler quand vous voulez, sans frais cachés."
     }
   ]
 
-  const planOrder = ['premium'] as const
-  const planIcons = {
-    premium: Crown
-  }
-  const planColors = {
-    premium: { text: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', glow: 'shadow-amber-500/20' }
-  }
-
   return (
-    <div className="min-h-dvh bg-[#0a0a0a] text-white overflow-hidden">
-      {/* Background Effects - s'étend sous notch iOS */}
-      <div className="fixed inset-0 pointer-events-none bg-[#0a0a0a]">
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
-        <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-emerald-600/10 rounded-full blur-[150px]" />
-        <div className="absolute top-1/2 right-0 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[120px]" />
+    <div className="min-h-screen bg-[#050508] text-white overflow-x-hidden">
+      {/* Background Effects */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:60px_60px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-[#00d4ff]/10 blur-[150px] rounded-full" />
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-[#8b5cf6]/8 blur-[120px] rounded-full" />
+        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-[#00d4ff]/8 blur-[100px] rounded-full" />
       </div>
 
-      {/* Header intelligent */}
+      {/* Header */}
       <PublicHeader variant="solid" />
 
-      {/* Bannière de bienvenue après onboarding */}
+      {/* Welcome Banner */}
       {showWelcomeBanner && (
-        <div className="fixed top-[72px] left-0 right-0 z-40 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-3 px-4">
+        <div className="fixed top-[72px] left-0 right-0 z-40 bg-gradient-to-r from-[#00d4ff] to-[#00a8cc] text-[#050508] py-3 px-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <CheckCircle className="h-5 w-5 shrink-0" />
               <p className="text-sm sm:text-base font-medium">
-                Votre compte est créé ! Choisissez votre plan pour commencer à utiliser StockGuard.
+                Votre compte est créé ! Choisissez votre plan pour commencer.
               </p>
             </div>
-            <button
-              onClick={() => setShowWelcomeBanner(false)}
-              className="p-1 hover:bg-white/20 rounded-lg transition-colors shrink-0"
-            >
+            <button onClick={() => setShowWelcomeBanner(false)} className="p-1 hover:bg-white/20 rounded-lg transition-colors shrink-0">
               <X className="h-5 w-5" />
             </button>
           </div>
         </div>
       )}
 
-      {/* Hero */}
-      <section className={`relative pb-12 px-4 sm:px-6 ${showWelcomeBanner ? 'pt-44' : 'pt-32'}`}>
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 mb-6">
-            <Sparkles className="h-4 w-4 text-emerald-400" />
-            <span className="text-sm font-medium text-emerald-400">14 jours d'essai gratuit</span>
-          </div>
-          
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black mb-6">
-            <span className="text-white">Tarifs </span>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-300">simples et transparents</span>
-          </h1>
-          
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-10">
-            Commencez votre essai gratuit, évoluez selon vos besoins. 
-            Sans engagement, annulable à tout moment.
-          </p>
+      {/* Hero Section */}
+      <section className={`relative z-10 px-4 ${showWelcomeBanner ? 'pt-44' : 'pt-32'} pb-16`}>
+        <motion.div 
+          initial="hidden" 
+          animate="visible" 
+          variants={staggerContainer}
+          className="max-w-4xl mx-auto text-center"
+        >
+          <motion.p variants={fadeInUp} className="text-[#00d4ff] text-sm uppercase tracking-widest mb-4">
+            Tarifs
+          </motion.p>
+          <motion.h1 variants={fadeInUp} className="text-4xl sm:text-5xl lg:text-6xl font-normal mb-6">
+            <span className="text-white">Un plan simple,</span>
+            <br />
+            <span className="text-white/30">zéro surprise</span>
+          </motion.h1>
+          <motion.p variants={fadeInUp} className="text-white/60 text-lg max-w-2xl mx-auto mb-10">
+            Toutes les fonctionnalités incluses. Choisissez simplement la durée qui vous convient.
+          </motion.p>
 
           {/* Billing Toggle */}
-          <div className="inline-flex items-center gap-4 p-2 rounded-full bg-white/5 border border-white/10">
+          <motion.div variants={fadeInUp} className="inline-flex items-center gap-2 p-1.5 rounded-full bg-white/5 border border-white/10">
             <button
               onClick={() => setBillingPeriod("monthly")}
-              className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all ${
+              className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all ${
                 billingPeriod === "monthly" 
-                  ? "bg-white text-black" 
-                  : "text-gray-400 hover:text-white"
+                  ? "bg-white text-[#050508]" 
+                  : "text-white/60 hover:text-white"
               }`}
             >
               Mensuel
             </button>
             <button
               onClick={() => setBillingPeriod("annual")}
-              className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all flex items-center gap-2 ${
+              className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
                 billingPeriod === "annual" 
-                  ? "bg-white text-black" 
-                  : "text-gray-400 hover:text-white"
+                  ? "bg-white text-[#050508]" 
+                  : "text-white/60 hover:text-white"
               }`}
             >
               Annuel
               <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                billingPeriod === "annual"
-                  ? "bg-emerald-500 text-white"
-                  : "bg-emerald-500/80 text-white"
+                billingPeriod === "annual" ? "bg-emerald-500 text-white" : "bg-emerald-500/20 text-emerald-400"
               }`}>
-                -20%
+                -41%
               </span>
             </button>
-          </div>
-
-          {billingPeriod === "annual" && (
-            <p className="text-sm text-emerald-400 mt-4 font-medium">
-              💰 Économisez jusqu'à 3 mois en passant à l'annuel
-            </p>
-          )}
-        </div>
+          </motion.div>
+        </motion.div>
       </section>
 
-      {/* Plans */}
-      <section id="pricing" className="relative pb-20 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-center">
-            <div className="max-w-md w-full">
-              {planOrder.map((planKey) => {
-                const plan = PRICING_PLANS[planKey]
-                const Icon = planIcons[planKey]
-                const colors = planColors[planKey]
-                const pricing = billingPeriod === "monthly" ? plan.monthly : plan.annual
+      {/* Pricing Cards */}
+      <section className="relative z-10 px-4 pb-24">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 60 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto"
+          >
+            {/* Monthly Card */}
+            <motion.div
+              whileHover={{ scale: 1.03, y: -8 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className={`relative cursor-pointer ${billingPeriod === "monthly" ? "order-1" : "order-2 md:order-1"}`}
+              onClick={() => setBillingPeriod("monthly")}
+            >
+              <div className={`relative h-full p-[1px] rounded-3xl overflow-hidden transition-all duration-300 ${
+                billingPeriod === "monthly" 
+                  ? "bg-gradient-to-b from-[#00d4ff]/50 via-[#00d4ff]/20 to-transparent shadow-2xl shadow-[#00d4ff]/20" 
+                  : "bg-gradient-to-b from-white/20 via-white/10 to-transparent"
+              }`}>
+                {/* Animated border for selected */}
+                {billingPeriod === "monthly" && (
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-r from-[#00d4ff]/0 via-[#00d4ff]/50 to-[#00d4ff]/0"
+                    animate={{ 
+                      opacity: [0.5, 0.8, 0.5]
+                    }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                )}
 
-                return (
-                  <div 
-                    key={planKey}
-                    className="relative rounded-3xl transition-all duration-300 premium-card-glow"
-                  >
-                    {/* Premium glow effects */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-500/15 to-amber-500/8 blur-2xl rounded-3xl animate-pulse-slow" />
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-400/10 to-orange-500/5 blur-xl rounded-3xl" />
-                    <div className="absolute inset-0 rounded-3xl overflow-hidden">
-                      <div className="absolute inset-0 premium-shimmer" />
+                <div className={`relative h-full backdrop-blur-xl rounded-3xl p-8 border transition-all duration-300 ${
+                  billingPeriod === "monthly" 
+                    ? "bg-[#0a0c14]/90 border-[#00d4ff]/30" 
+                    : "bg-[#0a0c14]/70 border-white/10"
+                }`}>
+                  {/* Glow effect */}
+                  {billingPeriod === "monthly" && (
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-40 bg-[#00d4ff]/20 blur-3xl rounded-full" />
+                  )}
+
+                  <div className="relative z-10">
+                    <p className={`text-sm font-semibold mb-2 ${billingPeriod === "monthly" ? "text-[#00d4ff]" : "text-white/50"}`}>
+                      Premium Mensuel
+                    </p>
+                    
+                    <div className="mb-4">
+                      <span className="text-5xl font-normal text-white">199€</span>
+                      <span className="text-white/40 text-lg">/mois</span>
                     </div>
+                    
+                    <p className="text-white/50 text-sm mb-8 leading-relaxed">
+                      Flexibilité maximale, sans engagement de durée.
+                    </p>
 
-                    <div className="relative p-8 rounded-3xl bg-gradient-to-br from-gray-900 to-gray-950 border-2 border-amber-500/50 shadow-2xl shadow-amber-500/20 premium-card-flicker">
-                      {/* Premium badge */}
-                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-10">
-                        <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-amber-500/50 premium-badge-flicker">
-                          <Crown className="h-4 w-4" />
-                          Plan Premium
-                        </div>
-                      </div>
-
-                      {/* Annual savings badge */}
-                      {billingPeriod === "annual" && pricing.discount && (
-                        <div className="absolute -top-3 right-4">
-                          <div className="bg-gradient-to-r from-amber-600 to-amber-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg">
-                            {pricing.discount}
+                    <div className="space-y-3 mb-8">
+                      {features.slice(0, 5).map((feature, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            billingPeriod === "monthly" ? "bg-[#00d4ff]/20" : "bg-white/10"
+                          }`}>
+                            <Check className={`w-3 h-3 ${billingPeriod === "monthly" ? "text-[#00d4ff]" : "text-white/50"}`} />
                           </div>
+                          <span className="text-white/70 text-sm">{feature}</span>
                         </div>
-                      )}
-
-                      {/* Header */}
-                      <div className="mb-6 pt-2">
-                        <div className="h-14 w-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-4">
-                          <Icon className="h-7 w-7 text-amber-400" />
-                        </div>
-                        <span className="text-xs font-semibold uppercase tracking-wider text-amber-400">
-                          {plan.tagline}
-                        </span>
-                        <h3 className="text-2xl font-bold text-white mt-2">{plan.name}</h3>
-                        <p className="text-xs text-gray-500 mt-1">{plan.target}</p>
-                      </div>
-
-                      {/* Price */}
-                      <div className="mb-6">
-                        <div className="flex items-baseline gap-2">
-                          {billingPeriod === "annual" && pricing.originalPrice && (
-                            <span className="text-xl font-medium text-gray-500 line-through">
-                              {pricing.originalPrice}€
-                            </span>
-                          )}
-                          <span className="text-5xl font-black text-amber-400">
-                            {pricing.price}€
-                          </span>
-                          <span className="text-gray-500">{pricing.period}</span>
-                        </div>
-                        {billingPeriod === "annual" && pricing.savings && (
-                          <p className="text-sm font-semibold mt-1 text-amber-400">
-                            Économisez {pricing.savings}
-                          </p>
-                        )}
-                        {billingPeriod === "monthly" && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            ou {plan.annual.price}€/an
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Limits */}
-                      <div className="flex gap-4 mb-6 pb-6 border-b border-white/10">
-                        <div className="flex-1 p-3 rounded-xl bg-amber-500/10">
-                          <p className="text-2xl font-bold text-white">
-                            {plan.limits.establishments === 'unlimited' ? '∞' : plan.limits.establishments}
-                          </p>
-                          <p className="text-xs text-gray-400">établissement{plan.limits.establishments !== 1 && plan.limits.establishments !== 'unlimited' ? 's' : ''}</p>
-                        </div>
-                        <div className="flex-1 p-3 rounded-xl bg-amber-500/10">
-                          <p className="text-2xl font-bold text-white">
-                            {plan.limits.users === 'unlimited' ? '∞' : plan.limits.users}
-                          </p>
-                          <p className="text-xs text-gray-400">utilisateur{typeof plan.limits.users === 'number' && plan.limits.users > 1 ? 's' : ''}</p>
-                        </div>
-                      </div>
-
-                      {/* Features */}
-                      <ul className="space-y-2.5 mb-4">
-                        {plan.features.slice(0, 6).map((feature, idx) => (
-                          <li key={idx} className="flex items-start gap-3">
-                            <Check className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
-                            <span className="text-sm text-white">{feature}</span>
-                          </li>
-                        ))}
-                        {plan.features.length > 6 && (
-                          <li className="text-xs text-gray-500 pl-7">
-                            + {plan.features.length - 6} autres fonctionnalités
-                          </li>
-                        )}
-                      </ul>
-
-                      {/* AI Features */}
-                      <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-purple-500/15 to-blue-500/15 border border-purple-500/30">
-                        <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                          <Brain className="h-3.5 w-3.5" />
-                          IA étendue
-                        </p>
-                        <ul className="space-y-2">
-                          {plan.aiFeatures.slice(0, 3).map((feature, idx) => (
-                            <li key={idx} className="flex items-start gap-2">
-                              <Sparkles className="h-3.5 w-3.5 text-purple-400 shrink-0 mt-0.5" />
-                              <span className="text-xs text-white">{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* CTA */}
-                      <Button
-                        onClick={() => handleSubscribe(planKey)}
-                        disabled={loading === planKey || authLoading}
-                        className="w-full h-12 font-bold shadow-lg transition-all bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-amber-500/30"
-                      >
-                        {loading === planKey ? (
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                        ) : (
-                          <>
-                            {isAuthenticated ? "Continuer avec ce plan" : "Essai gratuit 14 jours"}
-                            <ArrowRight className="h-4 w-4 ml-2" />
-                          </>
-                        )}
-                      </Button>
+                      ))}
+                      <p className="text-white/40 text-xs pl-8">+ {features.length - 5} autres fonctionnalités</p>
                     </div>
+
+                    <SlideInButton 
+                      variant={billingPeriod === "monthly" ? "secondary" : "outline"}
+                      onClick={() => handleSubscribe("monthly")}
+                      disabled={loading === "monthly" || authLoading}
+                      className="w-full"
+                    >
+                      {loading === "monthly" ? "Chargement..." : isAuthenticated ? "Choisir ce plan" : "Essai gratuit 14 jours"}
+                    </SlideInButton>
                   </div>
-                )
-              })}
-            </div>
-          </div>
+                </div>
+              </div>
+            </motion.div>
 
-          {/* Guarantee */}
-          <div className="mt-12 text-center">
-            <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-              <ShieldCheck className="h-6 w-6 text-emerald-400" />
-              <span className="text-white font-medium">
-                Garantie 30 jours satisfait ou remboursé
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
+            {/* Annual Card - Featured */}
+            <motion.div
+              whileHover={{ scale: 1.03, y: -8 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className={`relative cursor-pointer ${billingPeriod === "annual" ? "order-1" : "order-1 md:order-2"}`}
+              onClick={() => setBillingPeriod("annual")}
+            >
+              <div className={`relative h-full p-[1px] rounded-3xl overflow-hidden transition-all duration-300 ${
+                billingPeriod === "annual" 
+                  ? "bg-gradient-to-b from-[#00d4ff]/50 via-[#00d4ff]/20 to-transparent shadow-2xl shadow-[#00d4ff]/30" 
+                  : "bg-gradient-to-b from-white/20 via-white/10 to-transparent"
+              }`}>
+                {/* Best value badge */}
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
+                  <span className="px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 text-white text-xs font-bold shadow-lg shadow-emerald-500/30 flex items-center gap-1.5">
+                    <Crown className="w-3.5 h-3.5" />
+                    Meilleur rapport qualité-prix
+                  </span>
+                </div>
 
-      {/* Comparison note */}
-      <section className="py-16 px-4 sm:px-6 border-t border-white/5">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">
-            Tous les plans incluent
-          </h2>
-          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                {/* Animated border for selected */}
+                {billingPeriod === "annual" && (
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-r from-[#00d4ff]/0 via-[#00d4ff]/60 to-[#00d4ff]/0"
+                    animate={{ 
+                      opacity: [0.5, 1, 0.5]
+                    }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                )}
+
+                <div className={`relative h-full backdrop-blur-xl rounded-3xl p-8 border transition-all duration-300 ${
+                  billingPeriod === "annual" 
+                    ? "bg-[#0a0c14]/90 border-[#00d4ff]/40" 
+                    : "bg-[#0a0c14]/70 border-white/10"
+                }`}>
+                  {/* Enhanced glow effect */}
+                  {billingPeriod === "annual" && (
+                    <>
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-48 bg-[#00d4ff]/25 blur-3xl rounded-full" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#00d4ff]/10 via-transparent to-transparent rounded-3xl" />
+                    </>
+                  )}
+
+                  <div className="relative z-10 pt-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className={`text-sm font-semibold ${billingPeriod === "annual" ? "text-[#00d4ff]" : "text-white/50"}`}>
+                        Premium Annuel
+                      </p>
+                      <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-semibold border border-emerald-500/30">
+                        Économisez 995€
+                      </span>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <span className="text-white/40 text-lg line-through mr-2">2388€</span>
+                      <span className="text-5xl font-normal text-white">1393€</span>
+                      <span className="text-white/40 text-lg">/an</span>
+                    </div>
+                    
+                    <p className="text-white/50 text-sm mb-8 leading-relaxed">
+                      Le meilleur rapport qualité-prix. 4 mois offerts !
+                    </p>
+
+                    <div className="space-y-3 mb-8">
+                      {features.slice(0, 5).map((feature, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            billingPeriod === "annual" ? "bg-[#00d4ff]/20" : "bg-white/10"
+                          }`}>
+                            <Check className={`w-3 h-3 ${billingPeriod === "annual" ? "text-[#00d4ff]" : "text-white/50"}`} />
+                          </div>
+                          <span className={`text-sm ${billingPeriod === "annual" ? "text-white/80" : "text-white/70"}`}>{feature}</span>
+                        </div>
+                      ))}
+                      <p className="text-white/40 text-xs pl-8">+ {features.length - 5} autres fonctionnalités</p>
+                    </div>
+
+                    <SlideInButton 
+                      variant={billingPeriod === "annual" ? "secondary" : "outline"}
+                      onClick={() => handleSubscribe("annual")}
+                      disabled={loading === "annual" || authLoading}
+                      className="w-full"
+                    >
+                      {loading === "annual" ? "Chargement..." : isAuthenticated ? "Choisir ce plan" : "Essai gratuit 14 jours"}
+                    </SlideInButton>
+
+                    <p className="text-center text-white/30 text-xs mt-4">
+                      14 jours d'essai gratuit • Aucune carte requise
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+
+          {/* Trust badges */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="flex flex-wrap justify-center gap-6 sm:gap-10 mt-12 text-sm text-white/40"
+          >
             {[
-              { icon: Shield, text: "Données sécurisées" },
-              { icon: Zap, text: "Mises à jour gratuites" },
-              { icon: HelpCircle, text: "Support inclus" },
-              { icon: ShieldCheck, text: "Sans engagement" }
+              { icon: Shield, text: "Paiement sécurisé" },
+              { icon: Zap, text: "Activation instantanée" },
+              { icon: Clock, text: "Annulation à tout moment" }
             ].map((item, i) => (
-              <div key={i} className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                <item.icon className="h-6 w-6 text-emerald-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-300">{item.text}</p>
+              <div key={i} className="flex items-center gap-2">
+                <item.icon className="w-4 h-4 text-[#00d4ff]" />
+                <span>{item.text}</span>
               </div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="py-20 px-4 sm:px-6">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-6">
-              <HelpCircle className="h-4 w-4 text-emerald-400" />
-              <span className="text-sm font-medium text-emerald-400">Questions fréquentes</span>
-            </div>
-            <h2 className="text-3xl font-bold text-white">
-              Des questions ?
-            </h2>
-          </div>
-          
-          <div className="space-y-4">
-            {faqs.map((faq, i) => (
-              <FAQItem
+      {/* All Features Section */}
+      <section className="relative z-10 px-4 py-20 border-t border-white/5">
+        <div className="max-w-4xl mx-auto">
+          <motion.div 
+            initial="hidden" 
+            whileInView="visible" 
+            viewport={{ once: true }}
+            variants={staggerContainer}
+            className="text-center mb-12"
+          >
+            <motion.h2 variants={fadeInUp} className="text-3xl font-normal mb-4">
+              Tout est inclus
+            </motion.h2>
+            <motion.p variants={fadeInUp} className="text-white/50">
+              Un seul plan, toutes les fonctionnalités. Pas de surprise.
+            </motion.p>
+          </motion.div>
+
+          <motion.div 
+            initial="hidden" 
+            whileInView="visible" 
+            viewport={{ once: true }}
+            variants={staggerContainer}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+          >
+            {features.map((feature, i) => (
+              <motion.div 
                 key={i}
-                question={faq.question}
-                answer={faq.answer}
-                isOpen={openFAQ === i}
-                onClick={() => setOpenFAQ(openFAQ === i ? null : i)}
-              />
+                variants={fadeInUp}
+                className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-[#00d4ff]/30 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-full bg-[#00d4ff]/10 flex items-center justify-center flex-shrink-0">
+                  <Check className="w-4 h-4 text-[#00d4ff]" />
+                </div>
+                <span className="text-white/80 text-sm">{feature}</span>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="relative z-10 px-4 py-20">
+        <div className="max-w-3xl mx-auto">
+          <motion.div 
+            initial="hidden" 
+            whileInView="visible" 
+            viewport={{ once: true }}
+            variants={staggerContainer}
+            className="text-center mb-12"
+          >
+            <motion.div variants={fadeInUp} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#00d4ff]/10 border border-[#00d4ff]/20 mb-6">
+              <HelpCircle className="h-4 w-4 text-[#00d4ff]" />
+              <span className="text-sm font-medium text-[#00d4ff]">Questions fréquentes</span>
+            </motion.div>
+            <motion.h2 variants={fadeInUp} className="text-3xl font-normal">
+              Des questions ?
+            </motion.h2>
+          </motion.div>
+          
+          <motion.div 
+            initial="hidden" 
+            whileInView="visible" 
+            viewport={{ once: true }}
+            variants={staggerContainer}
+            className="space-y-4"
+          >
+            {faqs.map((faq, i) => (
+              <motion.div key={i} variants={fadeInUp}>
+                <FAQItem
+                  question={faq.question}
+                  answer={faq.answer}
+                  isOpen={openFAQ === i}
+                  onClick={() => setOpenFAQ(openFAQ === i ? null : i)}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 px-4 sm:px-6 border-t border-white/5">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-black mb-6">
-            Prêt à reprendre le <span className="text-emerald-400">contrôle</span> ?
+      <section className="relative z-10 px-4 py-20 border-t border-white/5">
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-3xl mx-auto text-center"
+        >
+          <h2 className="text-3xl md:text-4xl font-normal mb-6">
+            Prêt à reprendre le <span className="text-[#00d4ff]">contrôle</span> ?
           </h2>
-          <p className="text-xl text-gray-400 mb-8">
-            {isAuthenticated
-              ? "Choisissez votre plan et commencez dès maintenant."
-              : "Commencez gratuitement pendant 14 jours. Sans carte bancaire."}
+          <p className="text-xl text-white/50 mb-8">
+            Commencez gratuitement pendant 14 jours. Sans carte bancaire.
           </p>
-          <Button
-            onClick={() => {
-              if (isAuthenticated) {
-                handleSubscribe("premium")
-              } else {
-                window.location.href = "/login"
-              }
-            }}
-            disabled={loading === "premium"}
-            className="h-14 px-10 text-lg font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl shadow-2xl shadow-emerald-500/30"
+          <SlideInButton
+            variant="secondary"
+            onClick={() => handleSubscribe(billingPeriod)}
+            disabled={loading !== null}
+            className="mx-auto"
           >
-            {loading === "premium" ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <>
-                {isAuthenticated ? "Souscrire au plan Premium" : "Commencer maintenant"}
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </>
-            )}
-          </Button>
-        </div>
+            {loading !== null ? "Chargement..." : "Commencer l'essai gratuit"}
+          </SlideInButton>
+        </motion.div>
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-4 sm:px-6 border-t border-white/5">
+      <footer className="relative z-10 py-8 px-4 border-t border-white/5">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00d4ff] to-[#0891b2] flex items-center justify-center">
               <Shield className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold">STOCKGUARD</span>
-          </div>
-          <p className="text-sm text-gray-500">
+            <span className="font-bold tracking-tight">STOCKGUARD</span>
+          </Link>
+          <p className="text-sm text-white/40">
             © {new Date().getFullYear()} StockGuard. Tous droits réservés.
           </p>
         </div>
       </footer>
-
-      {/* Premium Card Animations */}
-      <style jsx>{`
-        @keyframes pulse-slow {
-          0%, 100% { opacity: 0.6; }
-          50% { opacity: 1; }
-        }
-        
-        @keyframes shimmer {
-          0% {
-            transform: translateX(-100%) translateY(-100%) rotate(45deg);
-          }
-          100% {
-            transform: translateX(200%) translateY(200%) rotate(45deg);
-          }
-        }
-        
-        @keyframes flicker {
-          0%, 100% { opacity: 1; filter: brightness(1); }
-          25% { opacity: 0.95; filter: brightness(1.1); }
-          50% { opacity: 1; filter: brightness(1.2); }
-          75% { opacity: 0.98; filter: brightness(1.1); }
-        }
-        
-        @keyframes price-flicker {
-          0%, 100% { 
-            text-shadow: 0 0 10px rgba(251, 191, 36, 0.5),
-                         0 0 20px rgba(251, 191, 36, 0.3),
-                         0 0 30px rgba(251, 191, 36, 0.2);
-            filter: brightness(1);
-          }
-          25% { 
-            text-shadow: 0 0 15px rgba(251, 191, 36, 0.7),
-                         0 0 25px rgba(251, 191, 36, 0.5),
-                         0 0 35px rgba(251, 191, 36, 0.3);
-            filter: brightness(1.2);
-          }
-          50% { 
-            text-shadow: 0 0 20px rgba(251, 191, 36, 0.8),
-                         0 0 30px rgba(251, 191, 36, 0.6),
-                         0 0 40px rgba(251, 191, 36, 0.4);
-            filter: brightness(1.3);
-          }
-          75% { 
-            text-shadow: 0 0 15px rgba(251, 191, 36, 0.7),
-                         0 0 25px rgba(251, 191, 36, 0.5),
-                         0 0 35px rgba(251, 191, 36, 0.3);
-            filter: brightness(1.2);
-          }
-        }
-        
-        .animate-pulse-slow {
-          animation: pulse-slow 3s ease-in-out infinite;
-        }
-        
-        .premium-shimmer {
-          background: linear-gradient(
-            45deg,
-            transparent 30%,
-            rgba(251, 191, 36, 0.1) 50%,
-            transparent 70%
-          );
-          width: 200%;
-          height: 200%;
-          animation: shimmer 3s ease-in-out infinite;
-        }
-        
-        .premium-card-flicker {
-          animation: flicker 2s ease-in-out infinite;
-        }
-        
-        .premium-price-flicker {
-          animation: price-flicker 2.5s ease-in-out infinite;
-        }
-        
-        .premium-card-glow:hover {
-          transform: scale(1.02);
-        }
-        
-        .premium-card-glow:hover .premium-shimmer {
-          animation-duration: 1.5s;
-        }
-        
-        @keyframes badge-flicker {
-          0%, 100% { 
-            box-shadow: 0 0 10px rgba(251, 191, 36, 0.5),
-                        0 0 20px rgba(251, 191, 36, 0.3);
-            filter: brightness(1);
-          }
-          50% { 
-            box-shadow: 0 0 15px rgba(251, 191, 36, 0.8),
-                        0 0 25px rgba(251, 191, 36, 0.6),
-                        0 0 35px rgba(251, 191, 36, 0.4);
-            filter: brightness(1.3);
-          }
-        }
-        
-        .premium-badge-flicker {
-          animation: badge-flicker 2s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   )
 }
 
-// Page wrapper avec Suspense pour useSearchParams
+// Page wrapper avec Suspense
 export default function PricingPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-dvh bg-[#0a0a0a] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+      <div className="min-h-screen bg-[#050508] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#00d4ff]" />
       </div>
     }>
       <PricingContent />

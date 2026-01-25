@@ -113,31 +113,25 @@ export async function updateSession(request: NextRequest) {
 
       // Normaliser les valeurs en minuscules pour éviter les problèmes de casse
       const subscriptionStatus = (establishment?.subscription_status || 'none').toLowerCase()
-      const subscriptionPlan = (establishment?.subscription_plan || 'free').toLowerCase()
-      const hasStripeSubscription = !!establishment?.stripe_subscription_id
 
       // Debug logs
       console.log('[Middleware] Vérification abonnement:', {
         subscriptionStatus,
-        subscriptionPlan,
-        hasStripeSubscription,
+        subscriptionPlan: establishment?.subscription_plan,
+        stripeSubscriptionId: establishment?.stripe_subscription_id,
         establishmentId: profile.establishment_id
       })
 
-      // Vérifier si le statut est autorisé (active ou trialing)
+      // ============================================
+      // LOGIQUE SIMPLIFIÉE : Si status = active/trialing → accès OK
+      // Le webhook Stripe met à jour le status, c'est la source de vérité
+      // ============================================
       const hasValidStatus = ALLOWED_SUBSCRIPTION_STATUSES.includes(subscriptionStatus)
-      
-      // Vérifier si c'est un plan payant (pas free)
-      const isPaidPlan = subscriptionPlan !== 'free' && subscriptionPlan !== null && subscriptionPlan !== ''
-      
-      // Accès autorisé si :
-      // - Statut actif ou en essai ET (plan payant OU abonnement Stripe existant)
-      const hasValidAccess = hasValidStatus && (isPaidPlan || hasStripeSubscription)
-      
-      console.log('[Middleware] Résultat:', { hasValidStatus, isPaidPlan, hasValidAccess })
-      
-      // Si pas d'accès valide, rediriger vers billing/block
-      if (!hasValidAccess) {
+
+      console.log('[Middleware] Résultat:', { hasValidStatus, subscriptionStatus })
+
+      // Si statut non valide (pas active ni trialing), rediriger vers billing/block
+      if (!hasValidStatus) {
         const url = request.nextUrl.clone()
         url.pathname = "/billing/block"
         return NextResponse.redirect(url)
@@ -173,15 +167,12 @@ export async function updateSession(request: NextRequest) {
         .single()
 
       // Normaliser en minuscules
-      const subscriptionPlan = (establishment?.subscription_plan || 'free').toLowerCase()
-      const hasStripeSubscription = !!establishment?.stripe_subscription_id
       const subscriptionStatus = (establishment?.subscription_status || 'none').toLowerCase()
-      
-      const isPaidPlan = subscriptionPlan !== 'free' && subscriptionPlan !== null && subscriptionPlan !== ''
-      const hasValidStatus = ALLOWED_SUBSCRIPTION_STATUSES.includes(subscriptionStatus)
-      const hasValidAccess = hasValidStatus && (isPaidPlan || hasStripeSubscription)
-      
-      console.log('[Middleware Login] Vérification:', { subscriptionPlan, subscriptionStatus, hasStripeSubscription, hasValidAccess })
+
+      // LOGIQUE SIMPLIFIÉE : Si status = active/trialing → accès OK
+      const hasValidAccess = ALLOWED_SUBSCRIPTION_STATUSES.includes(subscriptionStatus)
+
+      console.log('[Middleware Login] Vérification:', { subscriptionStatus, hasValidAccess })
       
       // Si pas d'abonnement valide, rediriger vers pricing ou billing/block
       if (!hasValidAccess) {

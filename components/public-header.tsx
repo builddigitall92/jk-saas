@@ -91,11 +91,14 @@ export function PublicHeader({ variant = "solid" }: PublicHeaderProps) {
     window.location.href = "/"
   }
 
-  // Déterminer si l'utilisateur a un accès valide au dashboard
+  // ============================================
+  // LOGIQUE SIMPLIFIÉE : Si status = active/trialing → accès OK
+  // Le webhook Stripe met à jour le status, c'est la source de vérité
+  // ============================================
   const hasValidAccess = establishment && (
     establishment.subscription_status === "active" ||
     establishment.subscription_status === "trialing"
-  ) && establishment.subscription_plan !== "free"
+  )
 
   // Déterminer le dashboard selon le rôle
   const dashboardUrl = profile?.role === "employee" ? "/employee" : "/manager"

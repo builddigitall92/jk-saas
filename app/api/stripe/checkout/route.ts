@@ -123,6 +123,7 @@ export async function POST(request: NextRequest) {
       locale: 'fr',
       metadata: {
         establishment_id: establishment.id,
+        user_id: user.id, // supabaseUserId pour le webhook
         plan_id: planId,
         billing_type: billingType,
       },
@@ -133,6 +134,7 @@ export async function POST(request: NextRequest) {
       sessionConfig.subscription_data = {
         metadata: {
           establishment_id: establishment.id,
+          user_id: user.id, // supabaseUserId pour le webhook
           plan_id: planId,
           billing_type: billingType,
         },

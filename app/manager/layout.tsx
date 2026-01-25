@@ -104,14 +104,16 @@ export default function ManagerLayout({
       return // Owner, accès autorisé
     }
 
-    // Vérifier si l'abonnement est valide
+    // LOGIQUE SIMPLIFIÉE : Si status = active/trialing → accès OK
     const hasValidSubscription = subscription && (
       subscription.status === 'active' || subscription.status === 'trialing'
-    ) && subscription.plan !== 'FREE' && subscription.plan !== 'free'
+    )
+
+    console.log('[Manager Layout] Vérification:', { status: subscription?.status, hasValidSubscription })
 
     // Si pas d'abonnement valide, rediriger vers billing/block
     if (!hasValidSubscription) {
-      console.warn('[Layout] Abonnement non valide, redirection vers /billing/block')
+      console.warn('[Manager Layout] Abonnement non valide, redirection vers /billing/block')
       router.replace('/billing/block')
     }
   }, [subscription, subscriptionLoading, user?.email, router])

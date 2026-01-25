@@ -129,10 +129,13 @@ export default function EmployeeLayout({
       return // Owner, accès autorisé
     }
 
-    // Vérifier si l'abonnement est valide
+    // ============================================
+    // LOGIQUE SIMPLIFIÉE : Si status = active/trialing → accès OK
+    // Le webhook Stripe met à jour le status, c'est la source de vérité
+    // ============================================
     const hasValidSubscription = subscription && (
       subscription.status === 'active' || subscription.status === 'trialing'
-    ) && subscription.plan !== 'FREE' && subscription.plan !== 'free'
+    )
 
     // Si pas d'abonnement valide, rediriger vers billing/block
     if (!hasValidSubscription) {
