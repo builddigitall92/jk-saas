@@ -26,68 +26,48 @@ const isOwnerEmail = (email: string | undefined): boolean => {
   )
 }
 
-// Plans définis localement pour éviter l'import côté serveur
+// Plans simplifiés : FREE et PREMIUM uniquement
 const PLANS = {
   FREE: {
     id: 'free',
     name: 'Gratuit',
-    description: 'Pour découvrir StockGuard',
+    description: 'Essai gratuit de 14 jours',
     price: 0,
     features: [
-      '1 établissement',
-      '2 employés max',
-      'Gestion de stock basique',
-      'Alertes par email',
-    ],
-  },
-  STARTER: {
-    id: 'starter',
-    name: 'Starter',
-    description: 'Pour les petits établissements',
-    price: 60,
-    features: [
-      '1 établissement',
-      '3 employés',
-      'Gestion de stock complète',
-      'Alertes temps réel',
-      'Rapports mensuels',
-      'Support email',
-    ],
-  },
-  PRO: {
-    id: 'pro',
-    name: 'Pro',
-    description: 'Pour les établissements en croissance',
-    price: 120,
-    features: [
-      '1 établissement',
-      '7 employés',
-      'Toutes les fonctionnalités',
-      'Prévisions IA',
-      'Rapports avancés',
-      'Support prioritaire',
-      'Export données',
+      'Toutes les fonctionnalités Premium',
+      'Essai de 14 jours',
+      'Sans carte bancaire',
     ],
   },
   PREMIUM: {
     id: 'premium',
     name: 'Premium',
-    description: 'Pour les chaînes de restaurants',
-    price: 199,
+    description: 'Accès complet à StockGuard',
+    price: 99,
     features: [
-      'Tout Pro inclus',
-      'Multi-établissements : gestion centralisée de plusieurs sites',
-      'Recettes partagées avec prix localisés par site',
-      'Automatisations : alertes marge sous seuil, surstock, ruptures',
-      'Suggestions de commandes fournisseurs',
-      'Support prioritaire 24/7',
-      'Onboarding personnalisé',
-      'Account manager dédié',
+      'Gestion de stock complète',
+      'Menu & recettes',
+      'Rapports détaillés',
+      'Alertes automatiques',
+      'Prévisions intelligentes',
+      'Multi-établissements',
+      'Support prioritaire',
+      'IA intégrée',
     ],
   }
 } as const
 
 type PlanId = keyof typeof PLANS
+
+// Mapper les anciens plans vers les nouveaux
+const mapPlanToNew = (plan: string): PlanId => {
+  const normalizedPlan = plan.toUpperCase()
+  // Tous les plans payants (starter, pro, premium) deviennent PREMIUM
+  if (normalizedPlan === 'STARTER' || normalizedPlan === 'PRO' || normalizedPlan === 'PREMIUM') {
+    return 'PREMIUM'
+  }
+  return 'FREE'
+}
 type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'unpaid' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'none'
 
 interface Subscription {
@@ -198,14 +178,14 @@ export function useSubscription(): SubscriptionState {
           const hasActiveStripeSubscription = establishment.stripe_subscription_id && 
             (rawStatus === 'active' || rawStatus === 'trialing')
           
-          // Déterminer le plan (convertir en majuscules pour le type PlanId)
+          // Déterminer le plan (mapper vers FREE ou PREMIUM)
           let plan: PlanId = 'FREE'
           if (hasActiveStripeSubscription) {
-            plan = (rawPlan.toUpperCase() || 'PREMIUM') as PlanId
+            plan = mapPlanToNew(rawPlan || 'premium')
           } else if (ownerStatus) {
             plan = 'FREE' // Owner sans abonnement = Essai gratuit
           } else {
-            plan = (rawPlan.toUpperCase() || 'FREE') as PlanId
+            plan = mapPlanToNew(rawPlan || 'free')
           }
           
           // Déterminer le statut
@@ -267,10 +247,12 @@ export function useSubscription(): SubscriptionState {
   
   const canAccessFeature = (requiredPlan: PlanId) => {
     if (isOwner) return true
-    const planOrder: PlanId[] = ['FREE', 'STARTER', 'PRO', 'PREMIUM']
-    const currentIndex = planOrder.indexOf(subscription?.plan || 'FREE')
-    const requiredIndex = planOrder.indexOf(requiredPlan)
-    return currentIndex >= requiredIndex
+    // Avec seulement FREE et PREMIUM, c'est simple :
+    // - FREE ne peut accéder qu'aux features FREE
+    // - PREMIUM peut accéder à tout
+    const currentPlanId = subscription?.plan || 'FREE'
+    if (currentPlanId === 'PREMIUM') return true
+    return requiredPlan === 'FREE'
   }
 
   const openBillingPortal = async () => {

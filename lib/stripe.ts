@@ -15,99 +15,47 @@ export const stripe = stripeSecretKey
 export const isStripeConfigured = () => !!stripeSecretKey
 
 // Type de facturation
-export type BillingType = 'monthly' | 'annual' | 'lifetime'
+export type BillingType = 'monthly' | 'annual'
 
-// Helper pour obtenir le Price ID selon le type de facturation
-function getPriceId(planKey: string, billingType: BillingType): string | null {
-  const envKey = `STRIPE_${planKey}_PRICE_ID_${billingType.toUpperCase()}`
-  return process.env[envKey] || null
-}
-
-// Plans d'abonnement
+// Plans simplifiés : FREE et PREMIUM uniquement
 export const PLANS = {
   FREE: {
     id: 'free',
     name: 'Gratuit',
-    description: 'Pour découvrir StockGuard',
+    description: 'Essai gratuit de 14 jours',
     price: 0,
     priceIdMonthly: null,
-    priceIdLifetime: null,
+    priceIdAnnual: null,
     features: [
-      '1 établissement',
-      '2 employés max',
-      'Gestion de stock basique',
-      'Alertes par email',
+      'Toutes les fonctionnalités Premium',
+      'Essai de 14 jours',
+      'Sans carte bancaire',
     ],
     limits: {
-      establishments: 1,
-      employees: 2,
-      products: 50,
-    }
-  },
-  STARTER: {
-    id: 'starter',
-    name: 'Starter',
-    description: 'Pour les petits établissements',
-    price: 20,
-    priceIdMonthly: getPriceId('STARTER', 'monthly') || 'price_1SkrloCF3gPATsYiVAYHP0Tp',
-    priceIdAnnual: getPriceId('STARTER', 'annual') || 'price_1SlD5Q2EccmTZDWQW0TLg6el',
-    priceIdLifetime: getPriceId('STARTER', 'lifetime') || 'price_1SkrphCF3gPATsYiv6fjVt7P',
-    features: [
-      '1 établissement',
-      '5 employés',
-      'Gestion de stock complète',
-      'Alertes temps réel',
-      'Rapports mensuels',
-      'Support email',
-    ],
-    limits: {
-      establishments: 1,
-      employees: 5,
-      products: 200,
-    }
-  },
-  PRO: {
-    id: 'pro',
-    name: 'Pro',
-    description: 'Pour les établissements en croissance',
-    price: 80,
-    priceIdMonthly: getPriceId('PRO', 'monthly') || 'price_1SkrnmCF3gPATsYizbk82ioU',
-    priceIdAnnual: getPriceId('PRO', 'annual') || 'price_1SlD5d2EccmTZDWQX6L7wZwz',
-    priceIdLifetime: getPriceId('PRO', 'lifetime') || 'price_1SkrpLCF3gPATsYi4dTrUVB8',
-    features: [
-      '3 établissements',
-      '15 employés',
-      'Toutes les fonctionnalités',
-      'Prévisions IA',
-      'Rapports avancés',
-      'Support prioritaire',
-      'Export données',
-    ],
-    limits: {
-      establishments: 3,
-      employees: 15,
-      products: 1000,
+      establishments: -1,
+      employees: -1,
+      products: -1,
     }
   },
   PREMIUM: {
     id: 'premium',
     name: 'Premium',
-    description: 'Pour les chaînes de restaurants',
-    price: 110,
-    priceIdMonthly: getPriceId('PREMIUM', 'monthly') || 'price_1Skro7CF3gPATsYiYfarUPwH',
-    priceIdAnnual: getPriceId('PREMIUM', 'annual') || 'price_1SlD5r2EccmTZDWQj8XNefir',
-    priceIdLifetime: getPriceId('PREMIUM', 'lifetime') || 'price_1SkrovCF3gPATsYivmiVD5er',
+    description: 'Accès complet à StockGuard',
+    price: 99,
+    priceIdMonthly: process.env.STRIPE_PREMIUM_PRICE_ID_MONTHLY || 'price_premium_monthly',
+    priceIdAnnual: process.env.STRIPE_PREMIUM_PRICE_ID_ANNUAL || 'price_premium_annual',
     features: [
-      'Établissements illimités',
-      'Employés illimités',
-      'Toutes les fonctionnalités',
-      'API personnalisée',
-      'Intégrations sur mesure',
-      'Account manager dédié',
-      'SLA garanti',
+      'Gestion de stock complète',
+      'Menu & recettes',
+      'Rapports détaillés',
+      'Alertes automatiques',
+      'Prévisions intelligentes',
+      'Multi-établissements',
+      'Support prioritaire',
+      'IA intégrée',
     ],
     limits: {
-      establishments: -1, // illimité
+      establishments: -1,
       employees: -1,
       products: -1,
     }
@@ -117,12 +65,19 @@ export const PLANS = {
 export type PlanId = keyof typeof PLANS
 
 // Récupérer le plan à partir du price ID Stripe
+// Tous les plans payants sont mappés vers PREMIUM
 export function getPlanFromPriceId(priceId: string): PlanId {
-  for (const [planId, plan] of Object.entries(PLANS)) {
-    if (plan.priceIdMonthly === priceId || plan.priceIdAnnual === priceId || plan.priceIdLifetime === priceId) {
-      return planId as PlanId
-    }
+  // Si c'est le price ID premium, retourner PREMIUM
+  if (priceId === PLANS.PREMIUM.priceIdMonthly || priceId === PLANS.PREMIUM.priceIdAnnual) {
+    return 'PREMIUM'
   }
+  
+  // Pour tous les autres price IDs (anciens plans starter, pro, etc.), retourner PREMIUM
+  // Cela permet de gérer les abonnements existants
+  if (priceId && priceId !== '') {
+    return 'PREMIUM'
+  }
+  
   return 'FREE'
 }
 
@@ -133,15 +88,16 @@ export function getPriceIdForPlan(planId: PlanId, billingType: BillingType): str
   
   if (billingType === 'monthly') {
     return plan.priceIdMonthly
-  } else if (billingType === 'annual') {
-    return plan.priceIdAnnual
   } else {
-    return plan.priceIdLifetime
+    return plan.priceIdAnnual
   }
 }
 
 // Vérifier si un plan a accès à une fonctionnalité
 export function hasFeatureAccess(currentPlan: PlanId, requiredPlan: PlanId): boolean {
-  const planOrder: PlanId[] = ['FREE', 'STARTER', 'PRO', 'PREMIUM']
-  return planOrder.indexOf(currentPlan) >= planOrder.indexOf(requiredPlan)
+  // Avec seulement FREE et PREMIUM :
+  // - PREMIUM a accès à tout
+  // - FREE a accès uniquement aux features FREE
+  if (currentPlan === 'PREMIUM') return true
+  return requiredPlan === 'FREE'
 }
