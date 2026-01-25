@@ -34,6 +34,7 @@ import {
 import { createClient } from "@/utils/supabase/client"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useSubscription } from "@/lib/hooks/use-subscription"
+import { toast } from "sonner"
 import Link from "next/link"
 
 interface Establishment {
@@ -291,6 +292,13 @@ export default function SettingsPage() {
 
     if (!error) {
       setEstablishment({ ...establishment, ...editedEstablishment })
+      toast.success("Enregistrement sauvegardé", {
+        description: "Vos modifications ont été enregistrées avec succès.",
+      })
+    } else {
+      toast.error("Erreur lors de la sauvegarde", {
+        description: "Une erreur est survenue. Veuillez réessayer.",
+      })
     }
     
     setSaving(false)
@@ -305,11 +313,11 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Paramètres</h1>
-        <p className="text-muted-foreground mt-1">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Paramètres</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">
           Gérez votre établissement et invitez votre équipe
         </p>
       </div>
@@ -327,33 +335,33 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="flex-1 bg-background border-2 border-dashed border-orange-500/30 rounded-lg p-4 text-center">
-                <span className="text-3xl font-mono font-bold tracking-widest text-orange-500">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex-1 bg-background border-2 border-dashed border-orange-500/30 rounded-lg p-3 sm:p-4 text-center">
+                <span className="text-2xl sm:text-3xl font-mono font-bold tracking-widest text-orange-500">
                   {establishment?.code || "------"}
                 </span>
               </div>
               <div className="flex flex-col gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="icon"
                   onClick={copyCode}
-                  className="h-12 w-12"
+                  className="h-10 w-10 sm:h-12 sm:w-12"
                 >
                   {copied ? (
-                    <Check className="h-5 w-5 text-green-500" />
+                    <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                   ) : (
-                    <Copy className="h-5 w-5" />
+                    <Copy className="h-4 w-4 sm:h-5 sm:w-5" />
                   )}
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="icon"
                   onClick={regenerateCode}
-                  className="h-12 w-12"
+                  className="h-10 w-10 sm:h-12 sm:w-12"
                   title="Générer un nouveau code"
                 >
-                  <RefreshCw className="h-5 w-5" />
+                  <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </div>
             </div>
@@ -384,18 +392,18 @@ export default function SettingsPage() {
           <CardContent>
             <div className="space-y-3">
               {teamMembers.map((member) => (
-                <div 
-                  key={member.id} 
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50 group"
+                <div
+                  key={member.id}
+                  className="flex items-center justify-between gap-2 p-2 sm:p-3 rounded-lg bg-muted/50 group"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                      <span className="text-white font-medium">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0">
+                      <span className="text-white font-medium text-sm sm:text-base">
                         {member.first_name?.[0]}{member.last_name?.[0]}
                       </span>
                     </div>
-                    <div>
-                      <p className="font-medium">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm sm:text-base truncate">
                         {member.first_name} {member.last_name}
                       </p>
                       <p className="text-xs text-muted-foreground capitalize">
@@ -413,7 +421,7 @@ export default function SettingsPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setMemberToRemove(member)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600 hover:bg-red-500/10"
                       >
                         <UserMinus className="h-4 w-4" />
                       </Button>
@@ -452,11 +460,11 @@ export default function SettingsPage() {
               <div className="space-y-6">
                 {/* Alerte si impayé */}
                 {isPastDue && (
-                  <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-3">
-                    <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-destructive">Paiement en retard</p>
-                      <p className="text-sm text-muted-foreground">
+                  <div className="p-3 sm:p-4 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-2 sm:gap-3">
+                    <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-destructive text-sm sm:text-base">Paiement en retard</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">
                         Veuillez mettre à jour vos informations de paiement pour continuer à utiliser toutes les fonctionnalités.
                       </p>
                     </div>
@@ -464,14 +472,14 @@ export default function SettingsPage() {
                 )}
 
                 {/* Plan actuel */}
-                <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 rounded-xl bg-muted/50">
                   <div className="flex items-center gap-4">
-                    <div className="h-14 w-14 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                      <Crown className="h-7 w-7 text-purple-500" />
+                    <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
+                      <Crown className="h-6 w-6 sm:h-7 sm:w-7 text-purple-500" />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-xl font-bold text-foreground">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-lg sm:text-xl font-bold text-foreground">
                           {currentPlan?.name || 'Gratuit'}
                         </h3>
                         {isTrialing && (
@@ -482,19 +490,19 @@ export default function SettingsPage() {
                         {/* Badge de statut */}
                         {subscription?.status && subscription.status !== 'active' && subscription.status !== 'trialing' && (
                           <span className={`text-xs px-2 py-1 rounded ${
-                            subscription.status === 'past_due' || subscription.status === 'unpaid' 
-                              ? 'bg-red-500/10 text-red-500' 
+                            subscription.status === 'past_due' || subscription.status === 'unpaid'
+                              ? 'bg-red-500/10 text-red-500'
                               : 'bg-amber-500/10 text-amber-500'
                           }`}>
-                            {subscription.status === 'past_due' ? 'Impayé' : 
-                             subscription.status === 'canceled' ? 'Annulé' : 
+                            {subscription.status === 'past_due' ? 'Impayé' :
+                             subscription.status === 'canceled' ? 'Annulé' :
                              subscription.status}
                           </span>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {currentPlan?.price === 0 
-                          ? 'Plan gratuit' 
+                        {currentPlan?.price === 0
+                          ? 'Plan gratuit'
                           : `${currentPlan?.price}€/mois`}
                       </p>
                       {subscription?.periodEnd && (
@@ -509,8 +517,8 @@ export default function SettingsPage() {
                       )}
                     </div>
                   </div>
-                  
-                  <div className="flex flex-col gap-2">
+
+                  <div className="flex flex-col gap-2 sm:shrink-0">
                     {/* Bouton Gérer l'abonnement / Portail Stripe */}
                     {/* Afficher si : plan payant OU essai OU a un ID Stripe (même si plan = free) */}
                     {(() => {
@@ -522,20 +530,26 @@ export default function SettingsPage() {
                         <>
                           <Button
                             variant="default"
-                            onClick={async () => {
+                            onClick={async (e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              console.log('Bouton cliqué, ouverture du portail...')
                               setOpeningPortal(true)
                               try {
+                                console.log('Appel openBillingPortal...')
                                 await openBillingPortal()
+                                console.log('Portail ouvert avec succès')
                               } catch (error) {
                                 console.error('Erreur portail:', error)
                                 // Si pas de customer Stripe, rediriger vers pricing pour créer un abonnement
                                 const errorMessage = error instanceof Error ? error.message : String(error)
-                                if (errorMessage.includes('customer') || errorMessage.includes('abonnement') || errorMessage.includes('Aucun')) {
+                                console.error('Message d\'erreur:', errorMessage)
+                                if (errorMessage.includes('customer') || errorMessage.includes('abonnement') || errorMessage.includes('Aucun') || errorMessage.includes('non trouvé')) {
                                   if (confirm('Vous n\'avez pas encore d\'abonnement actif. Souhaitez-vous vous abonner maintenant ?')) {
                                     window.location.href = '/pricing'
                                   }
                                 } else {
-                                  alert('Erreur lors de l\'ouverture du portail de paiement. Veuillez réessayer.')
+                                  alert(`Erreur lors de l'ouverture du portail de paiement: ${errorMessage}. Veuillez réessayer.`)
                                 }
                               } finally {
                                 setOpeningPortal(false)
@@ -543,6 +557,7 @@ export default function SettingsPage() {
                             }}
                             disabled={openingPortal}
                             className="gap-2 bg-purple-600 hover:bg-purple-700 text-white w-full"
+                            type="button"
                           >
                             {openingPortal ? (
                               <>
@@ -552,17 +567,10 @@ export default function SettingsPage() {
                             ) : (
                               <>
                                 <CreditCard className="h-4 w-4" />
-                                {isTrialing ? 'Gérer ou annuler l\'essai' : 'Gérer mon abonnement'}
+                                Gérer ou annuler l'abonnement
                               </>
                             )}
                           </Button>
-                          {/* Bouton pour changer de plan */}
-                          <Link href="/pricing">
-                            <Button variant="outline" className="w-full gap-2 border-purple-500/30 text-purple-600 hover:bg-purple-500/10">
-                              <Crown className="h-4 w-4" />
-                              Changer de plan
-                            </Button>
-                          </Link>
                         </>
                       ) : (
                         /* Bouton pour s'abonner si pas d'abonnement */
@@ -579,15 +587,15 @@ export default function SettingsPage() {
 
                 {/* Info importante pour l'essai */}
                 {isTrialing && subscription?.stripeSubscriptionId && (
-                  <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
-                    <div className="flex items-start gap-3">
+                  <div className="p-3 sm:p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                    <div className="flex items-start gap-2 sm:gap-3">
                       <AlertTriangle className="h-5 w-5 text-orange-500 mt-0.5 shrink-0" />
-                      <div className="flex-1">
-                        <p className="font-semibold text-orange-600 dark:text-orange-400 mb-1">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-orange-600 dark:text-orange-400 mb-1 text-sm sm:text-base">
                           Période d'essai en cours
                         </p>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          Vous pouvez annuler votre abonnement à tout moment depuis le portail Stripe. 
+                        <p className="text-xs sm:text-sm text-muted-foreground mb-3">
+                          Vous pouvez annuler votre abonnement à tout moment depuis le portail Stripe.
                           {subscription?.trialEndsAt && (
                             <> L'essai se termine le <strong>{subscription.trialEndsAt.toLocaleDateString('fr-FR')}</strong>.</>
                           )}
@@ -607,14 +615,15 @@ export default function SettingsPage() {
                             }
                           }}
                           disabled={openingPortal}
-                          className="gap-2 border-orange-500/30 text-orange-600 hover:bg-orange-500/10"
+                          className="gap-2 border-orange-500/30 text-orange-600 hover:bg-orange-500/10 text-xs sm:text-sm"
                         >
                           {openingPortal ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
                             <ExternalLink className="h-3 w-3" />
                           )}
-                          Annuler l'essai ou l'abonnement
+                          <span className="hidden sm:inline">Annuler l'essai ou l'abonnement</span>
+                          <span className="sm:hidden">Annuler</span>
                         </Button>
                       </div>
                     </div>
@@ -623,14 +632,14 @@ export default function SettingsPage() {
 
                 {/* Info pour les abonnements actifs */}
                 {!isTrialing && subscription?.stripeSubscriptionId && subscription?.plan !== 'FREE' && (
-                  <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                    <div className="flex items-start gap-3">
+                  <div className="p-3 sm:p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                    <div className="flex items-start gap-2 sm:gap-3">
                       <CreditCard className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
-                      <div className="flex-1">
-                        <p className="font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-blue-600 dark:text-blue-400 mb-1 text-sm sm:text-base">
                           Abonnement actif
                         </p>
-                        <p className="text-sm text-muted-foreground mb-3">
+                        <p className="text-xs sm:text-sm text-muted-foreground mb-3">
                           Gérez votre abonnement, mettez à jour votre moyen de paiement ou annulez depuis le portail client Stripe sécurisé.
                         </p>
                         <Button
@@ -648,14 +657,15 @@ export default function SettingsPage() {
                             }
                           }}
                           disabled={openingPortal}
-                          className="gap-2 border-blue-500/30 text-blue-600 hover:bg-blue-500/10"
+                          className="gap-2 border-blue-500/30 text-blue-600 hover:bg-blue-500/10 text-xs sm:text-sm"
                         >
                           {openingPortal ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
                             <ExternalLink className="h-3 w-3" />
                           )}
-                          Ouvrir le portail de gestion
+                          <span className="hidden sm:inline">Ouvrir le portail de gestion</span>
+                          <span className="sm:hidden">Gérer</span>
                         </Button>
                       </div>
                     </div>
@@ -679,7 +689,7 @@ export default function SettingsPage() {
         {/* Configuration du Check-in */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <ClipboardCheck className="h-5 w-5 text-green-500" />
@@ -689,7 +699,7 @@ export default function SettingsPage() {
                   Définissez les points à vérifier par vos employés avant le service
                 </CardDescription>
               </div>
-              <Button onClick={() => setShowAddCheckItem(true)} variant="outline" className="gap-2">
+              <Button onClick={() => setShowAddCheckItem(true)} variant="outline" className="gap-2 w-full sm:w-auto">
                 <Plus className="h-4 w-4" />
                 Ajouter un point
               </Button>
@@ -713,7 +723,7 @@ export default function SettingsPage() {
                   </Button>
                 </div>
                 
-                <div className="flex gap-4 items-end">
+                <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
                   <div className="flex-1">
                     <Label htmlFor="checkItemLabel">Libellé du point</Label>
                     <Input
@@ -724,32 +734,34 @@ export default function SettingsPage() {
                       className="mt-1"
                     />
                   </div>
-                  
-                  <div>
-                    <Label>Icône</Label>
-                    <select
-                      value={newCheckItem.icon}
-                      onChange={(e) => setNewCheckItem({ ...newCheckItem, icon: e.target.value })}
-                      className="w-full h-10 mt-1 rounded-lg border border-border bg-background px-3"
+
+                  <div className="flex gap-3 sm:gap-4 items-end">
+                    <div className="flex-1 sm:flex-initial">
+                      <Label>Icône</Label>
+                      <select
+                        value={newCheckItem.icon}
+                        onChange={(e) => setNewCheckItem({ ...newCheckItem, icon: e.target.value })}
+                        className="w-full h-10 mt-1 rounded-lg border border-border bg-background px-3"
+                      >
+                        <option value="Package">📦 Stock</option>
+                        <option value="ThermometerSun">🌡️ Température</option>
+                        <option value="ClipboardCheck">📋 Vérification</option>
+                        <option value="Utensils">🍴 Matériel</option>
+                      </select>
+                    </div>
+
+                    <Button
+                      onClick={addCheckItem}
+                      disabled={!newCheckItem.item_label.trim() || savingCheckItem}
+                      className="bg-green-500 hover:bg-green-600 shrink-0"
                     >
-                      <option value="Package">📦 Stock</option>
-                      <option value="ThermometerSun">🌡️ Température</option>
-                      <option value="ClipboardCheck">📋 Vérification</option>
-                      <option value="Utensils">🍴 Matériel</option>
-                    </select>
+                      {savingCheckItem ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="h-4 w-4" />
+                      )}
+                    </Button>
                   </div>
-                  
-                  <Button 
-                    onClick={addCheckItem} 
-                    disabled={!newCheckItem.item_label.trim() || savingCheckItem}
-                    className="bg-green-500 hover:bg-green-600"
-                  >
-                    {savingCheckItem ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Check className="h-4 w-4" />
-                    )}
-                  </Button>
                 </div>
               </div>
             )}
@@ -758,29 +770,29 @@ export default function SettingsPage() {
             {checkItems.length > 0 ? (
               <div className="space-y-2">
                 {checkItems.map((item, index) => (
-                  <div 
+                  <div
                     key={item.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors group"
+                    className="flex items-center justify-between gap-2 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors group"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="text-muted-foreground">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                      <div className="text-muted-foreground hidden sm:block">
                         <GripVertical className="h-4 w-4" />
                       </div>
-                      <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                        {item.icon === 'Package' && <Package className="h-5 w-5 text-green-500" />}
-                        {item.icon === 'ThermometerSun' && <ThermometerSun className="h-5 w-5 text-green-500" />}
-                        {item.icon === 'ClipboardCheck' && <ClipboardCheck className="h-5 w-5 text-green-500" />}
-                        {item.icon === 'Utensils' && <Utensils className="h-5 w-5 text-green-500" />}
+                      <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
+                        {item.icon === 'Package' && <Package className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />}
+                        {item.icon === 'ThermometerSun' && <ThermometerSun className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />}
+                        {item.icon === 'ClipboardCheck' && <ClipboardCheck className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />}
+                        {item.icon === 'Utensils' && <Utensils className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />}
                       </div>
-                      <div>
-                        <p className="font-medium text-sm">{item.item_label}</p>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{item.item_label}</p>
                         <p className="text-xs text-muted-foreground">Point #{index + 1}</p>
                       </div>
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                      className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all shrink-0"
                       onClick={() => deleteCheckItem(item.id)}
                       disabled={deletingCheckItem === item.id}
                     >
@@ -891,38 +903,38 @@ export default function SettingsPage() {
 
       {/* Modal de confirmation de suppression de membre */}
       {memberToRemove && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
           {/* Overlay */}
-          <div 
+          <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => !isRemovingMember && setMemberToRemove(null)}
           />
-          
+
           {/* Modal */}
-          <div className="relative w-full max-w-md rounded-2xl p-6 bg-background border shadow-xl">
+          <div className="relative w-full max-w-md rounded-2xl p-4 sm:p-6 bg-background border shadow-xl">
             {/* Bouton fermer */}
             <button
               onClick={() => !isRemovingMember && setMemberToRemove(null)}
               disabled={isRemovingMember}
-              className="absolute top-4 right-4 p-2 rounded-lg hover:bg-muted transition-all disabled:opacity-50"
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 rounded-lg hover:bg-muted transition-all disabled:opacity-50"
             >
               <X className="h-4 w-4" />
             </button>
 
             {/* Icône d'alerte */}
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center">
-                <AlertTriangle className="h-8 w-8 text-red-500" />
+            <div className="flex justify-center mb-3 sm:mb-4">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-red-500/10 flex items-center justify-center">
+                <AlertTriangle className="h-7 w-7 sm:h-8 sm:w-8 text-red-500" />
               </div>
             </div>
 
             {/* Titre */}
-            <h3 className="text-xl font-bold text-center mb-2">
+            <h3 className="text-lg sm:text-xl font-bold text-center mb-2">
               Retirer ce membre ?
             </h3>
 
             {/* Description */}
-            <p className="text-muted-foreground text-center mb-4">
+            <p className="text-sm sm:text-base text-muted-foreground text-center mb-4">
               Vous êtes sur le point de retirer{' '}
               <span className="text-foreground font-semibold">
                 {memberToRemove.first_name} {memberToRemove.last_name}
@@ -931,18 +943,18 @@ export default function SettingsPage() {
             </p>
 
             {/* Info sur les conséquences */}
-            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 mb-6">
-              <p className="text-sm text-red-600 dark:text-red-400 flex items-start gap-2">
+            <div className="p-3 sm:p-4 rounded-xl bg-red-500/10 border border-red-500/20 mb-4 sm:mb-6">
+              <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
                 <span>
-                  Cette personne sera <strong>immédiatement déconnectée</strong> de l'établissement 
+                  Cette personne sera <strong>immédiatement déconnectée</strong> de l'établissement
                   et ne pourra plus y accéder.
                 </span>
               </p>
             </div>
 
             {/* Boutons */}
-            <div className="flex gap-3">
+            <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
               <Button
                 variant="outline"
                 onClick={() => setMemberToRemove(null)}

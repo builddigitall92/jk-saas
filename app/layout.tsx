@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Analytics } from '@vercel/analytics/next'
+import { Toaster } from 'sonner'
 import './globals.css'
 
 // ✅ Viewport Mobile-First (PRD Responsive)
@@ -50,6 +51,7 @@ export default function RootLayout({
         style={{ fontFamily: "var(--font-sf-pro)" }}
       >
         {children}
+        <Toaster position="top-center" richColors />
         <Analytics />
       </body>
     </html>

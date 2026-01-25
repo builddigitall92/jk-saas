@@ -334,10 +334,10 @@ export default function OnboardingPage() {
       if (updateError) throw updateError
 
       setStep("complete")
-      
+
       // Rediriger vers la page de pricing pour choisir un plan
       setTimeout(() => {
-        router.push("/pricing")
+        router.push("/pricing?onboarding=complete")
       }, 2000)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de la création")

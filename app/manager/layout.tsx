@@ -91,6 +91,31 @@ export default function ManagerLayout({
     return () => clearTimeout(timer)
   }, [])
 
+  // ============================================
+  // 2ÈME COUCHE DE PROTECTION - Vérification abonnement côté client
+  // ============================================
+  useEffect(() => {
+    // Attendre que les données soient chargées
+    if (subscriptionLoading) return
+
+    // Bypass pour les owners/admins (emails autorisés)
+    const ownerEmails = ['admin@stockguard.fr', 'owner@stockguard.fr']
+    if (user?.email && ownerEmails.includes(user.email.toLowerCase())) {
+      return // Owner, accès autorisé
+    }
+
+    // Vérifier si l'abonnement est valide
+    const hasValidSubscription = subscription && (
+      subscription.status === 'active' || subscription.status === 'trialing'
+    ) && subscription.plan !== 'FREE' && subscription.plan !== 'free'
+
+    // Si pas d'abonnement valide, rediriger vers billing/block
+    if (!hasValidSubscription) {
+      console.warn('[Layout] Abonnement non valide, redirection vers /billing/block')
+      router.replace('/billing/block')
+    }
+  }, [subscription, subscriptionLoading, user?.email, router])
+
   // Heartbeat de présence - signale que le manager est en ligne
   useEffect(() => {
     if (!profile?.establishment_id) return

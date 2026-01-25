@@ -4,9 +4,10 @@ import { NextResponse, type NextRequest } from "next/server"
 // ============================================
 // MODE OWNER - Accès Premium automatique pour le propriétaire du SaaS
 // ============================================
-const FORCE_PREMIUM_ACCESS = true
+// ⚠️ IMPORTANT: Mettre à false en production !
+const FORCE_PREMIUM_ACCESS = process.env.NODE_ENV === 'development' && process.env.FORCE_PREMIUM_ACCESS === 'true'
 
-// Emails avec accès Premium automatique
+// Emails avec accès Premium automatique (bypass abonnement)
 const OWNER_EMAILS = [
   'admin@stockguard.fr',
   'owner@stockguard.fr',

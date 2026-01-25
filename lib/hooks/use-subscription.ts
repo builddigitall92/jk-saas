@@ -254,15 +254,29 @@ export function useSubscription(): SubscriptionState {
 
   const openBillingPortal = async () => {
     try {
+      console.log('Appel API /api/stripe/portal...')
       const response = await fetch('/api/stripe/portal', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `Erreur HTTP ${response.status}` }))
+        throw new Error(errorData.error || `Erreur HTTP ${response.status}`)
+      }
+      
       const data = await response.json()
+      console.log('Réponse API:', data)
       
       if (data.url) {
+        console.log('Redirection vers:', data.url)
         window.location.href = data.url
       } else if (data.error) {
         throw new Error(data.error)
+      } else {
+        throw new Error('Aucune URL de portail reçue')
       }
     } catch (err) {
       console.error('Erreur ouverture portail:', err)

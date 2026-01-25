@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { 
-  Check, 
-  Sparkles, 
+import {
+  Check,
+  Sparkles,
   Zap,
   Crown,
   Loader2,
@@ -13,11 +14,15 @@ import {
   Brain,
   ShieldCheck,
   HelpCircle,
-  ChevronDown
+  ChevronDown,
+  CheckCircle,
+  X
 } from "lucide-react"
 import Link from "next/link"
 import { getStripe } from "@/lib/stripe-client"
 import { PRICING_PLANS, type BillingPeriod } from "@/lib/pricing-config"
+import { PublicHeader } from "@/components/public-header"
+import { createClient } from "@/utils/supabase/client"
 
 // FAQ Item Component
 function FAQItem({ question, answer, isOpen, onClick }: {
@@ -39,10 +44,32 @@ function FAQItem({ question, answer, isOpen, onClick }: {
   )
 }
 
-export default function PricingPage() {
+// Composant interne qui utilise useSearchParams (doit être dans Suspense)
+function PricingContent() {
   const [loading, setLoading] = useState<string | null>(null)
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("annual")
   const [openFAQ, setOpenFAQ] = useState<number | null>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState(false)
+
+  const searchParams = useSearchParams()
+
+  // Vérifier l'authentification et les params
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      setIsAuthenticated(!!user)
+      setAuthLoading(false)
+
+      // Afficher la bannière de bienvenue si venant de l'onboarding
+      if (searchParams.get("onboarding") === "complete") {
+        setShowWelcomeBanner(true)
+      }
+    }
+    checkAuth()
+  }, [searchParams])
 
   const handleSubscribe = async (planId: string) => {
     setLoading(planId)
@@ -126,34 +153,31 @@ export default function PricingPage() {
         <div className="absolute top-1/2 right-0 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[120px]" />
       </div>
 
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-[#0a0a0a]/80 border-b border-white/5 pt-[env(safe-area-inset-top)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                <Shield className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-black tracking-tight">STOCKGUARD</span>
-            </Link>
+      {/* Header intelligent */}
+      <PublicHeader variant="solid" />
+
+      {/* Bannière de bienvenue après onboarding */}
+      {showWelcomeBanner && (
+        <div className="fixed top-[72px] left-0 right-0 z-40 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-3 px-4">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <Link href="/login">
-                <Button variant="ghost" className="text-gray-400 hover:text-white hover:bg-white/5">
-                  Connexion
-                </Button>
-              </Link>
-              <Link href="/login">
-                <Button className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-lg shadow-emerald-500/20">
-                  Essai gratuit
-                </Button>
-              </Link>
+              <CheckCircle className="h-5 w-5 shrink-0" />
+              <p className="text-sm sm:text-base font-medium">
+                Votre compte est créé ! Choisissez votre plan pour commencer à utiliser StockGuard.
+              </p>
             </div>
+            <button
+              onClick={() => setShowWelcomeBanner(false)}
+              className="p-1 hover:bg-white/20 rounded-lg transition-colors shrink-0"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
         </div>
-      </header>
+      )}
 
       {/* Hero */}
-      <section className="relative pt-32 pb-12 px-4 sm:px-6">
+      <section className={`relative pb-12 px-4 sm:px-6 ${showWelcomeBanner ? 'pt-44' : 'pt-32'}`}>
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 mb-6">
             <Sparkles className="h-4 w-4 text-emerald-400" />
@@ -337,14 +361,14 @@ export default function PricingPage() {
                       {/* CTA */}
                       <Button
                         onClick={() => handleSubscribe(planKey)}
-                        disabled={loading === planKey}
+                        disabled={loading === planKey || authLoading}
                         className="w-full h-12 font-bold shadow-lg transition-all bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-amber-500/30"
                       >
                         {loading === planKey ? (
                           <Loader2 className="h-5 w-5 animate-spin" />
                         ) : (
                           <>
-                            Essai gratuit 14 jours
+                            {isAuthenticated ? "Continuer avec ce plan" : "Essai gratuit 14 jours"}
                             <ArrowRight className="h-4 w-4 ml-2" />
                           </>
                         )}
@@ -424,14 +448,30 @@ export default function PricingPage() {
             Prêt à reprendre le <span className="text-emerald-400">contrôle</span> ?
           </h2>
           <p className="text-xl text-gray-400 mb-8">
-            Commencez gratuitement pendant 14 jours. Sans carte bancaire.
+            {isAuthenticated
+              ? "Choisissez votre plan et commencez dès maintenant."
+              : "Commencez gratuitement pendant 14 jours. Sans carte bancaire."}
           </p>
-          <Link href="/login">
-            <Button className="h-14 px-10 text-lg font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl shadow-2xl shadow-emerald-500/30">
-              Commencer maintenant
-              <ArrowRight className="h-5 w-5 ml-2" />
-            </Button>
-          </Link>
+          <Button
+            onClick={() => {
+              if (isAuthenticated) {
+                handleSubscribe("premium")
+              } else {
+                window.location.href = "/login"
+              }
+            }}
+            disabled={loading === "premium"}
+            className="h-14 px-10 text-lg font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl shadow-2xl shadow-emerald-500/30"
+          >
+            {loading === "premium" ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <>
+                {isAuthenticated ? "Souscrire au plan Premium" : "Commencer maintenant"}
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </>
+            )}
+          </Button>
         </div>
       </section>
 
@@ -551,5 +591,18 @@ export default function PricingPage() {
         }
       `}</style>
     </div>
+  )
+}
+
+// Page wrapper avec Suspense pour useSearchParams
+export default function PricingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-dvh bg-[#0a0a0a] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+      </div>
+    }>
+      <PricingContent />
+    </Suspense>
   )
 }

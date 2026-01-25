@@ -45,6 +45,7 @@ import {
   Crown
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { PublicHeader } from "@/components/public-header"
 
 // ============================================
 // ANIMATION VARIANTS
@@ -676,7 +677,7 @@ function FAQItem({ question, answer, index }: { question: string; answer: string
 // ============================================
 
 export default function LandingPage() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  // Mobile menu state moved to PublicHeader component
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("annual")
   const [activeTestimonial, setActiveTestimonial] = useState(0)
   
@@ -708,71 +709,8 @@ export default function LandingPage() {
         <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-[#00d4ff]/5 rounded-full blur-[120px]" />
       </div>
 
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 backdrop-blur-2xl bg-[#050508]/60 border-b border-white/[0.05]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-[#0a1929]">
-                <Image src="/icon.svg" alt="StockGuard" width={32} height={32} className="w-full h-full" />
-              </div>
-              <span className="text-lg font-normal tracking-tight">StockGuard</span>
-            </Link>
-
-            <div className="hidden md:flex items-center gap-8">
-              {["Fonctionnalités", "Tarifs", "Témoignages", "FAQ"].map((item) => (
-                <a key={item} href={`#${item.toLowerCase()}`} className="text-sm text-white/50 hover:text-white transition-colors font-normal">
-                  {item}
-                </a>
-              ))}
-            </div>
-
-            <div className="hidden md:flex items-center gap-4">
-              <div className="flex items-center gap-2 text-xs text-emerald-400">
-                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                En ligne
-              </div>
-              <Link href="/login">
-                <Button className="bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/10 text-white font-normal px-5">
-                  Connexion
-                </Button>
-              </Link>
-            </div>
-
-            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden p-2 rounded-lg bg-white/5 border border-white/10">
-              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="md:hidden border-t border-white/5 bg-[#050508]/95 backdrop-blur-2xl"
-            >
-              <div className="px-4 py-6 space-y-4">
-                {["Fonctionnalités", "Tarifs", "Témoignages", "FAQ"].map((item) => (
-                  <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsMobileMenuOpen(false)} className="block text-white/70 hover:text-white py-2 font-normal">
-                    {item}
-                  </a>
-                ))}
-                <div className="pt-4 flex flex-col gap-3">
-                  <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button className="w-full bg-white/10 border border-white/10 text-white font-normal">Connexion</Button>
-                  </Link>
-                  <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button className="w-full bg-[#00d4ff] hover:bg-[#00d4ff]/90 text-black font-semibold">Essai gratuit</Button>
-                  </Link>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </nav>
+      {/* Navigation - Header intelligent avec détection d'auth */}
+      <PublicHeader variant="transparent" />
 
       {/* Hero Section */}
       <section ref={heroRef} className="relative min-h-[100dvh] flex items-center pt-24 pb-16 px-4 overflow-hidden">

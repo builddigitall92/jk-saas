@@ -27,6 +27,7 @@ import {
   ShoppingBag,
 } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { useSubscription } from "@/lib/hooks/use-subscription"
 import { useNotifications } from "@/lib/hooks/use-notifications"
 
 const mainNavItems = [
@@ -49,7 +50,8 @@ export default function EmployeeLayout({
 }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { profile, loading: authLoading } = useAuth()
+  const { profile, user, loading: authLoading } = useAuth()
+  const { subscription, loading: subscriptionLoading } = useSubscription()
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
   const userName = profile?.first_name || "Employé"
   const [isProfileOpen, setIsProfileOpen] = useState(false)
@@ -113,6 +115,31 @@ export default function EmployeeLayout({
   useEffect(() => {
     checkEmployeeAccess()
   }, [pathname])
+
+  // ============================================
+  // 2ÈME COUCHE DE PROTECTION - Vérification abonnement côté client
+  // ============================================
+  useEffect(() => {
+    // Attendre que les données soient chargées
+    if (subscriptionLoading) return
+
+    // Bypass pour les owners/admins (emails autorisés)
+    const ownerEmails = ['admin@stockguard.fr', 'owner@stockguard.fr']
+    if (user?.email && ownerEmails.includes(user.email.toLowerCase())) {
+      return // Owner, accès autorisé
+    }
+
+    // Vérifier si l'abonnement est valide
+    const hasValidSubscription = subscription && (
+      subscription.status === 'active' || subscription.status === 'trialing'
+    ) && subscription.plan !== 'FREE' && subscription.plan !== 'free'
+
+    // Si pas d'abonnement valide, rediriger vers billing/block
+    if (!hasValidSubscription) {
+      console.warn('[Employee Layout] Abonnement non valide, redirection vers /billing/block')
+      router.replace('/billing/block')
+    }
+  }, [subscription, subscriptionLoading, user?.email, router])
 
   // Polling toutes les 5 secondes pour vérifier l'accès
   useEffect(() => {
