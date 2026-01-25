@@ -47,6 +47,7 @@ const mainNavItems = [
 ]
 
 const bottomNavItems = [
+  { name: "Compte", href: "/manager/settings", icon: User },
   { name: "Paramètres", href: "/manager/settings", icon: Settings },
 ]
 
@@ -646,6 +647,10 @@ export default function ManagerLayout({
 
                   {/* Liste des options */}
                   <div className="profile-menu-options">
+                    <Link href="/manager/account" className="profile-menu-item" onClick={() => setIsProfileOpen(false)}>
+                      <User className="profile-menu-item-icon" />
+                      <span>Voir le Profil</span>
+                    </Link>
                     <Link href="/manager/settings" className="profile-menu-item" onClick={() => setIsProfileOpen(false)}>
                       <Settings className="profile-menu-item-icon" />
                       <span>Paramètres</span>
@@ -802,6 +807,14 @@ export default function ManagerLayout({
         {/* Bottom Links */}
         <div className="space-y-1">
           <Link
+            href="/manager/account"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all"
+          >
+            <User className="w-5 h-5" />
+            <span className="font-medium">Mon Profil</span>
+          </Link>
+          <Link
             href="/manager/settings"
             onClick={() => setIsMobileMenuOpen(false)}
             className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all"
@@ -865,4 +878,3 @@ export default function ManagerLayout({
     </div>
   )
 }
-
