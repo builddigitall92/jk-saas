@@ -76,6 +76,7 @@ export default function SettingsPage() {
   const { subscription, currentPlan, isTrialing, isPastDue, openBillingPortal, loading: subLoading, trialDaysRemaining } = useSubscription()
   const [establishment, setEstablishment] = useState<Establishment | null>(null)
   const [openingPortal, setOpeningPortal] = useState(false)
+  const [syncingSubscription, setSyncingSubscription] = useState(false)
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -568,6 +569,56 @@ export default function SettingsPage() {
                               <>
                                 <CreditCard className="h-4 w-4" />
                                 Gérer ou annuler l'abonnement
+                              </>
+                            )}
+                          </Button>
+                          {/* Bouton de synchronisation */}
+                          <Button
+                            variant="outline"
+                            onClick={async (e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              setSyncingSubscription(true)
+                              try {
+                                const response = await fetch('/api/stripe/sync', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                })
+                                const data = await response.json()
+                                
+                                if (data.success) {
+                                  toast.success("Abonnement synchronisé", {
+                                    description: data.message,
+                                  })
+                                  // Recharger la page pour mettre à jour les données
+                                  window.location.reload()
+                                } else {
+                                  toast.error("Synchronisation échouée", {
+                                    description: data.message || data.error,
+                                  })
+                                }
+                              } catch (error) {
+                                console.error('Erreur sync:', error)
+                                toast.error("Erreur de synchronisation", {
+                                  description: "Impossible de synchroniser l'abonnement. Veuillez réessayer.",
+                                })
+                              } finally {
+                                setSyncingSubscription(false)
+                              }
+                            }}
+                            disabled={syncingSubscription}
+                            className="gap-2 w-full border-blue-500/30 text-blue-600 hover:bg-blue-500/10"
+                            type="button"
+                          >
+                            {syncingSubscription ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Synchronisation...
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCw className="h-4 w-4" />
+                                Synchroniser l'abonnement
                               </>
                             )}
                           </Button>

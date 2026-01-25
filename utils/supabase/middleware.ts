@@ -106,19 +106,33 @@ export async function updateSession(request: NextRequest) {
         .eq("id", profile.establishment_id)
         .single()
 
-      const subscriptionStatus = establishment?.subscription_status || 'none'
-      const subscriptionPlan = establishment?.subscription_plan || 'free'
+      // Normaliser les valeurs en minuscules pour éviter les problèmes de casse
+      const subscriptionStatus = (establishment?.subscription_status || 'none').toLowerCase()
+      const subscriptionPlan = (establishment?.subscription_plan || 'free').toLowerCase()
       const hasStripeSubscription = !!establishment?.stripe_subscription_id
 
-      // Bloquer si :
-      // 1. Plan = 'free' (pas d'abonnement payant)
-      // 2. OU statut pas autorisé (ni active ni trialing)
-      // 3. OU pas d'abonnement Stripe ET plan = free
-      const isFreePlan = subscriptionPlan === 'free' || subscriptionPlan === null
+      // Debug logs
+      console.log('[Middleware] Vérification abonnement:', {
+        subscriptionStatus,
+        subscriptionPlan,
+        hasStripeSubscription,
+        establishmentId: profile.establishment_id
+      })
+
+      // Vérifier si le statut est autorisé (active ou trialing)
       const hasValidStatus = ALLOWED_SUBSCRIPTION_STATUSES.includes(subscriptionStatus)
       
-      // Si plan free ou pas d'abonnement Stripe, rediriger vers billing/block
-      if (isFreePlan || !hasValidStatus || (!hasStripeSubscription && isFreePlan)) {
+      // Vérifier si c'est un plan payant (pas free)
+      const isPaidPlan = subscriptionPlan !== 'free' && subscriptionPlan !== null && subscriptionPlan !== ''
+      
+      // Accès autorisé si :
+      // - Statut actif ou en essai ET (plan payant OU abonnement Stripe existant)
+      const hasValidAccess = hasValidStatus && (isPaidPlan || hasStripeSubscription)
+      
+      console.log('[Middleware] Résultat:', { hasValidStatus, isPaidPlan, hasValidAccess })
+      
+      // Si pas d'accès valide, rediriger vers billing/block
+      if (!hasValidAccess) {
         const url = request.nextUrl.clone()
         url.pathname = "/billing/block"
         return NextResponse.redirect(url)
@@ -153,12 +167,16 @@ export async function updateSession(request: NextRequest) {
         .eq("id", profile.establishment_id)
         .single()
 
-      const subscriptionPlan = establishment?.subscription_plan || 'free'
+      // Normaliser en minuscules
+      const subscriptionPlan = (establishment?.subscription_plan || 'free').toLowerCase()
       const hasStripeSubscription = !!establishment?.stripe_subscription_id
-      const subscriptionStatus = establishment?.subscription_status || 'none'
+      const subscriptionStatus = (establishment?.subscription_status || 'none').toLowerCase()
       
-      const isFreePlan = subscriptionPlan === 'free'
-      const hasValidAccess = !isFreePlan && hasStripeSubscription && ALLOWED_SUBSCRIPTION_STATUSES.includes(subscriptionStatus)
+      const isPaidPlan = subscriptionPlan !== 'free' && subscriptionPlan !== null && subscriptionPlan !== ''
+      const hasValidStatus = ALLOWED_SUBSCRIPTION_STATUSES.includes(subscriptionStatus)
+      const hasValidAccess = hasValidStatus && (isPaidPlan || hasStripeSubscription)
+      
+      console.log('[Middleware Login] Vérification:', { subscriptionPlan, subscriptionStatus, hasStripeSubscription, hasValidAccess })
       
       // Si pas d'abonnement valide, rediriger vers pricing ou billing/block
       if (!hasValidAccess) {

@@ -183,21 +183,42 @@ export function useSubscription(): SubscriptionState {
           .single()
 
         if (establishment) {
-          // Si owner mais pas d'abonnement Stripe actif → traiter comme essai gratuit
+          // Normaliser les valeurs en minuscules pour comparaison
+          const rawStatus = (establishment.subscription_status || 'none').toLowerCase()
+          const rawPlan = (establishment.subscription_plan || 'free').toLowerCase()
+          
+          console.log('[useSubscription] Données brutes:', {
+            rawStatus,
+            rawPlan,
+            stripeSubscriptionId: establishment.stripe_subscription_id,
+            stripeCustomerId: establishment.stripe_customer_id
+          })
+          
+          // Vérifier si abonnement Stripe actif
           const hasActiveStripeSubscription = establishment.stripe_subscription_id && 
-            (establishment.subscription_status === 'active' || establishment.subscription_status === 'trialing')
+            (rawStatus === 'active' || rawStatus === 'trialing')
           
-          const plan = hasActiveStripeSubscription 
-            ? (establishment.subscription_plan?.toUpperCase() || 'PREMIUM') as PlanId
-            : ownerStatus 
-              ? 'FREE' as PlanId // Owner sans abonnement = Essai gratuit
-              : (establishment.subscription_plan?.toUpperCase() || 'FREE') as PlanId
+          // Déterminer le plan (convertir en majuscules pour le type PlanId)
+          let plan: PlanId = 'FREE'
+          if (hasActiveStripeSubscription) {
+            plan = (rawPlan.toUpperCase() || 'PREMIUM') as PlanId
+          } else if (ownerStatus) {
+            plan = 'FREE' // Owner sans abonnement = Essai gratuit
+          } else {
+            plan = (rawPlan.toUpperCase() || 'FREE') as PlanId
+          }
           
-          const status = hasActiveStripeSubscription
-            ? (establishment.subscription_status || 'none') as SubscriptionStatus
-            : ownerStatus
-              ? 'trialing' as SubscriptionStatus // Essai pour owner
-              : (establishment.subscription_status || 'none') as SubscriptionStatus
+          // Déterminer le statut
+          let status: SubscriptionStatus = 'none'
+          if (hasActiveStripeSubscription) {
+            status = rawStatus as SubscriptionStatus
+          } else if (ownerStatus) {
+            status = 'trialing' // Essai pour owner
+          } else {
+            status = rawStatus as SubscriptionStatus
+          }
+          
+          console.log('[useSubscription] Résultat:', { plan, status, hasActiveStripeSubscription })
 
           setSubscription({
             plan,
