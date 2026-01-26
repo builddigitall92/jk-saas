@@ -69,6 +69,7 @@ export default function ManagerLayout({
   const [isLoading, setIsLoading] = useState(true)
   const [tooltip, setTooltip] = useState<{ text: string; top: number } | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isSigningOut, setIsSigningOut] = useState(false)
 
   // Items pour la navigation mobile (bottom bar)
   const mobileNavItems = [
@@ -229,9 +230,24 @@ export default function ManagerLayout({
   const hideTooltip = () => setTooltip(null)
 
   const handleSignOut = async () => {
-    const { supabase } = await import("@/lib/supabase")
-    await supabase.auth.signOut()
-    window.location.href = "/login"
+    // Éviter les doubles clics
+    if (isSigningOut) return
+    setIsSigningOut(true)
+    
+    try {
+      const { supabase } = await import("@/lib/supabase")
+      const { error } = await supabase.auth.signOut()
+      
+      if (error) {
+        console.error('Erreur déconnexion:', error)
+      }
+    } catch (err) {
+      console.error('Erreur lors de la déconnexion:', err)
+    } finally {
+      // Toujours rediriger vers login, même en cas d'erreur
+      // Utiliser replace pour éviter le retour arrière
+      window.location.replace("/login")
+    }
   }
 
   return (
@@ -370,12 +386,13 @@ export default function ManagerLayout({
           {/* Logout */}
           <button
             onClick={handleSignOut}
+            disabled={isSigningOut}
             className="icon-sidebar-item"
-            onMouseEnter={(e) => showTooltip(e, "Déconnexion")}
+            onMouseEnter={(e) => showTooltip(e, isSigningOut ? "Déconnexion..." : "Déconnexion")}
             onMouseLeave={hideTooltip}
           >
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-red-500/10 border border-transparent hover:bg-red-500/20 hover:border-red-500/30 transition-all duration-300">
-              <LogOut className="w-[18px] h-[18px] text-red-400" />
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${isSigningOut ? 'bg-red-500/20 border-red-500/30 animate-pulse' : 'bg-red-500/10 border border-transparent hover:bg-red-500/20 hover:border-red-500/30'}`}>
+              <LogOut className={`w-[18px] h-[18px] text-red-400 ${isSigningOut ? 'animate-spin' : ''}`} />
             </div>
           </button>
         </div>
@@ -669,9 +686,13 @@ export default function ManagerLayout({
 
                     <div className="profile-menu-separator" />
 
-                    <button onClick={handleSignOut} className="profile-menu-item profile-menu-item-danger">
-                      <LogOut className="profile-menu-item-icon" />
-                      <span>Déconnexion</span>
+                    <button 
+                      onClick={handleSignOut} 
+                      disabled={isSigningOut}
+                      className={`profile-menu-item profile-menu-item-danger ${isSigningOut ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <LogOut className={`profile-menu-item-icon ${isSigningOut ? 'animate-spin' : ''}`} />
+                      <span>{isSigningOut ? 'Déconnexion...' : 'Déconnexion'}</span>
                     </button>
                   </div>
                 </div>
@@ -836,10 +857,11 @@ export default function ManagerLayout({
         <div className="mt-auto pt-4 space-y-2">
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all"
+            disabled={isSigningOut}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 transition-all ${isSigningOut ? 'opacity-50 cursor-not-allowed bg-red-500/10' : 'hover:bg-red-500/10'}`}
           >
-            <LogOut className="w-5 h-5" />
-            <span className="font-medium">Déconnexion</span>
+            <LogOut className={`w-5 h-5 ${isSigningOut ? 'animate-spin' : ''}`} />
+            <span className="font-medium">{isSigningOut ? 'Déconnexion...' : 'Déconnexion'}</span>
           </button>
         </div>
       </div>
