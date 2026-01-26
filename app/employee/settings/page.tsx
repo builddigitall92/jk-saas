@@ -5,6 +5,7 @@ import { User, Camera, Save, Loader2, Building2, MapPin, Mail, Phone, CheckCircl
 import Image from "next/image"
 import { createClient } from "@/utils/supabase/client"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { toast } from "sonner"
 
 interface UserProfile {
   id: string
@@ -95,11 +96,10 @@ export default function EmployeeSettingsPage() {
 
   // Sauvegarder le profil
   const handleSave = async () => {
-    console.log('[Settings] Bouton sauvegarder cliqué', { profile, formData })
-    
     if (!profile) {
-      console.error('[Settings] Pas de profil chargé')
-      alert('Erreur: profil non chargé. Rechargez la page.')
+      toast.error("Erreur", {
+        description: "Profil non chargé. Rechargez la page."
+      })
       return
     }
     
@@ -107,15 +107,8 @@ export default function EmployeeSettingsPage() {
     setSaved(false)
 
     try {
-      console.log('[Settings] Envoi de la mise à jour...', {
-        id: profile.id,
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        phone: formData.phone
-      })
-      
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
+      const { error } = await (supabase as any)
         .from('profiles')
         .update({
           first_name: formData.first_name,
@@ -123,9 +116,6 @@ export default function EmployeeSettingsPage() {
           phone: formData.phone
         })
         .eq('id', profile.id)
-        .select()
-
-      console.log('[Settings] Résultat mise à jour:', { data, error })
 
       if (error) throw error
 
@@ -133,15 +123,20 @@ export default function EmployeeSettingsPage() {
       setProfile(prev => prev ? { ...prev, ...formData } : null)
       
       // Rafraîchir le profil global pour mettre à jour le layout/sidebar
-      console.log('[Settings] Rafraîchissement du profil global...')
       await refetchProfile()
       
-      console.log('[Settings] Sauvegarde réussie!')
+      // Notification de succès
+      toast.success("Profil mis à jour !", {
+        description: "Vos modifications ont été enregistrées avec succès."
+      })
+      
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err) {
-      console.error('[Settings] Erreur sauvegarde:', err)
-      alert('Erreur lors de la sauvegarde. Veuillez réessayer.')
+      console.error('Erreur sauvegarde:', err)
+      toast.error("Erreur de sauvegarde", {
+        description: "Une erreur est survenue. Veuillez réessayer."
+      })
     } finally {
       setSaving(false)
     }
@@ -155,13 +150,17 @@ export default function EmployeeSettingsPage() {
     // Vérifier le type de fichier
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
     if (!allowedTypes.includes(file.type)) {
-      alert('Format de fichier non supporté. Utilisez JPG, PNG, GIF ou WebP.')
+      toast.error("Format non supporté", {
+        description: "Utilisez JPG, PNG, GIF ou WebP."
+      })
       return
     }
 
     // Vérifier la taille (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Le fichier est trop volumineux. Maximum 5 MB.')
+      toast.error("Fichier trop volumineux", {
+        description: "La taille maximum est de 5 MB."
+      })
       return
     }
 
@@ -225,13 +224,19 @@ export default function EmployeeSettingsPage() {
       // Rafraîchir le profil global pour mettre à jour le layout
       await refetchProfile()
       
-      // Afficher un message de succès temporaire
+      // Notification de succès
+      toast.success("Photo mise à jour !", {
+        description: "Votre nouvelle photo de profil a été enregistrée."
+      })
+      
       setUploadSuccess(true)
       setTimeout(() => setUploadSuccess(false), 3000)
     } catch (err) {
       console.error('Erreur upload:', err)
       const errorMessage = err instanceof Error ? err.message : 'Erreur lors de l\'upload de la photo'
-      alert(errorMessage)
+      toast.error("Échec de l'upload", {
+        description: errorMessage
+      })
     } finally {
       setUploading(false)
       // Réinitialiser l'input file pour permettre un nouvel upload du même fichier
@@ -466,9 +471,10 @@ export default function EmployeeSettingsPage() {
 
       {/* Bouton Sauvegarder */}
       <button
+        type="button"
         onClick={handleSave}
         disabled={saving}
-        className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-300 ${
+        className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
           saved 
             ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/30' 
             : 'bg-gradient-to-r from-orange-500 via-red-500 to-rose-500 text-white hover:scale-[1.02] hover:shadow-xl hover:shadow-orange-500/30'
