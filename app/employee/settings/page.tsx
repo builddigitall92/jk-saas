@@ -95,13 +95,27 @@ export default function EmployeeSettingsPage() {
 
   // Sauvegarder le profil
   const handleSave = async () => {
-    if (!profile) return
+    console.log('[Settings] Bouton sauvegarder cliqué', { profile, formData })
+    
+    if (!profile) {
+      console.error('[Settings] Pas de profil chargé')
+      alert('Erreur: profil non chargé. Rechargez la page.')
+      return
+    }
+    
     setSaving(true)
     setSaved(false)
 
     try {
+      console.log('[Settings] Envoi de la mise à jour...', {
+        id: profile.id,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        phone: formData.phone
+      })
+      
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from('profiles')
         .update({
           first_name: formData.first_name,
@@ -109,15 +123,25 @@ export default function EmployeeSettingsPage() {
           phone: formData.phone
         })
         .eq('id', profile.id)
+        .select()
+
+      console.log('[Settings] Résultat mise à jour:', { data, error })
 
       if (error) throw error
 
+      // Mettre à jour l'état local
       setProfile(prev => prev ? { ...prev, ...formData } : null)
+      
+      // Rafraîchir le profil global pour mettre à jour le layout/sidebar
+      console.log('[Settings] Rafraîchissement du profil global...')
+      await refetchProfile()
+      
+      console.log('[Settings] Sauvegarde réussie!')
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err) {
-      console.error('Erreur sauvegarde:', err)
-      alert('Erreur lors de la sauvegarde')
+      console.error('[Settings] Erreur sauvegarde:', err)
+      alert('Erreur lors de la sauvegarde. Veuillez réessayer.')
     } finally {
       setSaving(false)
     }
