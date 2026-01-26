@@ -39,6 +39,14 @@ const mainNavItems = [
   { name: "Alertes", href: "/employee/alerts", icon: AlertTriangle, color: "pink", hasBadge: true },
 ]
 
+// Helper pour ajouter un cache-buster aux URLs d'avatar
+const getAvatarUrl = (url: string | undefined | null): string | null => {
+  if (!url) return null
+  // Ajouter un timestamp pour éviter le cache
+  const separator = url.includes('?') ? '&' : '?'
+  return `${url}${separator}v=${Date.now()}`
+}
+
 const bottomNavItems = [
   { name: "Paramètres", href: "/employee/settings", icon: Settings },
 ]
@@ -356,11 +364,12 @@ export default function EmployeeLayout({
           <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-orange-500/30 ring-2 ring-orange-400/20 cursor-pointer transition-transform duration-200 hover:scale-105">
             {profile?.avatar_url ? (
               <Image 
-                src={profile.avatar_url} 
+                src={getAvatarUrl(profile.avatar_url) || ''} 
                 alt="Avatar" 
                 width={40} 
                 height={40} 
                 className="w-full h-full object-cover"
+                unoptimized
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-orange-500 via-red-500 to-rose-600 flex items-center justify-center text-white font-black text-sm">
@@ -646,11 +655,12 @@ export default function EmployeeLayout({
                 <div className="w-8 h-8 rounded-lg overflow-hidden">
                   {profile?.avatar_url ? (
                     <Image 
-                      src={profile.avatar_url} 
+                      src={getAvatarUrl(profile.avatar_url) || ''} 
                       alt="Avatar" 
                       width={32} 
                       height={32} 
                       className="w-full h-full object-cover"
+                      unoptimized
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-xs font-bold">
@@ -762,11 +772,12 @@ export default function EmployeeLayout({
           <div className="w-12 h-12 rounded-xl overflow-hidden ring-2 ring-orange-400/20">
             {profile?.avatar_url ? (
               <Image
-                src={profile.avatar_url}
+                src={getAvatarUrl(profile.avatar_url) || ''}
                 alt="Avatar"
                 width={48}
                 height={48}
                 className="w-full h-full object-cover"
+                unoptimized
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-orange-500 via-red-500 to-rose-600 flex items-center justify-center text-white font-black text-lg">

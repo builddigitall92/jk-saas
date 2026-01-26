@@ -112,8 +112,7 @@ export default function EmployeeSettingsPage() {
         .from('profiles')
         .update({
           first_name: formData.first_name,
-          last_name: formData.last_name,
-          phone: formData.phone
+          last_name: formData.last_name
         })
         .eq('id', profile.id)
 
@@ -132,10 +131,13 @@ export default function EmployeeSettingsPage() {
       
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Erreur sauvegarde:', err)
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : (err as { message?: string })?.message || "Une erreur est survenue"
       toast.error("Erreur de sauvegarde", {
-        description: "Une erreur est survenue. Veuillez réessayer."
+        description: errorMessage
       })
     } finally {
       setSaving(false)

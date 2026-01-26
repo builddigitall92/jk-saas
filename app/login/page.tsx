@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, Suspense, type FormEvent } from "react"
+import { useState, useEffect, Suspense, type FormEvent } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -14,11 +14,15 @@ import {
   Clock,
   Zap,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Mail,
+  ArrowLeft,
+  CheckCircle2
 } from "lucide-react"
 import Link from "next/link"
 import { login, signup } from "./actions"
 import { useSearchParams } from "next/navigation"
+import { createClient } from "@/utils/supabase/client"
 
 // Timeline steps for left panel
 const timelineSteps = [
@@ -50,7 +54,10 @@ const timelineSteps = [
 
 function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
+  const [isProcessingCode, setIsProcessingCode] = useState(false)
   const [isSignup, setIsSignup] = useState(false)
+  const [isReset, setIsReset] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
@@ -63,6 +70,69 @@ function LoginForm() {
   })
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirectTo")
+  const resetParam = searchParams.get("reset")
+  const codeParam = searchParams.get("code")
+  
+  // Si un code est présent (lien de reset password), l'échanger et rediriger
+  useEffect(() => {
+    const handleRecoveryCode = async () => {
+      if (codeParam) {
+        setIsProcessingCode(true)
+        try {
+          const supabase = createClient()
+          const { error } = await supabase.auth.exchangeCodeForSession(codeParam)
+          
+          if (!error) {
+            // Rediriger vers la page de reset password
+            window.location.href = "/auth/reset-password"
+          } else {
+            setError("Le lien de réinitialisation a expiré ou est invalide.")
+            setIsProcessingCode(false)
+          }
+        } catch {
+          setError("Erreur lors de la validation du lien.")
+          setIsProcessingCode(false)
+        }
+      }
+    }
+    
+    handleRecoveryCode()
+  }, [codeParam])
+  
+  // Initialiser le mode reset si ?reset=true
+  useEffect(() => {
+    if (resetParam === "true") {
+      setIsReset(true)
+    }
+  }, [resetParam])
+  
+  // Fonction pour réinitialiser le mot de passe
+  const handleResetPassword = async () => {
+    if (!formData.email || !formData.email.includes("@")) {
+      setError("Veuillez entrer une adresse email valide.")
+      return
+    }
+    
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+        redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+      })
+      
+      if (error) {
+        setError(error.message)
+      } else {
+        setResetSent(true)
+      }
+    } catch {
+      setError("Une erreur est survenue. Veuillez réessayer.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const validateForm = (): boolean => {
     if (!formData.email || !formData.password) {
@@ -131,6 +201,21 @@ function LoginForm() {
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     if (error) setError(null)
+  }
+
+  // Écran de chargement pendant le traitement du code de récupération
+  if (isProcessingCode) {
+    return (
+      <div className="min-h-[100dvh] bg-[#0a0f0a] flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 backdrop-blur-xl border border-emerald-500/30 flex items-center justify-center mx-auto mb-4">
+            <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Validation en cours...</h2>
+          <p className="text-gray-400 text-sm">Nous vérifions votre lien de réinitialisation</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -261,12 +346,19 @@ function LoginForm() {
             {/* Header */}
             <div className="mb-6 sm:mb-8 text-center lg:text-left">
               <h2 className="text-2xl sm:text-3xl font-black text-white mb-2 tracking-tight">
-                {isSignup ? "Créer un compte" : "Se connecter"}
+                {isReset 
+                  ? "Mot de passe oublié" 
+                  : isSignup 
+                    ? "Créer un compte" 
+                    : "Se connecter"
+                }
               </h2>
               <p className="text-gray-400 text-sm sm:text-base">
-                {isSignup 
-                  ? "Créez votre compte pour sécuriser vos stocks." 
-                  : "Entrez vos identifiants pour accéder à votre espace."
+                {isReset
+                  ? "Entrez votre email pour recevoir un lien de réinitialisation."
+                  : isSignup 
+                    ? "Créez votre compte pour sécuriser vos stocks." 
+                    : "Entrez vos identifiants pour accéder à votre espace."
                 }
               </p>
             </div>
@@ -278,7 +370,87 @@ function LoginForm() {
               </div>
             )}
 
-            {/* Form fields - Touch-friendly inputs */}
+            {/* Reset Password Success */}
+            {isReset && resetSent ? (
+              <div className="space-y-6">
+                <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                      <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-white">Email envoyé !</h3>
+                      <p className="text-emerald-400 text-sm">Vérifiez votre boîte de réception</p>
+                    </div>
+                  </div>
+                  <p className="text-gray-400 text-sm">
+                    Un email a été envoyé à <span className="text-white font-medium">{formData.email}</span> avec un lien pour réinitialiser votre mot de passe.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsReset(false)
+                    setResetSent(false)
+                    setFormData({ ...formData, email: "" })
+                  }}
+                  className="w-full flex items-center justify-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors py-3"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Retour à la connexion
+                </button>
+              </div>
+            ) : isReset ? (
+              /* Reset Password Form */
+              <div className="space-y-4 sm:space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-400">
+                    Adresse e-mail
+                  </Label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange("email", e.target.value)}
+                      placeholder="vous@entreprise.fr"
+                      className="h-12 sm:h-12 min-h-[48px] pl-12 bg-white/5 border-white/10 text-white placeholder:text-gray-600 rounded-xl focus:border-emerald-500/50 focus:ring-emerald-500/20 text-base"
+                    />
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={handleResetPassword}
+                  disabled={isLoading}
+                  className="w-full h-14 min-h-[56px] bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-base rounded-xl shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                      Envoi en cours...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="w-5 h-5 mr-2" />
+                      Envoyer le lien de réinitialisation
+                    </>
+                  )}
+                </Button>
+                
+                <button
+                  onClick={() => {
+                    setIsReset(false)
+                    setError(null)
+                  }}
+                  className="w-full flex items-center justify-center gap-2 text-gray-400 hover:text-white transition-colors py-3"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Retour à la connexion
+                </button>
+              </div>
+            ) : (
+            /* Login/Signup Form fields - Touch-friendly inputs */
+            <>
             <div className="space-y-4 sm:space-y-5">
               {isSignup && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -388,12 +560,13 @@ function LoginForm() {
                       Se souvenir de moi
                     </span>
                   </label>
-                  <Link 
-                    href="/login?reset=true" 
+                  <button 
+                    type="button"
+                    onClick={() => setIsReset(true)}
                     className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
                   >
                     Mot de passe oublié ?
-                  </Link>
+                  </button>
                 </div>
               )}
             </div>
@@ -441,6 +614,8 @@ function LoginForm() {
                 {isSignup ? "Se connecter" : "Créer un compte"}
               </button>
             </div>
+            </>
+            )}
 
             {/* Back to home */}
             <div className="mt-4 sm:mt-6 text-center pb-4 sm:pb-0">
