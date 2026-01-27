@@ -42,3 +42,20 @@ STRIPE_PREMIUM_PRICE_ID_LIFETIME=price_1SkrovCF3gPATsYivmiVD5er
 # =============================================
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
+# =============================================
+# EMAIL - RESEND (Pour le formulaire de contact)
+# =============================================
+# Clé API Resend (obtenue sur https://resend.com)
+# Commence par re_...
+RESEND_API_KEY=
+
+# Email où recevoir les messages de contact
+CONTACT_EMAIL=votre-email@example.com
+
+# Email d'expéditeur (optionnel, par défaut: onboarding@resend.dev pour les tests)
+# En production, utilisez votre domaine vérifié sur Resend
+# RESEND_FROM_EMAIL=contact@votre-domaine.com
+
+# Optionnel : Utiliser Supabase au lieu de Resend
+# USE_SUPABASE_CONTACT=true
+

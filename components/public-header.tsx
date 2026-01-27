@@ -300,7 +300,7 @@ export function PublicHeader({ variant = "solid" }: PublicHeaderProps) {
                   </Button>
                 </Link>
                 <Link href="/login">
-                  <Button className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-lg shadow-emerald-500/20">
+                  <Button className="bg-gradient-to-r from-[#00d4ff] to-[#00a8cc] hover:from-[#00e5ff] hover:to-[#00b8d4] text-[#050508] font-semibold shadow-lg shadow-[#00d4ff]/30 hover:shadow-2xl hover:shadow-[#00d4ff]/50">
                     Essai gratuit
                   </Button>
                 </Link>
@@ -396,7 +396,7 @@ export function PublicHeader({ variant = "solid" }: PublicHeaderProps) {
                   </Button>
                 </Link>
                 <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">
+                  <Button className="w-full bg-gradient-to-r from-[#00d4ff] to-[#00a8cc] hover:from-[#00e5ff] hover:to-[#00b8d4] text-[#050508] font-semibold shadow-lg shadow-[#00d4ff]/30">
                     Essai gratuit
                   </Button>
                 </Link>

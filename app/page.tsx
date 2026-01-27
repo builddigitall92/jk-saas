@@ -1224,7 +1224,7 @@ export default function LandingPage() {
                     </div>
 
                     {/* CTA Button */}
-                    <Link href="/contact" className="block">
+                    <Link href="/contact?subject=custom" className="block">
                       <SlideInButton variant="purple" icon={ArrowRight} className="variant-purple w-full rounded-full">
                         Contacter nous
                       </SlideInButton>
