@@ -570,16 +570,29 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
     switch (phase) {
       case 'stock_name': {
+        // Gérer le clic sur "➕ Créer 'nom'"
+        const createMatch = trimmed.match(/^➕\s*Créer\s*["']?(.+?)["']?$/i)
+        if (createMatch) {
+          const productNameFromClick = createMatch[1].trim()
+          setStockCtx({ ...stockCtx, name: productNameFromClick })
+          ask(
+            `Parfait, on ajoute **"${productNameFromClick}"** ! 📦\n\n**De quel type de produit s'agit-il ?**`,
+            PRODUCT_TYPES.map(t => `${t.emoji} ${t.label}`)
+          )
+          setPhase('stock_type')
+          break
+        }
+
         // Recherche flexible du produit existant
         const searchTerm = lowerInput.trim()
-        
+
         // Fonction de normalisation (sans accents)
         const normalizeStr = (s: string) => s
           .normalize('NFD')
           .replace(/[\u0300-\u036f]/g, '')
           .replace(/[^a-z0-9\s]/gi, '')
           .toLowerCase()
-        
+
         const normalizedSearch = normalizeStr(searchTerm)
         
         // 1. Correspondance exacte
@@ -1498,6 +1511,21 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
       }
 
       case 'menu_ingredient_name': {
+        // Gérer le clic sur "➕ Créer 'nom'"
+        const createMatch = trimmed.match(/^➕\s*Créer\s*["']?(.+?)["']?$/i)
+        if (createMatch) {
+          const productNameFromClick = createMatch[1].trim()
+          setCurrentIngredient({ name: productNameFromClick, stockContext: {} })
+          ask(
+            `🆕 **"${productNameFromClick}"** n'est pas dans ton stock.\n\n` +
+            `On va l'ajouter en même temps que la recette !\n\n` +
+            `**Quel type de produit est-ce ?**`,
+            PRODUCT_TYPES.map(t => `${t.emoji} ${t.label}`)
+          )
+          setPhase('menu_ingredient_type')
+          break
+        }
+
         // Vérifier si des produits sont disponibles
         if (products.length === 0) {
           ask(
@@ -1506,7 +1534,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
             `_Ou tape le nom du produit et je vais t'aider à le créer maintenant !_`
           )
         }
-        
+
         // Fonction de normalisation (supprime accents, met en minuscule)
         const normalizeStr = (s: string) => s
           .normalize('NFD')
