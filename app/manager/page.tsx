@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import Link from "next/link"
 import {
   Package,
@@ -529,372 +529,889 @@ function QuickActionCard({ label, icon: Icon, theme, href, index }: QuickActionC
 }
 
 // ============================================
-// PRIORITY TO SELL CARD - Style Mood Tracking
+// PRIORITY TO SELL CARD - FEFO System (PRD v2)
 // ============================================
+
+// Types pour le système de priorité à 3 niveaux
+type PriorityLevel = 'CRITIQUE' | 'URGENT' | 'EXCELLENT'
+
 interface PriorityToSellItem {
   id: string
   name: string
-  reason: 'expiring' | 'overstock' | 'low_margin' | 'slow_moving'
-  urgency: 'critical' | 'high' | 'medium'
-  daysLeft?: number
-  quantity?: number
-  value?: number
-  suggestion?: string
+  quantity: number
+  unit: string
+  expiryDate: Date
+  daysRemaining: number
+  batchNumber?: string
+  supplierId?: string
+  supplierName?: string
+  storageZone?: string
+  category?: string
+  priorityLevel: PriorityLevel
+  stockId?: string // ID du stock pour les actions
 }
 
 interface PriorityToSellCardProps {
   items: PriorityToSellItem[]
   lastUpdated?: Date
+  onItemUsed?: (itemId: string, quantity: number) => void
+  onItemDiscarded?: (itemId: string, quantity: number, reason: string) => void
+  onItemRemoved?: (itemId: string) => void
 }
 
-function PriorityToSellCard({ items, lastUpdated }: PriorityToSellCardProps) {
-  const [isAnimated, setIsAnimated] = useState(false)
-
-  // Animation au montage
-  useEffect(() => {
-    const timer = setTimeout(() => setIsAnimated(true), 300)
-    return () => clearTimeout(timer)
-  }, [])
-
-  // Calcul du score basé sur le produit le plus urgent (celui avec le moins de jours)
-  // Trouver le produit qui expire le plus tôt parmi ceux qui ont une date d'expiration
-  const expiringItems = items.filter(i => i.reason === 'expiring' && i.daysLeft !== undefined)
-  const minDaysLeft = expiringItems.length > 0
-    ? Math.min(...expiringItems.map(i => i.daysLeft!))
-    : null
-
-  // Score basé sur le nombre de jours avant péremption du produit le plus urgent
-  const calculateScore = () => {
-    // Si aucun produit avec date d'expiration → Excellent
-    if (minDaysLeft === null) return 100
-
-    // Score selon les jours restants :
-    // Périmé (0 ou moins) → 10 (Critique)
-    // 1 jour → 30 (Urgent)
-    // 2 jours → 50 (Attention)
-    // 3 jours → 70 (Bon)
-    // > 3 jours → 90+ (Excellent)
-    if (minDaysLeft <= 0) return 10  // Périmé = Critique
-    if (minDaysLeft === 1) return 30 // 1 jour = Urgent
-    if (minDaysLeft === 2) return 50 // 2 jours = Attention
-    if (minDaysLeft === 3) return 70 // 3 jours = Bon
-    return 90 // > 3 jours = Excellent
+// Fonction de calcul du niveau de priorité selon le PRD
+function calculatePriorityLevel(expiryDate: Date): { level: PriorityLevel; color: string; icon: string; bgColor: string } {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const expiry = new Date(expiryDate)
+  expiry.setHours(0, 0, 0, 0)
+  const daysRemaining = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  
+  if (daysRemaining < 0 || daysRemaining <= 2) {
+    return { level: 'CRITIQUE', color: '#EF4444', icon: '💀', bgColor: 'rgba(239, 68, 68, 0.15)' }
+  } else if (daysRemaining >= 3 && daysRemaining <= 7) {
+    return { level: 'URGENT', color: '#F97316', icon: '⚠️', bgColor: 'rgba(249, 115, 22, 0.15)' }
+  } else {
+    return { level: 'EXCELLENT', color: '#10B981', icon: '⭐', bgColor: 'rgba(16, 185, 129, 0.15)' }
   }
+}
 
-  const score = calculateScore()
-
-  // Déterminer le niveau actif basé sur le score
-  const getActiveLevel = () => {
-    if (score <= 20) return 0 // Critique (périmé)
-    if (score <= 40) return 1 // Urgent (1 jour)
-    if (score <= 60) return 2 // Attention (2 jours)
-    if (score <= 80) return 3 // Bon (3 jours)
-    return 4 // Excellent (pas de produit expirant)
+// Composant Badge de Priorité
+function PriorityBadge({ level, daysRemaining }: { level: PriorityLevel; daysRemaining: number }) {
+  const config = {
+    CRITIQUE: { color: '#EF4444', icon: '💀', bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.3)' },
+    URGENT: { color: '#F97316', icon: '⚠️', bg: 'rgba(249, 115, 22, 0.15)', border: 'rgba(249, 115, 22, 0.3)' },
+    EXCELLENT: { color: '#10B981', icon: '⭐', bg: 'rgba(16, 185, 129, 0.15)', border: 'rgba(16, 185, 129, 0.3)' },
   }
+  const c = config[level]
+  
+  return (
+    <div 
+      className="priority-badge"
+      style={{ 
+        background: c.bg, 
+        borderColor: c.border,
+        color: c.color 
+      }}
+    >
+      <span className="priority-badge-icon">{c.icon}</span>
+      <span className="priority-badge-label">{level}</span>
+    </div>
+  )
+}
 
-  const activeLevel = getActiveLevel()
+// Composant Card Individuelle (ExpiryCard)
+function ExpiryCard({
+  item,
+  onUsed,
+  onDiscarded,
+  onRemoved
+}: {
+  item: PriorityToSellItem
+  onUsed?: (id: string, qty: number) => void
+  onDiscarded?: (id: string, qty: number, reason: string) => void
+  onRemoved?: (id: string) => void
+}) {
+  const [quantity, setQuantity] = useState(item.quantity)
+  const [showDiscardModal, setShowDiscardModal] = useState(false)
+  const [discardReason, setDiscardReason] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  
+  const priority = calculatePriorityLevel(item.expiryDate)
+  const isExpired = item.daysRemaining < 0
+  
+  const handleUsed = async () => {
+    if (quantity <= 0 || isLoading) return
+    setIsLoading(true)
+    try {
+      onUsed?.(item.id, 1)
+      setQuantity(prev => Math.max(0, prev - 1))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  
+  const handleDiscard = async () => {
+    if (!discardReason.trim()) return
+    setIsLoading(true)
+    try {
+      onDiscarded?.(item.id, quantity, discardReason)
+      setQuantity(0)
+      setShowDiscardModal(false)
+      setDiscardReason('')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  
+  const adjustQuantity = (delta: number) => {
+    setQuantity(prev => Math.max(0, prev + delta))
+  }
+  
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  }
+  
+  return (
+    <>
+      <div
+        className="expiry-card"
+        style={{
+          borderColor: `${priority.color}30`,
+          boxShadow: item.daysRemaining <= 2 ? `0 0 20px ${priority.color}20` : undefined
+        }}
+      >
+        {/* Bouton supprimer (croix) */}
+        <button
+          className="expiry-card-remove"
+          onClick={() => onRemoved?.(item.id)}
+          title="Supprimer ce produit"
+        >
+          ×
+        </button>
 
-  // Configuration des niveaux
-  const levels = [
-    { emoji: '🔥', label: 'Critique', color: '#ef4444' },   // Périmé
-    { emoji: '⚠️', label: 'Urgent', color: '#f97316' },     // 1 jour
-    { emoji: '📊', label: 'Attention', color: '#eab308' },  // 2 jours
-    { emoji: '✅', label: 'Bon', color: '#22c55e' },        // 3 jours
-    { emoji: '🌟', label: 'Excellent', color: '#10b981' },  // Pas de produit expirant
-  ]
+        {/* Header avec Badge */}
+        <div className="expiry-card-header">
+          <PriorityBadge level={priority.level} daysRemaining={item.daysRemaining} />
+          {item.storageZone && (
+            <span className="expiry-card-zone">{item.storageZone}</span>
+          )}
+        </div>
+        
+        {/* Corps */}
+        <div className="expiry-card-body">
+          <h4 className="expiry-card-name">{item.name}</h4>
+          
+          <div className="expiry-card-info">
+            <div className="expiry-card-row">
+              <span className="expiry-card-label">Quantité</span>
+              <div className="expiry-card-quantity">
+                <button 
+                  className="qty-btn" 
+                  onClick={() => adjustQuantity(-1)}
+                  disabled={quantity <= 0}
+                >
+                  −
+                </button>
+                <span className="qty-value">{quantity} {item.unit}</span>
+                <button 
+                  className="qty-btn" 
+                  onClick={() => adjustQuantity(1)}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            
+            <div className="expiry-card-row">
+              <span className="expiry-card-label">Péremption</span>
+              <span className="expiry-card-value">{formatDate(item.expiryDate)}</span>
+            </div>
+            
+            <div className="expiry-card-row">
+              <span className="expiry-card-label">Expire dans</span>
+              <span 
+                className="expiry-card-days"
+                style={{ color: priority.color }}
+              >
+                {isExpired 
+                  ? `PÉRIMÉ (${Math.abs(item.daysRemaining)}j)` 
+                  : item.daysRemaining === 0 
+                    ? "AUJOURD'HUI" 
+                    : `${item.daysRemaining} jour${item.daysRemaining > 1 ? 's' : ''}`}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Actions */}
+        <div className="expiry-card-actions">
+          <button 
+            className="action-btn action-used"
+            onClick={handleUsed}
+            disabled={quantity <= 0 || isLoading}
+          >
+            ✓ Utilisé
+          </button>
+          <button 
+            className="action-btn action-discard"
+            onClick={() => setShowDiscardModal(true)}
+            disabled={quantity <= 0 || isLoading}
+          >
+            ✗ Jeté
+          </button>
+        </div>
+      </div>
+      
+      {/* Modal de confirmation pour Jeté */}
+      {showDiscardModal && (
+        <div className="discard-modal-overlay" onClick={() => setShowDiscardModal(false)}>
+          <div className="discard-modal" onClick={e => e.stopPropagation()}>
+            <h4>Confirmer la perte</h4>
+            <p>Raison du jet de <strong>{item.name}</strong> ({quantity} {item.unit}) :</p>
+            <select 
+              value={discardReason} 
+              onChange={e => setDiscardReason(e.target.value)}
+              className="discard-select"
+            >
+              <option value="">Sélectionner une raison...</option>
+              <option value="expired">Produit périmé</option>
+              <option value="damaged">Produit endommagé</option>
+              <option value="contaminated">Contamination</option>
+              <option value="quality">Qualité insuffisante</option>
+              <option value="other">Autre</option>
+            </select>
+            <div className="discard-modal-actions">
+              <button 
+                className="modal-btn modal-cancel"
+                onClick={() => setShowDiscardModal(false)}
+              >
+                Annuler
+              </button>
+              <button 
+                className="modal-btn modal-confirm"
+                onClick={handleDiscard}
+                disabled={!discardReason || isLoading}
+              >
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
 
-  // Top 3 produits à écouler
-  const topItems = items.slice(0, 3)
-
+// Composant Principal - Carte Priorité Écoulement avec grille
+function PriorityToSellCard({ items, lastUpdated, onItemUsed, onItemDiscarded, onItemRemoved }: PriorityToSellCardProps) {
+  const [filter, setFilter] = useState<PriorityLevel | 'ALL'>('ALL')
+  const [searchQuery, setSearchQuery] = useState('')
+  
+  // Compter par niveau
+  const counts = useMemo(() => {
+    const c = { CRITIQUE: 0, URGENT: 0, EXCELLENT: 0 }
+    items.forEach(item => {
+      c[item.priorityLevel]++
+    })
+    return c
+  }, [items])
+  
+  // Filtrer les items
+  const filteredItems = useMemo(() => {
+    return items
+      .filter(item => filter === 'ALL' || item.priorityLevel === filter)
+      .filter(item => 
+        searchQuery === '' || 
+        item.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .sort((a, b) => a.daysRemaining - b.daysRemaining) // FEFO: plus proche péremption en premier
+  }, [items, filter, searchQuery])
+  
+  // Déterminer l'état global du stock
+  const globalStatus = useMemo(() => {
+    if (counts.CRITIQUE > 0) return { level: 'CRITIQUE' as PriorityLevel, color: '#EF4444', message: `${counts.CRITIQUE} produit${counts.CRITIQUE > 1 ? 's' : ''} critique${counts.CRITIQUE > 1 ? 's' : ''}` }
+    if (counts.URGENT > 0) return { level: 'URGENT' as PriorityLevel, color: '#F97316', message: `${counts.URGENT} produit${counts.URGENT > 1 ? 's' : ''} à écouler cette semaine` }
+    return { level: 'EXCELLENT' as PriorityLevel, color: '#10B981', message: 'Stock en bonne santé' }
+  }, [counts])
+  
   return (
     <div className="priority-card">
       {/* Header */}
       <div className="priority-card-header">
-        <h3 className="priority-card-title">Priorité Écoulement</h3>
+        <div className="priority-card-title-row">
+          <h3 className="priority-card-title">Priorité Écoulement</h3>
+          <span 
+            className="priority-status-badge"
+            style={{ background: `${globalStatus.color}20`, color: globalStatus.color, borderColor: `${globalStatus.color}40` }}
+          >
+            {globalStatus.message}
+          </span>
+        </div>
         <p className="priority-card-subtitle">
-          Évaluez la santé de votre stock et identifiez les produits à écouler rapidement.
+          Méthode FEFO : First-Expired-First-Out
         </p>
       </div>
-
-      {/* Slider avec gradient */}
-      <div className="priority-slider-container">
-        <div className="priority-slider-track">
-          {/* Gradient background */}
-          <div className="priority-slider-gradient" />
-          
-          {/* Thumb/Indicator */}
-          <div 
-            className="priority-slider-thumb"
-            style={{ 
-              left: isAnimated ? `${score}%` : '0%',
-              background: levels[activeLevel].color,
-              boxShadow: `0 0 20px ${levels[activeLevel].color}80`
-            }}
-          />
-          
-          {/* Glow effect suivant le thumb */}
-          <div 
-            className="priority-slider-glow"
-            style={{ 
-              left: isAnimated ? `${score}%` : '0%',
-              background: `radial-gradient(circle, ${levels[activeLevel].color}40 0%, transparent 70%)`
-            }}
-          />
-        </div>
+      
+      {/* Compteurs par niveau */}
+      <div className="priority-counters">
+        <button 
+          className={`priority-counter ${filter === 'CRITIQUE' ? 'active' : ''}`}
+          onClick={() => setFilter(filter === 'CRITIQUE' ? 'ALL' : 'CRITIQUE')}
+          style={{ '--counter-color': '#EF4444' } as React.CSSProperties}
+        >
+          <span className="counter-icon">💀</span>
+          <span className="counter-value">{counts.CRITIQUE}</span>
+          <span className="counter-label">Critique</span>
+        </button>
+        <button 
+          className={`priority-counter ${filter === 'URGENT' ? 'active' : ''}`}
+          onClick={() => setFilter(filter === 'URGENT' ? 'ALL' : 'URGENT')}
+          style={{ '--counter-color': '#F97316' } as React.CSSProperties}
+        >
+          <span className="counter-icon">⚠️</span>
+          <span className="counter-value">{counts.URGENT}</span>
+          <span className="counter-label">Urgent</span>
+        </button>
+        <button 
+          className={`priority-counter ${filter === 'EXCELLENT' ? 'active' : ''}`}
+          onClick={() => setFilter(filter === 'EXCELLENT' ? 'ALL' : 'EXCELLENT')}
+          style={{ '--counter-color': '#10B981' } as React.CSSProperties}
+        >
+          <span className="counter-icon">⭐</span>
+          <span className="counter-value">{counts.EXCELLENT}</span>
+          <span className="counter-label">Excellent</span>
+        </button>
       </div>
-
-      {/* Indicateurs emoji */}
-      <div className="priority-levels">
-        {levels.map((level, index) => (
-          <div 
-            key={index}
-            className={`priority-level ${activeLevel === index ? 'active' : ''}`}
+      
+      {/* Recherche */}
+      <div className="priority-search">
+        <input
+          type="text"
+          placeholder="Rechercher un produit..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="priority-search-input"
+        />
+        {searchQuery && (
+          <button 
+            className="priority-search-clear"
+            onClick={() => setSearchQuery('')}
           >
-            <span 
-              className="priority-level-emoji"
-              style={{ 
-                filter: activeLevel === index ? 'none' : 'grayscale(0.7)',
-                transform: activeLevel === index ? 'scale(1.3)' : 'scale(1)'
-              }}
-            >
-              {level.emoji}
-            </span>
-            <span 
-              className="priority-level-label"
-              style={{ 
-                color: activeLevel === index ? level.color : 'rgba(148, 163, 184, 0.5)'
-              }}
-            >
-              {level.label}
-            </span>
-          </div>
-        ))}
+            ✕
+          </button>
+        )}
       </div>
-
-      {/* Liste compacte des produits prioritaires */}
-      {topItems.length > 0 && (
-        <div className="priority-items-list">
-          <div className="priority-items-header">
-            <span className="priority-items-title">Top priorités</span>
-            <span className="priority-items-count">{items.length} produit{items.length > 1 ? 's' : ''}</span>
+      
+      {/* Grille de cards */}
+      <div className="priority-grid">
+        {filteredItems.length > 0 ? (
+          filteredItems.slice(0, 6).map(item => (
+            <ExpiryCard
+              key={item.id}
+              item={item}
+              onUsed={onItemUsed}
+              onDiscarded={onItemDiscarded}
+              onRemoved={onItemRemoved}
+            />
+          ))
+        ) : (
+          <div className="priority-empty">
+            <span className="priority-empty-icon">📦</span>
+            <p className="priority-empty-text">
+              {items.length === 0 
+                ? 'Aucun produit avec date de péremption'
+                : 'Aucun produit correspondant au filtre'}
+            </p>
           </div>
-          {topItems.map((item, index) => (
-            <div key={item.id} className="priority-item-row">
-              <span className="priority-item-number">{index + 1}</span>
-              <span className="priority-item-name">{item.name}</span>
-              <span 
-                className="priority-item-tag"
-                style={{ 
-                  color: item.urgency === 'critical' ? '#ef4444' : item.urgency === 'high' ? '#f97316' : '#eab308',
-                  background: item.urgency === 'critical' ? 'rgba(239, 68, 68, 0.15)' : item.urgency === 'high' ? 'rgba(249, 115, 22, 0.15)' : 'rgba(234, 179, 8, 0.15)'
-                }}
-              >
-                {item.daysLeft !== undefined
-                  ? (item.daysLeft === 0 ? 'PÉRIMÉ' : `${item.daysLeft}j`)
-                  : item.quantity !== undefined ? `${item.quantity}u` : '!'}
-              </span>
-            </div>
-          ))}
+        )}
+      </div>
+      
+      {/* Voir plus si > 6 produits */}
+      {filteredItems.length > 6 && (
+        <div className="priority-more">
+          <span className="priority-more-text">
+            +{filteredItems.length - 6} autres produits
+          </span>
         </div>
       )}
 
       <style jsx>{`
+        /* ========================================
+           PRIORITY CARD - Container Principal
+           ======================================== */
         .priority-card {
           position: relative;
           width: 100%;
-          height: 100%;
           min-height: 380px;
-          background: linear-gradient(
-            145deg,
-            rgba(15, 15, 20, 0.95) 0%,
-            rgba(10, 10, 15, 0.98) 100%
-          );
+          max-height: 600px;
+          background: linear-gradient(145deg, rgba(15, 15, 20, 0.95) 0%, rgba(10, 10, 15, 0.98) 100%);
           backdrop-filter: blur(40px);
-          -webkit-backdrop-filter: blur(40px);
           border-radius: 24px;
           border: 1px solid rgba(255, 255, 255, 0.06);
-          box-shadow: 
-            0 4px 30px rgba(0, 0, 0, 0.4),
-            0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+          box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
           overflow: hidden;
-          padding: 24px;
+          padding: 20px;
           display: flex;
           flex-direction: column;
         }
 
+        /* Header */
         .priority-card-header {
-          margin-bottom: 28px;
+          margin-bottom: 16px;
+        }
+        
+        .priority-card-title-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 6px;
+          flex-wrap: wrap;
         }
 
         .priority-card-title {
-          font-size: 18px;
+          font-size: 16px;
           font-weight: 600;
           color: #ffffff;
-          margin: 0 0 8px 0;
-          letter-spacing: -0.02em;
+          margin: 0;
+        }
+        
+        .priority-status-badge {
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 600;
+          border: 1px solid;
         }
 
         .priority-card-subtitle {
-          font-size: 13px;
+          font-size: 12px;
           color: rgba(148, 163, 184, 0.6);
           margin: 0;
-          line-height: 1.5;
         }
 
-        /* Slider Container */
-        .priority-slider-container {
-          margin-bottom: 20px;
-          padding: 0 4px;
-        }
-
-        .priority-slider-track {
-          position: relative;
-          height: 8px;
-          border-radius: 100px;
-          background: rgba(30, 30, 40, 0.8);
-          overflow: visible;
-        }
-
-        .priority-slider-gradient {
-          position: absolute;
-          inset: 0;
-          border-radius: 100px;
-          background: linear-gradient(
-            90deg,
-            #ef4444 0%,
-            #f97316 25%,
-            #eab308 50%,
-            #22c55e 75%,
-            #10b981 100%
-          );
-          opacity: 0.9;
-        }
-
-        .priority-slider-thumb {
-          position: absolute;
-          top: 50%;
-          transform: translate(-50%, -50%);
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          border: 3px solid rgba(255, 255, 255, 0.9);
-          transition: left 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-          z-index: 10;
-        }
-
-        .priority-slider-glow {
-          position: absolute;
-          top: 50%;
-          transform: translate(-50%, -50%);
-          width: 60px;
-          height: 60px;
-          border-radius: 50%;
-          transition: left 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-          z-index: 5;
-          pointer-events: none;
-        }
-
-        /* Niveaux avec emojis */
-        .priority-levels {
+        /* Compteurs par niveau */
+        .priority-counters {
           display: flex;
-          justify-content: space-between;
-          padding: 0 4px;
-          margin-bottom: 24px;
+          gap: 8px;
+          margin-bottom: 12px;
         }
-
-        .priority-level {
+        
+        .priority-counter {
+          flex: 1;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 6px;
-          flex: 1;
+          gap: 4px;
+          padding: 10px 8px;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all 0.2s ease;
         }
-
-        .priority-level-emoji {
-          font-size: 22px;
-          transition: all 0.4s ease;
+        
+        .priority-counter:hover {
+          background: rgba(255, 255, 255, 0.06);
         }
-
-        .priority-level-label {
-          font-size: 10px;
-          font-weight: 500;
+        
+        .priority-counter.active {
+          background: color-mix(in srgb, var(--counter-color) 15%, transparent);
+          border-color: color-mix(in srgb, var(--counter-color) 40%, transparent);
+        }
+        
+        .counter-icon {
+          font-size: 18px;
+        }
+        
+        .counter-value {
+          font-size: 20px;
+          font-weight: 700;
+          color: #ffffff;
+        }
+        
+        .counter-label {
+          font-size: 9px;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          transition: color 0.3s ease;
+          color: rgba(148, 163, 184, 0.6);
         }
 
-        /* Liste des produits prioritaires */
-        .priority-items-list {
-          flex: 1;
-          background: rgba(255, 255, 255, 0.02);
-          border-radius: 16px;
-          border: 1px solid rgba(255, 255, 255, 0.04);
-          padding: 14px;
-          overflow: hidden;
-        }
-
-        .priority-items-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+        /* Recherche */
+        .priority-search {
+          position: relative;
           margin-bottom: 12px;
         }
-
-        .priority-items-title {
-          font-size: 12px;
-          font-weight: 600;
-          color: rgba(255, 255, 255, 0.7);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
+        
+        .priority-search-input {
+          width: 100%;
+          padding: 10px 14px;
+          padding-right: 36px;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 10px;
+          font-size: 13px;
+          color: #ffffff;
+          outline: none;
+          transition: all 0.2s ease;
+        }
+        
+        .priority-search-input::placeholder {
+          color: rgba(148, 163, 184, 0.4);
+        }
+        
+        .priority-search-input:focus {
+          border-color: rgba(59, 130, 246, 0.5);
+          background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .priority-search-clear {
+          position: absolute;
+          right: 10px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          color: rgba(148, 163, 184, 0.5);
+          cursor: pointer;
+          font-size: 14px;
+          padding: 4px;
         }
 
-        .priority-items-count {
-          font-size: 11px;
+        /* Grille de cards */
+        .priority-grid {
+          flex: 1;
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 10px;
+          overflow-y: auto;
+          padding-right: 4px;
+        }
+        
+        @media (min-width: 400px) {
+          .priority-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        /* Empty state */
+        .priority-empty {
+          grid-column: 1 / -1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 32px;
+          text-align: center;
+        }
+        
+        .priority-empty-icon {
+          font-size: 40px;
+          margin-bottom: 12px;
+          opacity: 0.5;
+        }
+        
+        .priority-empty-text {
+          color: rgba(148, 163, 184, 0.5);
+          font-size: 13px;
+          margin: 0;
+        }
+
+        /* Voir plus */
+        .priority-more {
+          margin-top: 12px;
+          text-align: center;
+        }
+        
+        .priority-more-text {
+          font-size: 12px;
           color: rgba(148, 163, 184, 0.5);
         }
-
-        .priority-item-row {
+      `}</style>
+      
+      {/* Styles globaux pour ExpiryCard et Modal */}
+      <style jsx global>{`
+        /* ========================================
+           EXPIRY CARD - Card individuelle produit
+           ======================================== */
+        .expiry-card {
+          position: relative;
+          background: rgba(31, 41, 55, 0.6);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 14px;
+          padding: 12px;
           display: flex;
-          align-items: center;
+          flex-direction: column;
           gap: 10px;
-          padding: 10px 0;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+          transition: all 0.2s ease;
         }
 
-        .priority-item-row:last-child {
-          border-bottom: none;
+        .expiry-card:hover {
+          background: rgba(31, 41, 55, 0.8);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
         }
 
-        .priority-item-number {
+        .expiry-card-remove {
+          position: absolute;
+          top: 6px;
+          right: 6px;
           width: 20px;
           height: 20px;
-          border-radius: 6px;
-          background: rgba(255, 255, 255, 0.05);
+          border-radius: 50%;
+          background: rgba(239, 68, 68, 0.15);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          color: #EF4444;
+          font-size: 14px;
+          line-height: 1;
+          cursor: pointer;
+          opacity: 0;
+          transition: all 0.2s ease;
           display: flex;
           align-items: center;
           justify-content: center;
+          z-index: 10;
+        }
+
+        .expiry-card:hover .expiry-card-remove {
+          opacity: 1;
+        }
+
+        .expiry-card-remove:hover {
+          background: rgba(239, 68, 68, 0.3);
+          transform: scale(1.1);
+        }
+        
+        .expiry-card-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+        
+        .expiry-card-zone {
+          font-size: 9px;
+          padding: 3px 6px;
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 4px;
+          color: rgba(148, 163, 184, 0.6);
+        }
+        
+        .expiry-card-body {
+          flex: 1;
+        }
+        
+        .expiry-card-name {
+          font-size: 14px;
+          font-weight: 600;
+          color: #F9FAFB;
+          margin: 0 0 8px 0;
+          line-height: 1.3;
+        }
+        
+        .expiry-card-info {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        
+        .expiry-card-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+        
+        .expiry-card-label {
+          font-size: 11px;
+          color: #9CA3AF;
+        }
+        
+        .expiry-card-value {
+          font-size: 11px;
+          color: #F9FAFB;
+          font-weight: 500;
+        }
+        
+        .expiry-card-days {
+          font-size: 11px;
+          font-weight: 700;
+        }
+        
+        /* Quantité avec boutons +/- */
+        .expiry-card-quantity {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        
+        .qty-btn {
+          width: 22px;
+          height: 22px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255, 255, 255, 0.08);
+          border: none;
+          border-radius: 6px;
+          color: #ffffff;
+          font-size: 14px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        
+        .qty-btn:hover:not(:disabled) {
+          background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .qty-btn:disabled {
+          opacity: 0.3;
+          cursor: not-allowed;
+        }
+        
+        .qty-value {
+          font-size: 12px;
+          font-weight: 600;
+          color: #F9FAFB;
+          min-width: 50px;
+          text-align: center;
+        }
+        
+        /* Actions */
+        .expiry-card-actions {
+          display: flex;
+          gap: 8px;
+          margin-top: auto;
+        }
+        
+        .action-btn {
+          flex: 1;
+          padding: 8px 10px;
+          border: none;
+          border-radius: 8px;
           font-size: 11px;
           font-weight: 600;
-          color: rgba(255, 255, 255, 0.5);
-          flex-shrink: 0;
+          cursor: pointer;
+          transition: all 0.15s ease;
         }
-
-        .priority-item-name {
-          flex: 1;
-          font-size: 13px;
-          font-weight: 500;
-          color: rgba(255, 255, 255, 0.85);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+        
+        .action-btn:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
         }
-
-        .priority-item-tag {
+        
+        .action-used {
+          background: rgba(16, 185, 129, 0.15);
+          color: #10B981;
+          border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        
+        .action-used:hover:not(:disabled) {
+          background: rgba(16, 185, 129, 0.25);
+        }
+        
+        .action-discard {
+          background: rgba(239, 68, 68, 0.15);
+          color: #EF4444;
+          border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .action-discard:hover:not(:disabled) {
+          background: rgba(239, 68, 68, 0.25);
+        }
+        
+        /* Priority Badge */
+        .priority-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
           padding: 4px 8px;
           border-radius: 6px;
-          font-size: 10px;
+          border: 1px solid;
+          font-size: 9px;
           font-weight: 700;
-          flex-shrink: 0;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+        }
+        
+        .priority-badge-icon {
+          font-size: 11px;
+        }
+        
+        /* ========================================
+           DISCARD MODAL - Confirmation de perte
+           ======================================== */
+        .discard-modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          padding: 20px;
+        }
+        
+        .discard-modal {
+          background: linear-gradient(145deg, rgba(31, 41, 55, 0.98) 0%, rgba(17, 24, 39, 0.99) 100%);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 16px;
+          padding: 24px;
+          max-width: 400px;
+          width: 100%;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        .discard-modal h4 {
+          font-size: 18px;
+          font-weight: 600;
+          color: #ffffff;
+          margin: 0 0 12px 0;
+        }
+        
+        .discard-modal p {
+          font-size: 14px;
+          color: rgba(148, 163, 184, 0.8);
+          margin: 0 0 16px 0;
+        }
+        
+        .discard-select {
+          width: 100%;
+          padding: 12px 14px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
+          font-size: 14px;
+          color: #ffffff;
+          outline: none;
+          margin-bottom: 20px;
+          cursor: pointer;
+        }
+        
+        .discard-select option {
+          background: #1f2937;
+          color: #ffffff;
+        }
+        
+        .discard-modal-actions {
+          display: flex;
+          gap: 12px;
+        }
+        
+        .modal-btn {
+          flex: 1;
+          padding: 12px 16px;
+          border: none;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        
+        .modal-cancel {
+          background: rgba(255, 255, 255, 0.08);
+          color: #ffffff;
+        }
+        
+        .modal-cancel:hover {
+          background: rgba(255, 255, 255, 0.12);
+        }
+        
+        .modal-confirm {
+          background: #EF4444;
+          color: #ffffff;
+        }
+        
+        .modal-confirm:hover:not(:disabled) {
+          background: #DC2626;
+        }
+        
+        .modal-confirm:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
       `}</style>
     </div>
@@ -904,7 +1421,25 @@ function PriorityToSellCard({ items, lastUpdated }: PriorityToSellCardProps) {
 // ============================================
 // SECTION 3 - BUSINESS TRENDS + ACTIONS RAPIDES
 // ============================================
-function TrendsAndActionsSection({ chartData, hasData, caJour, caMois, priorityItems }: { chartData: any[], hasData: boolean, caJour: number, caMois: number, priorityItems: PriorityToSellItem[] }) {
+function TrendsAndActionsSection({
+  chartData,
+  hasData,
+  caJour,
+  caMois,
+  priorityItems,
+  onItemUsed,
+  onItemDiscarded,
+  onItemRemoved
+}: {
+  chartData: any[],
+  hasData: boolean,
+  caJour: number,
+  caMois: number,
+  priorityItems: PriorityToSellItem[],
+  onItemUsed?: (itemId: string, quantity: number) => void,
+  onItemDiscarded?: (itemId: string, quantity: number, reason: string) => void,
+  onItemRemoved?: (itemId: string) => void
+}) {
   const [period, setPeriod] = useState("30")
   const [chartKey, setChartKey] = useState(0)
   const [isPeriodDropdownOpen, setIsPeriodDropdownOpen] = useState(false)
@@ -1117,7 +1652,13 @@ function TrendsAndActionsSection({ chartData, hasData, caJour, caMois, priorityI
 
         {/* Priority To Sell Card */}
         <div className="w-full lg:w-[320px] flex-shrink-0">
-          <PriorityToSellCard items={priorityItems} lastUpdated={new Date()} />
+          <PriorityToSellCard
+            items={priorityItems}
+            lastUpdated={new Date()}
+            onItemUsed={onItemUsed}
+            onItemDiscarded={onItemDiscarded}
+            onItemRemoved={onItemRemoved}
+          />
         </div>
       </div>
     </section>
@@ -1250,7 +1791,7 @@ function TopProductsSection({
 export default function ManagerDashboard() {
   const { products: realtimeProducts, loading: realtimeLoading } = useRealtimeProducts()
   const { profile, establishment } = useAuth()
-  const { stocks, loading: stockLoading } = useStock()
+  const { stocks, loading: stockLoading, fetchStocks, deleteStock } = useStock()
   const { menuItems, loading: menuLoading } = useMenuItems()
   const { stats: dashboardStats, loading: statsLoading } = useDashboardStats()
   const [wasteData, setWasteData] = useState({ cost: 0, count: 0 })
@@ -1260,38 +1801,39 @@ export default function ManagerDashboard() {
 
   const loading = realtimeLoading || stockLoading || menuLoading || statsLoading || wasteLoading
 
-  // Récupérer les données de gaspillage du mois
-  useEffect(() => {
-    const fetchWasteData = async () => {
-      if (!profile?.establishment_id) {
-        setWasteLoading(false)
-        return
-      }
-
-      try {
-        const startOfMonth = new Date()
-        startOfMonth.setDate(1)
-        startOfMonth.setHours(0, 0, 0, 0)
-
-        const { data: wasteLogs, error } = await supabase
-          .from('waste_logs')
-          .select('estimated_cost')
-          .eq('establishment_id', profile.establishment_id)
-          .gte('created_at', startOfMonth.toISOString())
-
-        if (error) throw error
-
-        const totalCost = (wasteLogs || []).reduce((sum, log) => sum + (Number(log.estimated_cost) || 0), 0)
-        const count = (wasteLogs || []).length
-
-        setWasteData({ cost: totalCost, count })
-      } catch (err) {
-        console.error('Erreur lors du chargement des gaspillages:', err)
-      } finally {
-        setWasteLoading(false)
-      }
+  // Fonction pour récupérer les données de gaspillage du mois (accessible depuis les handlers)
+  const fetchWasteData = useCallback(async () => {
+    if (!profile?.establishment_id) {
+      setWasteLoading(false)
+      return
     }
 
+    try {
+      const startOfMonth = new Date()
+      startOfMonth.setDate(1)
+      startOfMonth.setHours(0, 0, 0, 0)
+
+      const { data: wasteLogs, error } = await supabase
+        .from('waste_logs')
+        .select('estimated_cost')
+        .eq('establishment_id', profile.establishment_id)
+        .gte('created_at', startOfMonth.toISOString())
+
+      if (error) throw error
+
+      const totalCost = (wasteLogs || []).reduce((sum, log) => sum + (Number(log.estimated_cost) || 0), 0)
+      const count = (wasteLogs || []).length
+
+      setWasteData({ cost: totalCost, count })
+    } catch (err) {
+      console.error('Erreur lors du chargement des gaspillages:', err)
+    } finally {
+      setWasteLoading(false)
+    }
+  }, [profile?.establishment_id, supabase])
+
+  // Initialisation et subscription temps réel pour les gaspillages
+  useEffect(() => {
     fetchWasteData()
 
     // Abonnement realtime pour les mises à jour
@@ -1309,7 +1851,7 @@ export default function ManagerDashboard() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [profile?.establishment_id, supabase])
+  }, [fetchWasteData, supabase])
 
   // ============================================
   // CALCULS DES KPIs RÉELS
@@ -1475,109 +2017,162 @@ export default function ManagerDashboard() {
   ].slice(0, 5)
 
   // ============================================
-  // CALCULS POUR LES PRODUITS À ÉCOULER EN PRIORITÉ
+  // CALCULS POUR LES PRODUITS À ÉCOULER EN PRIORITÉ (PRD FEFO)
+  // Système à 3 niveaux : CRITIQUE (≤2j), URGENT (3-7j), EXCELLENT (>7j)
   // ============================================
   
-  // Créer la liste des produits à écouler en priorité
   const priorityToSellItems: PriorityToSellItem[] = []
   
-  // 1. Produits qui expirent bientôt ou déjà périmés (CRITIQUE si périmé ou <= 1 jour, HIGH si 2 jours, MEDIUM si 3 jours)
+  // Parcourir tous les stocks avec date de péremption
   stocks.forEach(stock => {
     if (!stock.expiry_date) return
-    const expiry = new Date(stock.expiry_date)
+    
     const today = new Date()
-    const daysLeft = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    today.setHours(0, 0, 0, 0)
+    const expiry = new Date(stock.expiry_date)
+    expiry.setHours(0, 0, 0, 0)
+    const daysRemaining = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    
+    // Déterminer le niveau de priorité selon le PRD
+    let priorityLevel: PriorityLevel
+    if (daysRemaining < 0 || daysRemaining <= 2) {
+      priorityLevel = 'CRITIQUE'
+    } else if (daysRemaining >= 3 && daysRemaining <= 7) {
+      priorityLevel = 'URGENT'
+    } else {
+      priorityLevel = 'EXCELLENT'
+    }
+    
+    priorityToSellItems.push({
+      id: `exp-${stock.id}`,
+      name: stock.product?.name || 'Produit inconnu',
+      quantity: Number(stock.quantity) || 0,
+      unit: stock.product?.unit || 'unités',
+      expiryDate: expiry,
+      daysRemaining,
+      batchNumber: stock.batch_number || undefined,
+      storageZone: stock.storage_zone || undefined,
+      category: stock.product?.category || undefined,
+      priorityLevel,
+      stockId: stock.id
+    })
+  })
+  
+  // Trier par méthode FEFO (First-Expired-First-Out)
+  priorityToSellItems.sort((a, b) => a.daysRemaining - b.daysRemaining)
 
-    // Inclure les produits périmés (daysLeft <= 0) et ceux qui expirent dans 3 jours ou moins
-    if (daysLeft <= 3) {
-      // Déterminer l'urgence selon les jours restants
-      let urgency: 'critical' | 'high' | 'medium' = 'medium'
-      if (daysLeft <= 1) {
-        urgency = 'critical' // Périmé ou expire demain
-      } else if (daysLeft === 2) {
-        urgency = 'high' // Expire dans 2 jours
+  // ============================================
+  // HANDLERS POUR LES ACTIONS SUR LES PRODUITS (PRD)
+  // ============================================
+  
+  // Handler "Utilisé" : décrémenter la quantité du stock
+  const handleItemUsed = async (itemId: string, quantity: number) => {
+    const item = priorityToSellItems.find(i => i.id === itemId)
+    if (!item?.stockId) return
+
+    try {
+      // Récupérer le stock actuel
+      const { data: currentStock } = await supabase
+        .from('stock')
+        .select('quantity')
+        .eq('id', item.stockId)
+        .single()
+
+      if (!currentStock) return
+
+      const newQuantity = Math.max(0, Number(currentStock.quantity) - quantity)
+
+      // Si la quantité tombe à 0, supprimer le stock
+      if (newQuantity <= 0) {
+        await supabase
+          .from('stock')
+          .delete()
+          .eq('id', item.stockId)
       } else {
-        urgency = 'medium' // Expire dans 3 jours
+        // Mettre à jour le stock
+        await supabase
+          .from('stock')
+          .update({ quantity: newQuantity, updated_at: new Date().toISOString() })
+          .eq('id', item.stockId)
       }
 
-      // Générer la suggestion et le label selon l'état
-      const isExpired = daysLeft <= 0
-      const displayDays = isExpired ? 0 : daysLeft
+      // Rafraîchir les données
+      await fetchStocks()
 
-      priorityToSellItems.push({
-        id: `exp-${stock.id}`,
-        name: stock.product?.name || 'Produit inconnu',
-        reason: 'expiring',
-        urgency,
-        daysLeft: displayDays,
-        quantity: Number(stock.quantity) || 0,
-        suggestion: isExpired
-          ? `⚠️ PÉRIMÉ - Retirer ${stock.product?.name || 'ce produit'} immédiatement !`
-          : daysLeft === 1
-            ? `🔥 URGENT - Promo flash -50% sur ${stock.product?.name || 'ce produit'} !`
-            : `Promo -30% sur ${stock.product?.name || 'ce produit'} avant expiration`
-      })
+    } catch (err) {
+      console.error('Erreur lors de la mise à jour du stock:', err)
     }
-  })
-  
-  // 2. Produits en surstock (quantité > 2x le seuil min ou > 50 unités sans seuil)
-  dormantStocks.forEach(stock => {
-    const qty = Number(stock.quantity) || 0
-    const minThreshold = Number(stock.product?.min_stock_threshold) || 0
-    const isOverstocked = minThreshold > 0 ? qty > minThreshold * 3 : qty > 30
-    
-    if (isOverstocked) {
-      const value = qty * (Number(stock.unit_price) || 0)
-      priorityToSellItems.push({
-        id: `over-${stock.id}`,
-        name: stock.product?.name || 'Produit inconnu',
-        reason: 'overstock',
-        urgency: qty > (minThreshold > 0 ? minThreshold * 5 : 50) ? 'high' : 'medium',
-        quantity: qty,
-        value,
-        suggestion: `Réduis les prochaines commandes de ${stock.product?.name || 'ce produit'}`
-      })
-    }
-  })
-  
-  // 3. Produits à faible marge (< 40% de marge)
-  menuItems
-    .filter(item => item.actual_margin_percent > 0 && item.actual_margin_percent < 40)
-    .slice(0, 3)
-    .forEach(item => {
-      priorityToSellItems.push({
-        id: `margin-${item.id}`,
-        name: item.name,
-        reason: 'low_margin',
-        urgency: item.actual_margin_percent < 25 ? 'high' : 'medium',
-        suggestion: `Augmente le prix de ${item.name} de +15%`
-      })
-    })
-  
-  // 4. Produits à ventes lentes (les moins vendus)
-  if (topSellingProducts.length > 3) {
-    const slowMoving = [...topSellingProducts]
-      .sort((a, b) => a.quantity - b.quantity)
-      .slice(0, 2)
-    
-    slowMoving.forEach(product => {
-      // Éviter les doublons
-      if (!priorityToSellItems.find(p => p.name === product.name)) {
-        priorityToSellItems.push({
-          id: `slow-${product.name}`,
-          name: product.name,
-          reason: 'slow_moving',
-          urgency: 'medium',
-          quantity: product.quantity,
-          suggestion: `Propose ${product.name} en formule ou menu`
-        })
-      }
-    })
   }
   
-  // Trier par urgence (critical > high > medium)
-  const urgencyOrder = { critical: 0, high: 1, medium: 2 }
-  priorityToSellItems.sort((a, b) => urgencyOrder[a.urgency] - urgencyOrder[b.urgency])
+  // Handler "Jeté" : enregistrer la perte et mettre à jour le stock
+  const handleItemDiscarded = async (itemId: string, quantity: number, reason: string) => {
+    const item = priorityToSellItems.find(i => i.id === itemId)
+    if (!item?.stockId || !profile?.establishment_id) return
+
+    try {
+      // Récupérer le stock actuel avec le prix
+      const { data: currentStock } = await supabase
+        .from('stock')
+        .select('quantity, unit_price, product_id')
+        .eq('id', item.stockId)
+        .single()
+
+      if (!currentStock) return
+
+      const estimatedCost = quantity * (Number(currentStock.unit_price) || 0)
+
+      // Enregistrer dans waste_logs
+      const { error: wasteError } = await supabase.from('waste_logs').insert({
+        establishment_id: profile.establishment_id,
+        product_id: currentStock.product_id,
+        quantity: quantity,
+        unit: item.unit || 'unités',
+        reason: reason,
+        estimated_cost: estimatedCost
+      })
+
+      if (wasteError) {
+        console.error('Erreur insertion waste_logs:', wasteError)
+      }
+
+      // Mettre à jour ou supprimer le stock
+      const newQuantity = Math.max(0, Number(currentStock.quantity) - quantity)
+
+      if (newQuantity <= 0) {
+        await supabase
+          .from('stock')
+          .delete()
+          .eq('id', item.stockId)
+      } else {
+        await supabase
+          .from('stock')
+          .update({ quantity: newQuantity, updated_at: new Date().toISOString() })
+          .eq('id', item.stockId)
+      }
+
+      // Rafraîchir les données du stock et des pertes
+      await Promise.all([
+        fetchStocks(),
+        fetchWasteData()
+      ])
+
+    } catch (err) {
+      console.error('Erreur lors de l\'enregistrement de la perte:', err)
+    }
+  }
+
+  // Handler "Supprimer" : retirer le produit de la carte (supprimer l'entrée de stock)
+  const handleItemRemoved = async (itemId: string) => {
+    const item = priorityToSellItems.find(i => i.id === itemId)
+    if (!item?.stockId) return
+
+    try {
+      await deleteStock(item.stockId)
+      // Le hook useStock met à jour automatiquement l'état local
+    } catch (err) {
+      console.error('Erreur lors de la suppression du produit:', err)
+    }
+  }
 
   // Données du graphique (basées sur des estimations à partir des données réelles)
   // Si pas de données, afficher des valeurs à 0
@@ -2964,7 +3559,16 @@ export default function ManagerDashboard() {
         />
 
         {/* Section 3 - Business Trends + Produits à Écouler */}
-        <TrendsAndActionsSection chartData={chartData} hasData={menuItems.length > 0} caJour={caJour} caMois={caMois} priorityItems={priorityToSellItems} />
+        <TrendsAndActionsSection 
+          chartData={chartData} 
+          hasData={menuItems.length > 0}
+          caJour={caJour}
+          caMois={caMois}
+          priorityItems={priorityToSellItems}
+          onItemUsed={handleItemUsed}
+          onItemDiscarded={handleItemDiscarded}
+          onItemRemoved={handleItemRemoved}
+        />
 
         {/* Section 4 - Top Produits */}
         <TopProductsSection
