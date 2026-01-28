@@ -177,11 +177,22 @@ export default function SubscriptionPage() {
   const handleManageSubscription = async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase.functions.invoke('create-portal-session')
-
-      if (error) throw error
-
-      if (data?.url) {
+      const response = await fetch('/api/stripe/portal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        console.error('Erreur création portail:', data.error)
+        alert('Erreur lors de l\'accès au portail de gestion')
+        return
+      }
+      
+      if (data.url) {
         window.location.href = data.url
       }
     } catch (error) {

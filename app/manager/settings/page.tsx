@@ -36,6 +36,7 @@ import {
 import { createClient } from "@/utils/supabase/client"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useSubscription } from "@/lib/hooks/use-subscription"
+import { PRICING_PLANS } from "@/lib/pricing-config"
 import { toast } from "sonner"
 import Link from "next/link"
 
@@ -46,6 +47,7 @@ interface Establishment {
   address: string | null
   phone: string | null
   email: string | null
+  billing_period?: "monthly" | "annual"
 }
 
 interface TeamMember {
@@ -584,7 +586,9 @@ export default function SettingsPage() {
                       <p className="text-white/50">
                         {currentPlan?.price === 0
                           ? 'Plan gratuit'
-                          : `${currentPlan?.price}€/mois`}
+                          : (establishment?.billing_period === 'annual'
+                            ? `${PRICING_PLANS.premium.annual.price}€/an`
+                            : `${PRICING_PLANS.premium.monthly.price}€/mois`)}
                       </p>
                       {subscription?.periodEnd && (
                         <p className="text-xs text-white/40 mt-1">

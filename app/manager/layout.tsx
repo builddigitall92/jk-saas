@@ -70,6 +70,7 @@ export default function ManagerLayout({
   const [tooltip, setTooltip] = useState<{ text: string; top: number } | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
+  const [isLoadingPortal, setIsLoadingPortal] = useState(false)
 
   // Items pour la navigation mobile (bottom bar)
   const mobileNavItems = [
@@ -219,7 +220,13 @@ export default function ManagerLayout({
   const handleSearchItemClick = (href: string) => {
     setSearchQuery("")
     setIsSearchOpen(false)
-    router.push(href)
+    
+    // Cas spécial pour la gestion de l'abonnement : rediriger vers Stripe
+    if (href === "/manager/settings/subscription") {
+      handleManageSubscription()
+    } else {
+      router.push(href)
+    }
   }
 
   const showTooltip = (e: React.MouseEvent, text: string) => {
@@ -247,6 +254,39 @@ export default function ManagerLayout({
       // Toujours rediriger vers login, même en cas d'erreur
       // Utiliser replace pour éviter le retour arrière
       window.location.replace("/login")
+    }
+  }
+
+  const handleManageSubscription = async () => {
+    // Éviter les doubles clics
+    if (isLoadingPortal) return
+    setIsLoadingPortal(true)
+    
+    try {
+      const response = await fetch('/api/stripe/portal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        console.error('Erreur création portail:', data.error)
+        alert('Erreur lors de l\'accès au portail de gestion')
+        return
+      }
+      
+      if (data.url) {
+        // Rediriger vers le portail Stripe
+        window.location.href = data.url
+      }
+    } catch (err) {
+      console.error('Erreur lors de l\'accès au portail:', err)
+      alert('Erreur lors de l\'accès au portail de gestion')
+    } finally {
+      setIsLoadingPortal(false)
     }
   }
 
@@ -675,10 +715,17 @@ export default function ManagerLayout({
 
                     <div className="profile-menu-separator" />
 
-                    <Link href="/manager/settings/subscription" className="profile-menu-item" onClick={() => setIsProfileOpen(false)}>
-                      <CreditCard className="profile-menu-item-icon" />
-                      <span>Gérer l'Abonnement</span>
-                    </Link>
+                    <button 
+                      onClick={() => {
+                        setIsProfileOpen(false)
+                        handleManageSubscription()
+                      }}
+                      disabled={isLoadingPortal}
+                      className={`profile-menu-item ${isLoadingPortal ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <CreditCard className={`profile-menu-item-icon ${isLoadingPortal ? 'animate-spin' : ''}`} />
+                      <span>{isLoadingPortal ? 'Chargement...' : 'Gérer l\'Abonnement'}</span>
+                    </button>
                     <Link href="/manager/help" className="profile-menu-item" onClick={() => setIsProfileOpen(false)}>
                       <HelpCircle className="profile-menu-item-icon" />
                       <span>Aide & Support</span>

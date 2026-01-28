@@ -98,7 +98,7 @@ function DashboardMockup() {
           </div>
           <div className="flex-1 flex justify-center">
             <div className="px-4 py-1 rounded-md bg-white/5 text-white/40 text-xs">
-              app.stockguard.fr
+              stockguard.digital
             </div>
           </div>
         </div>

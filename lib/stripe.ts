@@ -42,7 +42,7 @@ export const PLANS = {
     id: 'premium',
     name: 'Premium',
     description: 'Accès complet à StockGuard',
-    price: 99,
+    price: 199,
     priceIdMonthly: process.env.STRIPE_PREMIUM_PRICE_ID_MONTHLY || 'price_premium_monthly',
     priceIdAnnual: process.env.STRIPE_PREMIUM_PRICE_ID_ANNUAL || 'price_premium_annual',
     priceIdLifetime: process.env.STRIPE_PREMIUM_PRICE_ID_LIFETIME || null,

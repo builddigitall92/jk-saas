@@ -34,7 +34,7 @@ const helpCategories = [
     icon: MessageCircle,
     title: "Chat Support",
     description: "Discutez avec notre équipe",
-    href: "#",
+    href: "/contact",
     color: "green"
   },
   {
@@ -153,9 +153,12 @@ export default function HelpPage() {
             <h3 className="text-lg font-semibold text-white mb-1">Besoin d'aide supplémentaire ?</h3>
             <p className="text-sm text-slate-400">Notre équipe support est disponible du lundi au vendredi, 9h-18h</p>
           </div>
-          <button className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+          <Link
+            href="/contact"
+            className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors inline-block"
+          >
             Contacter le Support
-          </button>
+          </Link>
         </div>
       </div>
     </div>

@@ -52,13 +52,43 @@ export async function POST(request: NextRequest) {
     }
 
     let customerId = establishment.stripe_customer_id
+    const supabaseAdmin = getSupabaseAdmin()
 
-    // Si pas de customer ID, on ne peut pas synchroniser
+    // Si pas de customer ID, essayer de trouver par email
     if (!customerId) {
-      return NextResponse.json({ 
-        error: 'Aucun compte Stripe associé',
-        message: 'Vous devez d\'abord effectuer un achat pour créer un compte Stripe'
-      }, { status: 400 })
+      console.log('[Sync] Pas de customer_id, recherche par email:', user.email)
+
+      // Chercher le customer Stripe par email
+      const customers = await stripe.customers.list({
+        email: user.email || '',
+        limit: 1,
+      })
+
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id
+        console.log('[Sync] Customer trouvé par email:', customerId)
+
+        // Sauvegarder le customer_id trouvé
+        await supabaseAdmin
+          .from('establishments')
+          .update({ stripe_customer_id: customerId })
+          .eq('id', establishment.id)
+      } else {
+        // Aucun customer Stripe, s'assurer que le statut est 'inactive'
+        await supabaseAdmin
+          .from('establishments')
+          .update({
+            subscription_status: 'inactive',
+            subscription_plan: 'free',
+          })
+          .eq('id', establishment.id)
+
+        return NextResponse.json({
+          success: true,
+          message: 'Aucun compte Stripe trouvé, statut mis à inactive',
+          subscription: null
+        })
+      }
     }
 
     console.log('[Sync] Synchronisation pour customer:', customerId)
@@ -76,8 +106,6 @@ export async function POST(request: NextRequest) {
     const activeSubscription = subscriptions.data.find(
       sub => sub.status === 'active' || sub.status === 'trialing'
     )
-
-    const supabaseAdmin = getSupabaseAdmin()
 
     if (activeSubscription) {
       // Récupérer le plan depuis le price ID
@@ -147,11 +175,21 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      // Aucun abonnement trouvé
-      console.log('[Sync] Aucun abonnement trouvé')
+      // Aucun abonnement actif ni annulé trouvé, mettre à inactive
+      console.log('[Sync] Aucun abonnement trouvé, mise à jour vers inactive')
+
+      await supabaseAdmin
+        .from('establishments')
+        .update({
+          stripe_subscription_id: null,
+          subscription_plan: 'free',
+          subscription_status: 'inactive',
+        })
+        .eq('id', establishment.id)
+
       return NextResponse.json({
-        success: false,
-        message: 'Aucun abonnement actif trouvé pour ce compte Stripe',
+        success: true,
+        message: 'Aucun abonnement actif trouvé, statut mis à inactive',
         subscription: null
       })
     }

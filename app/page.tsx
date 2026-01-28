@@ -790,7 +790,7 @@ export default function LandingPage() {
                     </div>
                     <div className="flex-1 mx-4">
                       <div className="max-w-xs mx-auto bg-white/5 rounded-md px-3 py-1 text-xs text-white/40 text-center">
-                        app.stockguard.fr
+                        stockguard.digital
                       </div>
                     </div>
                   </div>

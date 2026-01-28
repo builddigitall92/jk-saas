@@ -43,16 +43,16 @@ export const PRICING_PLANS: Record<string, PlanConfig> = {
     popular: true,
     target: "Restaurants, brasseries, dark kitchens, chaînes",
     monthly: {
-      price: 99,
+      price: 199,
       discount: "",
       period: "/mois",
       priceId: process.env.NEXT_PUBLIC_STRIPE_PREMIUM_MONTHLY_PRICE_ID || "price_premium_monthly",
     },
     annual: {
-      price: 990,
-      originalPrice: 1188,
-      discount: "2 mois offerts",
-      savings: "198€",
+      price: 1393,
+      originalPrice: 2388,
+      discount: "5 mois offerts",
+      savings: "995€",
       period: "/an",
       priceId: process.env.NEXT_PUBLIC_STRIPE_PREMIUM_ANNUAL_PRICE_ID || "price_premium_annual",
     },
@@ -106,7 +106,7 @@ export const formatPrice = (price: number): string => {
 }
 
 export const getAnnualDiscount = (): string => {
-  return "2 mois offerts"
+  return "5 mois offerts"
 }
 
 // Configuration de l'essai gratuit

@@ -105,7 +105,7 @@ export default function BillingBlockPage() {
         }
         
         // Déterminer la raison du blocage
-        if (!establishment?.subscription_status || !establishment?.subscription_plan || plan === "free") {
+        if (!establishment?.subscription_status || status === "inactive" || status === "none" || !establishment?.subscription_plan || plan === "free") {
           setBlockReason("no_subscription")
         } else if (status === "canceled" || status === "incomplete_expired") {
           setBlockReason("canceled")

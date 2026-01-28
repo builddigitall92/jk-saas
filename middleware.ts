@@ -1,7 +1,13 @@
-import { type NextRequest } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { updateSession } from "@/utils/supabase/middleware"
 
 export async function middleware(request: NextRequest) {
+  // IMPORTANT: Exclure le webhook Stripe du middleware d'authentification
+  // Stripe envoie des requêtes POST sans authentification Supabase
+  if (request.nextUrl.pathname.startsWith('/api/stripe/webhook')) {
+    return NextResponse.next()
+  }
+
   return await updateSession(request)
 }
 

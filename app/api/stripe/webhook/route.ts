@@ -238,6 +238,7 @@ async function handleCheckoutCompleted(
     await supabaseAdmin
       .from('establishments')
       .update({
+        stripe_customer_id: customerId, // IMPORTANT: Toujours synchroniser le customer_id
         subscription_plan: planId,
         subscription_status: 'active',
         stripe_subscription_id: null,
@@ -277,6 +278,7 @@ async function handleCheckoutCompleted(
     await supabaseAdmin
       .from('establishments')
       .update({
+        stripe_customer_id: customerId, // IMPORTANT: Toujours synchroniser le customer_id
         stripe_subscription_id: subscriptionId,
         subscription_status: hasTrialPeriod ? 'trialing' : 'active',
         subscription_plan: planId,
@@ -300,12 +302,13 @@ async function handleSubscriptionUpdated(
   const metadata = subscription.metadata || {}
   const establishmentId = metadata.establishment_id
 
-  console.log('[Subscription Update] Recherche établissement:', { customerId, establishmentId })
+  const subscriptionId = subscription.id
+  console.log('[Subscription Update] Recherche établissement:', { customerId, subscriptionId, establishmentId })
 
-  // Trouver l'établissement
+  // Trouver l'établissement par plusieurs méthodes
   let establishment = null
 
-  // Par establishment_id des métadonnées
+  // Méthode 1: Par establishment_id des métadonnées
   if (establishmentId) {
     const { data } = await supabaseAdmin
       .from('establishments')
@@ -313,26 +316,40 @@ async function handleSubscriptionUpdated(
       .eq('id', establishmentId)
       .single()
     establishment = data
+    if (establishment) console.log('[Subscription Update] Trouvé par establishment_id')
   }
 
-  // Par customer_id
-  if (!establishment) {
+  // Méthode 2: Par stripe_subscription_id (très fiable pour les updates)
+  if (!establishment && subscriptionId) {
+    const { data } = await supabaseAdmin
+      .from('establishments')
+      .select('id')
+      .eq('stripe_subscription_id', subscriptionId)
+      .single()
+    establishment = data
+    if (establishment) console.log('[Subscription Update] Trouvé par stripe_subscription_id')
+  }
+
+  // Méthode 3: Par stripe_customer_id
+  if (!establishment && customerId) {
     const { data } = await supabaseAdmin
       .from('establishments')
       .select('id')
       .eq('stripe_customer_id', customerId)
       .single()
     establishment = data
+    if (establishment) console.log('[Subscription Update] Trouvé par stripe_customer_id')
   }
 
   if (!establishment) {
-    console.error('[Subscription Update] ❌ Établissement non trouvé:', { customerId, establishmentId })
+    console.error('[Subscription Update] ❌ Établissement non trouvé:', { customerId, subscriptionId, establishmentId })
     throw new Error('Établissement non trouvé')
   }
 
   // Préparer les données de mise à jour
   const currentPeriodEnd = subscription.current_period_end
   const updateData: Record<string, any> = {
+    stripe_customer_id: customerId, // IMPORTANT: Toujours synchroniser le customer_id
     stripe_subscription_id: subscription.id,
     subscription_plan: planId.toLowerCase(),
     subscription_status: subscription.status,
@@ -366,12 +383,16 @@ async function handleSubscriptionDeleted(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>
 ) {
   const customerId = subscription.customer as string
+  const subscriptionId = subscription.id
   const metadata = subscription.metadata || {}
   const establishmentId = metadata.establishment_id
 
-  // Trouver l'établissement
+  console.log('[Subscription Deleted] Recherche établissement:', { customerId, subscriptionId, establishmentId })
+
+  // Trouver l'établissement par plusieurs méthodes
   let establishment = null
 
+  // Méthode 1: Par establishment_id des métadonnées
   if (establishmentId) {
     const { data } = await supabaseAdmin
       .from('establishments')
@@ -379,24 +400,38 @@ async function handleSubscriptionDeleted(
       .eq('id', establishmentId)
       .single()
     establishment = data
+    if (establishment) console.log('[Subscription Deleted] Trouvé par establishment_id')
   }
 
-  if (!establishment) {
+  // Méthode 2: Par stripe_subscription_id (le plus fiable)
+  if (!establishment && subscriptionId) {
+    const { data } = await supabaseAdmin
+      .from('establishments')
+      .select('id')
+      .eq('stripe_subscription_id', subscriptionId)
+      .single()
+    establishment = data
+    if (establishment) console.log('[Subscription Deleted] Trouvé par stripe_subscription_id')
+  }
+
+  // Méthode 3: Par stripe_customer_id
+  if (!establishment && customerId) {
     const { data } = await supabaseAdmin
       .from('establishments')
       .select('id')
       .eq('stripe_customer_id', customerId)
       .single()
     establishment = data
+    if (establishment) console.log('[Subscription Deleted] Trouvé par stripe_customer_id')
   }
 
   if (!establishment) {
-    console.error('[Subscription Deleted] ❌ Établissement non trouvé')
+    console.error('[Subscription Deleted] ❌ Établissement non trouvé pour:', { customerId, subscriptionId, establishmentId })
     return // Ne pas throw pour éviter les retry
   }
 
   // Rétrograder au plan gratuit
-  await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('establishments')
     .update({
       subscription_plan: 'free',
@@ -406,6 +441,11 @@ async function handleSubscriptionDeleted(
     })
     .eq('id', establishment.id)
 
+  if (error) {
+    console.error('[Subscription Deleted] ❌ Erreur mise à jour:', error)
+    throw error
+  }
+
   console.log('[Subscription Deleted] ✓ Abonnement annulé pour:', establishment.id)
 }
 
@@ -414,25 +454,50 @@ async function handlePaymentFailed(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>
 ) {
   const customerId = invoice.customer as string
+  const subscriptionId = invoice.subscription as string
 
-  const { data: establishment } = await supabaseAdmin
-    .from('establishments')
-    .select('id, name')
-    .eq('stripe_customer_id', customerId)
-    .single()
+  console.log('[Payment Failed] Recherche établissement:', { customerId, subscriptionId })
+
+  let establishment = null
+
+  // Méthode 1: Par stripe_subscription_id
+  if (subscriptionId) {
+    const { data } = await supabaseAdmin
+      .from('establishments')
+      .select('id, name')
+      .eq('stripe_subscription_id', subscriptionId)
+      .single()
+    establishment = data
+    if (establishment) console.log('[Payment Failed] Trouvé par stripe_subscription_id')
+  }
+
+  // Méthode 2: Par stripe_customer_id
+  if (!establishment && customerId) {
+    const { data } = await supabaseAdmin
+      .from('establishments')
+      .select('id, name')
+      .eq('stripe_customer_id', customerId)
+      .single()
+    establishment = data
+    if (establishment) console.log('[Payment Failed] Trouvé par stripe_customer_id')
+  }
 
   if (!establishment) {
-    console.warn('[Payment Failed] Établissement non trouvé pour:', customerId)
+    console.warn('[Payment Failed] Établissement non trouvé pour:', { customerId, subscriptionId })
     return // Ne pas throw
   }
 
   // Marquer comme impayé
-  await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('establishments')
     .update({
       subscription_status: 'past_due',
     })
     .eq('id', establishment.id)
+
+  if (error) {
+    console.error('[Payment Failed] Erreur mise à jour:', error)
+  }
 
   console.log('[Payment Failed] ✓ Statut mis à jour -> past_due pour:', establishment.name || establishment.id)
 
@@ -444,25 +509,50 @@ async function handlePaymentSucceeded(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>
 ) {
   const customerId = invoice.customer as string
+  const subscriptionId = invoice.subscription as string
 
-  const { data: establishment } = await supabaseAdmin
-    .from('establishments')
-    .select('id, name')
-    .eq('stripe_customer_id', customerId)
-    .single()
+  console.log('[Payment Succeeded] Recherche établissement:', { customerId, subscriptionId })
+
+  let establishment = null
+
+  // Méthode 1: Par stripe_subscription_id
+  if (subscriptionId) {
+    const { data } = await supabaseAdmin
+      .from('establishments')
+      .select('id, name')
+      .eq('stripe_subscription_id', subscriptionId)
+      .single()
+    establishment = data
+    if (establishment) console.log('[Payment Succeeded] Trouvé par stripe_subscription_id')
+  }
+
+  // Méthode 2: Par stripe_customer_id
+  if (!establishment && customerId) {
+    const { data } = await supabaseAdmin
+      .from('establishments')
+      .select('id, name')
+      .eq('stripe_customer_id', customerId)
+      .single()
+    establishment = data
+    if (establishment) console.log('[Payment Succeeded] Trouvé par stripe_customer_id')
+  }
 
   if (!establishment) {
-    console.warn('[Payment Succeeded] Établissement non trouvé pour:', customerId)
+    console.warn('[Payment Succeeded] Établissement non trouvé pour:', { customerId, subscriptionId })
     return // Ne pas throw
   }
 
   // Remettre le statut à actif
-  await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('establishments')
     .update({
       subscription_status: 'active',
     })
     .eq('id', establishment.id)
+
+  if (error) {
+    console.error('[Payment Succeeded] Erreur mise à jour:', error)
+  }
 
   console.log('[Payment Succeeded] ✓ Statut mis à jour -> active pour:', establishment.name || establishment.id)
 }

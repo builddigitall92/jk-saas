@@ -43,7 +43,7 @@ const PLANS = {
     id: 'premium',
     name: 'Premium',
     description: 'Accès complet à StockGuard',
-    price: 99,
+    price: 199,
     features: [
       'Gestion de stock complète',
       'Menu & recettes',
@@ -68,7 +68,7 @@ const mapPlanToNew = (plan: string): PlanId => {
   }
   return 'FREE'
 }
-type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'unpaid' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'none'
+type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'unpaid' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'inactive' | 'none'
 
 interface Subscription {
   plan: PlanId
