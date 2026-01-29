@@ -27,6 +27,7 @@ import {
   Receipt,
   Menu,
   X,
+  Trash2,
 } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useSubscription } from "@/lib/hooks/use-subscription"
@@ -41,6 +42,7 @@ const mainNavItems = [
   { name: "Fournisseurs", href: "/manager/suppliers", icon: Truck, color: "green" },
   { name: "Prévisions", href: "/manager/forecasts", icon: TrendingUp, color: "orange" },
   { name: "Rapports", href: "/manager/reports", icon: BarChart3, color: "pink" },
+  { name: "Gaspillage", href: "/manager/waste", icon: Trash2, color: "red" },
   { name: "Calculateur", href: "/manager/calculator", icon: Calculator, color: "yellow" },
   { name: "Équipe", href: "/manager/team", icon: Users, color: "teal" },
   { name: "Feedbacks", href: "/manager/feedback", icon: MessageSquare, color: "indigo" },
@@ -190,6 +192,7 @@ export default function ManagerLayout({
     { name: "Fournisseurs", href: "/manager/suppliers", keywords: ["fournisseur", "fournisseurs", "supplier"] },
     { name: "Prévisions", href: "/manager/forecasts", keywords: ["prévision", "prévisions", "forecast", "prédiction"] },
     { name: "Rapports", href: "/manager/reports", keywords: ["rapport", "rapports", "report", "analyse"] },
+    { name: "Gaspillage", href: "/manager/waste", keywords: ["gaspillage", "waste", "perte", "pertes", "déchet", "périmé"] },
     { name: "Calculateur", href: "/manager/calculator", keywords: ["calculateur", "calcul", "marge", "prix"] },
     { name: "Feedbacks", href: "/manager/feedback", keywords: ["feedback", "avis", "commentaire", "employé"] },
     { name: "Mon Profil", href: "/manager/account", keywords: ["profil", "compte", "utilisateur"] },

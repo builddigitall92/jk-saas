@@ -73,6 +73,8 @@ export default function EmployeeStockPage() {
   // Produit existant détecté
   const [detectedProduct, setDetectedProduct] = useState<Product | null>(null)
   const [showHistoryPanel, setShowHistoryPanel] = useState(true)
+  // Flag pour savoir si l'utilisateur a manuellement choisi une catégorie
+  const [userSelectedCategory, setUserSelectedCategory] = useState(false)
 
   // Détecter si le produit existe déjà
   useEffect(() => {
@@ -80,19 +82,20 @@ export default function EmployeeStockPage() {
       const existing = findProductByName(productName)
       setDetectedProduct(existing || null)
 
-      if (!existing) {
-        // Auto-détecter la catégorie pour un nouveau produit
-        const detected = detectCategory(productName)
-        if (detected) setSelectedCategory(detected)
-      } else {
+      if (existing) {
         // Utiliser la catégorie et l'unité du produit existant
         setSelectedCategory(existing.category as ProductCategory)
         setSelectedUnit(existing.unit as StockUnit)
+        setUserSelectedCategory(false) // Reset car on utilise celle du produit existant
+      } else if (!userSelectedCategory) {
+        // Auto-détecter la catégorie SEULEMENT si l'utilisateur n'a pas fait de choix manuel
+        const detected = detectCategory(productName)
+        if (detected) setSelectedCategory(detected)
       }
     } else {
       setDetectedProduct(null)
     }
-  }, [productName, findProductByName])
+  }, [productName, findProductByName, userSelectedCategory])
 
   // Auto-détection pour les ingrédients
   useEffect(() => {
@@ -210,6 +213,7 @@ export default function EmployeeStockPage() {
           setExpiryDate("")
           setSelectedSupplierId(null)
           setStockSuccess(null)
+          setUserSelectedCategory(false)
           setIsAddDialogOpen(false)
         }, 1500)
       } else {
@@ -423,7 +427,12 @@ export default function EmployeeStockPage() {
                     <button
                       key={tab.id}
                       type="button"
-                      onClick={() => !detectedProduct && setSelectedCategory(tab.id)}
+                      onClick={() => {
+                        if (!detectedProduct) {
+                          setSelectedCategory(tab.id)
+                          setUserSelectedCategory(true)
+                        }
+                      }}
                       disabled={!!detectedProduct}
                       className={`glass-tab flex-1 ${isActive ? 'glass-tab-active' : ''} ${detectedProduct ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >

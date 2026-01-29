@@ -357,7 +357,7 @@ export default function WastePage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <Link href="/employee" className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-4 transition-colors">
+        <Link href="/manager" className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-4 transition-colors">
           <ChevronLeft className="h-5 w-5" />
           <span>Retour</span>
         </Link>
@@ -578,7 +578,7 @@ export default function WastePage() {
                   <p className="text-slate-400 mb-2 font-medium">Aucun produit en stock</p>
                   <p className="text-sm text-slate-500 mb-4">Ajoutez d'abord du stock pour pouvoir enregistrer du gaspillage</p>
                   <Link 
-                    href="/employee/stock"
+                    href="/manager/stock"
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500/20 text-orange-400 font-medium hover:bg-orange-500/30 transition-all"
                   >
                     Aller aux stocks
