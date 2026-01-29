@@ -42,7 +42,9 @@ import { useAuth } from "@/lib/hooks/use-auth"
 import { useStock } from "@/lib/hooks/use-stock"
 import { useMenuItems } from "@/lib/hooks/use-menu-items"
 import { useDashboardStats } from "@/lib/hooks/use-dashboard-stats"
+import { useWeeklyRecap } from "@/lib/hooks/use-weekly-recap"
 import { createClient } from "@/utils/supabase/client"
+import { WeeklyRecapPopup } from "@/components/weekly-recap-popup"
 import {
   AreaChart,
   Area,
@@ -1794,6 +1796,7 @@ export default function ManagerDashboard() {
   const { stocks, loading: stockLoading, fetchStocks, deleteStock } = useStock()
   const { menuItems, loading: menuLoading } = useMenuItems()
   const { stats: dashboardStats, loading: statsLoading } = useDashboardStats()
+  const { isOpen: isRecapOpen, data: recapData, closePopup: closeRecap, dismissPermanently: dismissRecap } = useWeeklyRecap()
   const [wasteData, setWasteData] = useState({ cost: 0, count: 0 })
   const [wasteLoading, setWasteLoading] = useState(true)
   const [topSellingProducts, setTopSellingProducts] = useState<Array<{ name: string; quantity: number; totalRevenue: number }>>([])
@@ -3578,6 +3581,16 @@ export default function ManagerDashboard() {
           stocks={stocks}
         />
       </div>
+
+      {/* Popup Récap Hebdomadaire */}
+      <WeeklyRecapPopup
+        isOpen={isRecapOpen}
+        data={recapData}
+        onClose={closeRecap}
+        onDismissPermanently={dismissRecap}
+        restaurantName={establishment?.name || "Votre Restaurant"}
+        managerName={profile?.first_name || "Manager"}
+      />
     </>
   )
 }

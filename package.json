@@ -6,7 +6,8 @@
     "build": "next build",
     "dev": "next dev --hostname localhost --port 3000",
     "lint": "eslint .",
-    "start": "next start --hostname localhost --port 3000"
+    "start": "next start --hostname localhost --port 3000",
+    "git:push-recap": "powershell -ExecutionPolicy Bypass -File ./git-push-recap.ps1"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
