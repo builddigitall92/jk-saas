@@ -312,12 +312,12 @@ function FeatureTabs() {
       color: "#10b981"
     },
     {
-      id: "pipeline",
-      label: "Pipeline",
-      icon: Layers,
-      title: "Workflow Gamifié",
-      description: "Transformez la gestion en jeu : débloquez des badges, suivez votre progression, motivez l'équipe.",
-      features: ["Système XP", "Badges débloquables", "Classement équipe", "Défis quotidiens"],
+      id: "gaspillage",
+      label: "Gaspillage",
+      icon: AlertTriangle,
+      title: "Suivi des pertes & gaspillages",
+      description: "Enregistrez vos pertes en quelques secondes, visualisez leur coût, et identifiez les causes pour réduire le gaspillage semaine après semaine.",
+      features: ["Journal des pertes", "Coût du gaspillage (€)", "Analyse par produit/catégorie", "Tendances & actions"],
       color: "#f59e0b"
     }
   ]
@@ -522,45 +522,57 @@ function PipelineMockup() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-white/80 text-sm font-normal">Votre progression</span>
-        <span className="text-[#f59e0b] text-xs font-semibold">Level 12</span>
+        <span className="text-white/80 text-sm font-light">Journal des pertes</span>
+        <span className="text-[#f59e0b] text-xs font-medium">Cette semaine</span>
       </div>
       
       <div className="p-4 rounded-xl bg-gradient-to-r from-[#f59e0b]/10 to-transparent border border-[#f59e0b]/20">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-full bg-[#f59e0b]/20 flex items-center justify-center">
-            <Crown className="w-5 h-5 text-[#f59e0b]" />
+          <div className="w-10 h-10 rounded-xl bg-[#f59e0b]/20 flex items-center justify-center border border-[#f59e0b]/25">
+            <AlertTriangle className="w-5 h-5 text-[#f59e0b]" />
           </div>
-          <div>
-            <p className="text-white text-sm font-semibold">Stock Master</p>
-            <p className="text-white/50 text-xs">2,450 / 3,000 XP</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-white text-sm font-medium truncate">Total gaspillé</p>
+            <p className="text-white/50 text-xs">Pertes + DLC + casse</p>
+          </div>
+          <div className="text-right">
+            <p className="text-white text-sm font-medium">112,40€</p>
+            <p className="text-amber-400 text-xs">-18% vs N-1</p>
           </div>
         </div>
-        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: "82%" }}
-            transition={{ duration: 1, delay: 0.5 }}
-            className="h-full bg-gradient-to-r from-[#f59e0b] to-[#f59e0b]/60 rounded-full"
-          />
+
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { label: "Salade", value: "2,1 kg", hint: "DLC dépassée" },
+            { label: "Pain", value: "18 pces", hint: "Invendus" },
+            { label: "Tomates", value: "1,4 kg", hint: "Prépa" },
+            { label: "Poulet", value: "0,9 kg", hint: "Casse" },
+          ].map((row, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 + i * 0.08 }}
+              className="p-3 rounded-lg bg-white/5 border border-white/5"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-white/80 text-xs font-light truncate">{row.label}</p>
+                <p className="text-white text-xs font-medium tabular-nums">{row.value}</p>
+              </div>
+              <p className={`text-[10px] mt-1 ${
+                row.hint === 'DLC dépassée' ? 'text-red-400' : 'text-white/40'
+              }`}>{row.hint}</p>
+            </motion.div>
+          ))}
         </div>
       </div>
 
-      <div className="flex gap-2">
-        {['🏆', '⭐', '🎯', '🔥'].map((badge, i) => (
-          <motion.div
-            key={i}
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.5 + i * 0.1, type: "spring" }}
-            className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-lg"
-          >
-            {badge}
-          </motion.div>
-        ))}
-        <div className="w-10 h-10 rounded-lg bg-white/5 border border-dashed border-white/20 flex items-center justify-center text-white/30">
-          ?
+      <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+        <div className="flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 text-emerald-400" />
+          <span className="text-white/70 text-xs font-light">Top cause : invendus</span>
         </div>
+        <span className="text-white/40 text-xs font-light">Actionnable</span>
       </div>
     </div>
   )
