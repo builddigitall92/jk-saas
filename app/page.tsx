@@ -522,21 +522,21 @@ function PipelineMockup() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-white/80 text-sm font-light">Journal des pertes</span>
-        <span className="text-[#f59e0b] text-xs font-medium">Cette semaine</span>
+        <span className="text-white/80 text-sm font-normal">Journal des pertes</span>
+        <span className="text-[#f59e0b] text-xs font-semibold">Cette semaine</span>
       </div>
-      
+
       <div className="p-4 rounded-xl bg-gradient-to-r from-[#f59e0b]/10 to-transparent border border-[#f59e0b]/20">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 rounded-xl bg-[#f59e0b]/20 flex items-center justify-center border border-[#f59e0b]/25">
             <AlertTriangle className="w-5 h-5 text-[#f59e0b]" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-medium truncate">Total gaspillé</p>
+            <p className="text-white text-sm font-semibold truncate">Total gaspillé</p>
             <p className="text-white/50 text-xs">Pertes + DLC + casse</p>
           </div>
           <div className="text-right">
-            <p className="text-white text-sm font-medium">112,40€</p>
+            <p className="text-white text-sm font-semibold">112,40€</p>
             <p className="text-amber-400 text-xs">-18% vs N-1</p>
           </div>
         </div>
@@ -556,8 +556,8 @@ function PipelineMockup() {
               className="p-3 rounded-lg bg-white/5 border border-white/5"
             >
               <div className="flex items-center justify-between gap-2">
-                <p className="text-white/80 text-xs font-light truncate">{row.label}</p>
-                <p className="text-white text-xs font-medium tabular-nums">{row.value}</p>
+                <p className="text-white/80 text-xs font-normal truncate">{row.label}</p>
+                <p className="text-white text-xs font-semibold tabular-nums">{row.value}</p>
               </div>
               <p className={`text-[10px] mt-1 ${
                 row.hint === 'DLC dépassée' ? 'text-red-400' : 'text-white/40'
@@ -570,9 +570,9 @@ function PipelineMockup() {
       <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
         <div className="flex items-center gap-2">
           <CheckCircle className="w-4 h-4 text-emerald-400" />
-          <span className="text-white/70 text-xs font-light">Top cause : invendus</span>
+          <span className="text-white/70 text-xs">Top cause : invendus</span>
         </div>
-        <span className="text-white/40 text-xs font-light">Actionnable</span>
+        <span className="text-white/40 text-xs">Actionnable</span>
       </div>
     </div>
   )
@@ -764,7 +764,7 @@ export default function LandingPage() {
               {/* Trust Badges */}
               <motion.div variants={fadeInUp} className="flex flex-wrap justify-center gap-6 sm:gap-10 text-sm text-white/50 font-normal">
                 {[
-                  { icon: Zap, text: "4-6 semaines déploiement" },
+                  { icon: Zap, text: "30 minutes de déploiement" },
                   { icon: Eye, text: "Tarifs transparents" },
                   { icon: ShieldCheck, text: "Satisfait ou remboursé" }
                 ].map((item, i) => (
@@ -893,9 +893,21 @@ export default function LandingPage() {
           {/* Features Grid */}
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-24">
             {[
-              { icon: Layers, title: "Intégration Fluide", desc: "Connectez-vous à vos systèmes existants (POS, comptabilité) sans friction." },
-              { icon: Zap, title: "Productivité Décuplée", desc: "Automatisez les tâches répétitives et concentrez-vous sur l'essentiel : votre cuisine." },
-              { icon: Users, title: "Support Premium", desc: "Une équipe dédiée disponible 24/7 pour résoudre vos problèmes rapidement." }
+              {
+                icon: Package,
+                title: "Stocks & alertes en temps réel",
+                desc: "Inventaires rapides, historiques et valorisation du stock. Alertes intelligentes (ruptures, dates, surstock) pour éviter les mauvaises surprises."
+              },
+              {
+                icon: ShoppingCart,
+                title: "Commandes & fournisseurs simplifiés",
+                desc: "Centralisez vos fournisseurs, suivez vos commandes et vos réceptions, et gardez des prix unitaires propres. Des suggestions d’achat peuvent s’appuyer sur vos usages."
+              },
+              {
+                icon: BarChart3,
+                title: "Marge, pertes & pilotage",
+                desc: "Calculateur de marges, suivi du gaspillage/pertes, KPIs et tendances. Décidez plus vite, protégez vos marges, et alignez l’équipe."
+              }
             ].map((feature, i) => (
               <motion.div key={i} variants={fadeInUp}>
                 <GlassCard className="p-6 sm:p-8 h-full">
@@ -1135,7 +1147,7 @@ export default function LandingPage() {
                     </Link>
 
                     <p className="text-center text-white/30 text-xs mt-4 font-normal">
-                      14 jours d'essai gratuit • Aucune carte requise
+                      14 jours d'essai gratuit • Carte bancaire requise
                     </p>
                   </div>
                 </motion.div>
@@ -1303,7 +1315,7 @@ export default function LandingPage() {
             {[
               {
                 question: "Comment fonctionne l'essai gratuit de 14 jours ?",
-                answer: "Vous pouvez tester StockGuard pendant 14 jours sans carte bancaire. Accédez à toutes les fonctionnalités Premium, créez vos produits, invitez votre équipe, et testez la gestion complète. À la fin de l'essai, vous choisissez si vous souhaitez continuer ou arrêter, sans engagement."
+                answer: "Vous pouvez tester StockGuard pendant 14 jours. Une carte bancaire est requise pour démarrer l'essai. Accédez à toutes les fonctionnalités Premium, créez vos produits, invitez votre équipe, et testez la gestion complète. À la fin de l'essai, vous choisissez si vous souhaitez continuer ou arrêter, sans engagement."
               },
               {
                 question: "Puis-je utiliser StockGuard sur plusieurs établissements ?",

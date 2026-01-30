@@ -74,20 +74,100 @@ export function WeeklyRecapPopup({
     pertes: Math.round(data.pertes.gaspillageTotal * 26),
   }
 
-  // Message de conseil basé sur les données
+  // Calcul du bénéfice net et du statut (gain/perte)
+  const beneficeNet = data.gains.caTotal - data.pertes.gaspillageTotal
+  const isInProfit = beneficeNet > 0 && data.gains.caTotal > 0
+  const isBreakEven = data.gains.caTotal > 0 && beneficeNet === 0
+  const hasNoRevenue = data.gains.caTotal === 0
+
+  // Message de conseil ÉVOLUTIF basé sur le CA et les pertes
   const getConseil = () => {
-    const ratio = data.gains.caTotal > 0 ? (data.pertes.gaspillageTotal / data.gains.caTotal) * 100 : 0
-    
-    if (ratio < 5) {
-      return "Excellent travail ! Continue comme ça et tu maximiseras tes profits."
-    } else if (ratio < 10) {
-      return "Bon équilibre ! Quelques ajustements sur le gaspillage pourraient booster tes résultats."
-    } else if (ratio < 20) {
-      return "Attention au gaspillage. Réduire de moitié les pertes pourrait te faire économiser " + Math.round(data.pertes.gaspillageTotal * 13) + "€ sur 6 mois."
-    } else {
-      return "Le gaspillage impacte fortement tes résultats. Une action rapide est recommandée."
+    const ca = data.gains.caTotal
+    const pertes = data.pertes.gaspillageTotal
+    const ratio = ca > 0 ? (pertes / ca) * 100 : 0
+
+    // Cas 1: CA = 0
+    if (ca === 0) {
+      if (pertes > 0) {
+        return `Semaine difficile : aucun chiffre d'affaires et ${pertes.toFixed(0)}€ de pertes. Il est temps de reprendre le contrôle !`
+      }
+      return "Aucune activité cette semaine. C'est le moment de relancer la machine et de viser tes premiers résultats !"
+    }
+
+    // Cas 2: CA très faible (< 100€)
+    if (ca < 100) {
+      if (pertes > ca) {
+        return `Attention : tes pertes (${pertes.toFixed(0)}€) dépassent ton CA. Réduis le gaspillage en priorité pour revenir dans le vert.`
+      }
+      return "Début modeste cette semaine. Chaque euro compte — continue sur cette lancée pour faire grandir tes résultats !"
+    }
+
+    // Cas 3: CA faible (100-500€)
+    if (ca < 500) {
+      if (ratio > 30) {
+        return `Ton CA progresse, mais ${ratio.toFixed(0)}% part en pertes. Optimise ton stock pour garder plus de marge.`
+      }
+      return "Semaine correcte ! Maintiens cet élan et surveille le gaspillage pour maximiser tes profits."
+    }
+
+    // Cas 4: CA moyen (500-2000€)
+    if (ca < 2000) {
+      if (ratio > 20) {
+        return `Bon CA, mais attention : réduire les pertes de moitié pourrait te faire gagner ${Math.round(pertes * 13)}€ sur 6 mois.`
+      } else if (ratio > 10) {
+        return "Belle performance ! Quelques ajustements sur le gaspillage et tu optimiseras encore plus tes marges."
+      }
+      return "Très bien joué ! Ton équilibre CA/pertes est bon. Continue sur cette dynamique."
+    }
+
+    // Cas 5: Bon CA (2000-5000€)
+    if (ca < 5000) {
+      if (ratio > 15) {
+        return `Excellent CA ! Mais ${pertes.toFixed(0)}€ de pertes, c'est ${Math.round(pertes * 26).toLocaleString('fr-FR')}€ sur 6 mois. Une optimisation s'impose.`
+      } else if (ratio > 5) {
+        return "Super semaine ! Tes résultats sont solides. Garde un œil sur le gaspillage pour aller encore plus loin."
+      }
+      return "Bravo ! Excellente maîtrise du CA et du gaspillage. Tu es sur la bonne voie pour maximiser tes profits."
+    }
+
+    // Cas 6: Très bon CA (> 5000€)
+    if (ratio > 10) {
+      return `Semaine exceptionnelle ! Mais avec ${pertes.toFixed(0)}€ de pertes, tu laisses de l'argent sur la table. Optimise pour atteindre le top.`
+    } else if (ratio > 5) {
+      return "Performance remarquable ! Tu gères très bien. Quelques ajustements et tu seras imbattable."
+    }
+    return "Félicitations ! Semaine au top avec un excellent CA et un gaspillage maîtrisé. Continue comme ça !"
+  }
+
+  // Couleurs dynamiques basées sur profit/perte
+  const getColorScheme = () => {
+    if (hasNoRevenue || beneficeNet < 0) {
+      // ROUGE - Perte ou pas de CA
+      return {
+        gradient: "bg-gradient-to-b from-red-900/90 via-red-950/95 to-zinc-950",
+        radial: "bg-[radial-gradient(ellipse_at_top,rgba(239,68,68,0.3)_0%,transparent_60%)]",
+        accent: "text-red-400",
+        badge: "bg-red-500/20 border-red-500/30 text-red-300",
+      }
+    } else if (isBreakEven || (data.pertes.gaspillageTotal / data.gains.caTotal) > 0.3) {
+      // ORANGE - Équilibre ou pertes élevées
+      return {
+        gradient: "bg-gradient-to-b from-amber-900/90 via-amber-950/95 to-zinc-950",
+        radial: "bg-[radial-gradient(ellipse_at_top,rgba(245,158,11,0.3)_0%,transparent_60%)]",
+        accent: "text-amber-400",
+        badge: "bg-amber-500/20 border-amber-500/30 text-amber-300",
+      }
+    }
+    // VERT - Bénéfice
+    return {
+      gradient: "bg-gradient-to-b from-emerald-900/90 via-emerald-950/95 to-zinc-950",
+      radial: "bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.3)_0%,transparent_60%)]",
+      accent: "text-emerald-400",
+      badge: "bg-emerald-500/20 border-emerald-500/30 text-emerald-300",
     }
   }
+
+  const colors = getColorScheme()
 
   return (
     <AnimatePresence>
@@ -112,9 +192,9 @@ export function WeeklyRecapPopup({
             className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] max-w-[480px] max-h-[85vh] z-[100000]"
           >
             <div className="relative w-full max-h-[85vh] rounded-2xl sm:rounded-3xl overflow-hidden flex flex-col shadow-2xl bg-zinc-950">
-              {/* Background gradient vert → noir inspiré de l'image */}
-              <div className="absolute inset-0 bg-gradient-to-b from-emerald-900/90 via-emerald-950/95 to-zinc-950 pointer-events-none" />
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.3)_0%,transparent_60%)] pointer-events-none" />
+              {/* Background gradient dynamique (vert/orange/rouge) */}
+              <div className={`absolute inset-0 ${colors.gradient} pointer-events-none`} />
+              <div className={`absolute inset-0 ${colors.radial} pointer-events-none`} />
               
               {/* Close button */}
               <motion.button
@@ -139,7 +219,7 @@ export function WeeklyRecapPopup({
                     {restaurantName}
                   </span>
                   <div className="flex items-center">
-                    <span className="px-2.5 sm:px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-[10px] sm:text-xs font-medium">
+                    <span className={`px-2.5 sm:px-3 py-1 rounded-full border text-[10px] sm:text-xs font-medium ${colors.badge}`}>
                       Cette Semaine
                     </span>
                   </div>
@@ -156,7 +236,7 @@ export function WeeklyRecapPopup({
                     <AnimatedCounter value={data.gains.caTotal} suffix="€" />
                   </p>
                   <p className="text-base sm:text-lg md:text-xl text-white/80">
-                    de <span className="text-emerald-400 font-semibold">chiffre d'affaires</span> réalisé cette semaine.
+                    de <span className={`${colors.accent} font-semibold`}>chiffre d&apos;affaires</span> réalisé cette semaine.
                   </p>
                 </motion.div>
 
@@ -197,7 +277,7 @@ export function WeeklyRecapPopup({
                     </p>
                     <p className="text-white/80 text-xs sm:text-sm leading-relaxed">
                       À ce rythme, tu réaliseras{' '}
-                      <span className="text-emerald-400 font-semibold">{projection6Mois.gains.toLocaleString('fr-FR')}€</span>{' '}
+                      <span className={`${colors.accent} font-semibold`}>{projection6Mois.gains.toLocaleString('fr-FR')}€</span>{' '}
                       de CA
                       {projection6Mois.pertes > 0 && (
                         <>

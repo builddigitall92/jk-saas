@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input"
 import { useStock } from "@/lib/hooks/use-stock"
 import { useMenuItems } from "@/lib/hooks/use-menu-items"
 import { useSuppliers } from "@/lib/hooks/use-suppliers"
+import { useAuth } from "@/lib/hooks/use-auth"
 import type { ProductCategory, StockUnit } from "@/lib/database.types"
 
 // ============================================
@@ -103,6 +104,24 @@ interface MarginContext {
   breakEvenQuantity: number       // Seuil de rentabilité
 }
 
+interface TeamMemberInfo {
+  id: string
+  first_name: string | null
+  last_name: string | null
+  role: string
+  is_active: boolean
+  is_online: boolean
+}
+
+interface TeamContext {
+  selectedMemberId: string | null
+  selectedMemberName: string | null
+  selectedMemberRole: string | null
+  newRole: 'employee' | 'manager' | null
+  teamMembers: TeamMemberInfo[]
+  inviteEmail: string | null
+}
+
 type ConversationPhase =
   // Stock phases
   | 'stock_init'
@@ -166,6 +185,10 @@ type ConversationPhase =
   | 'team_invite'
   | 'team_manage'
   | 'team_schedule'
+  | 'team_promote_list'
+  | 'team_promote_confirm'
+  | 'team_demote_list'
+  | 'team_demote_confirm'
   // Done
   | 'done'
 
@@ -394,6 +417,7 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
   const { addProductAndStock, products: stockProducts, stocks, fetchStocks } = useStock()
   const { createMenuItem, addIngredient, updateMenuItem, products: menuProducts, fetchMenuItems, menuItems } = useMenuItems()
   const { suppliers, fetchSuppliers } = useSuppliers()
+  const { user: currentUser } = useAuth()
 
   // Combiner les produits des deux sources pour avoir une liste complète
   const products = useMemo(() => {
@@ -487,6 +511,16 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
 
   // Menu analysis state
   const [menuAnalysisIndex, setMenuAnalysisIndex] = useState(0)
+
+  // Team context
+  const [teamCtx, setTeamCtx] = useState<TeamContext>({
+    selectedMemberId: null,
+    selectedMemberName: null,
+    selectedMemberRole: null,
+    newRole: null,
+    teamMembers: [],
+    inviteEmail: null,
+  })
 
   // Scroll & Focus
   useEffect(() => {
@@ -2220,16 +2254,47 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           )
           setPhase('team_action')
         } else if (wantsStats) {
-          ask(
-            "📊 **Statistiques de l'équipe**\n\n" +
-            "Cette fonctionnalité arrive bientôt ! 🚀\n\n" +
-            "Tu pourras voir :\n" +
-            "• Le temps de présence de chaque membre\n" +
-            "• Les performances individuelles\n" +
-            "• Les rapports d'activité\n\n" +
-            "**Autre chose que je peux faire pour toi ?**",
-            ['📧 Inviter un membre', '👤 Gérer les rôles', '✅ Terminer']
-          )
+          // Fetch real team stats
+          try {
+            const res = await fetch('/api/team/stats')
+            const data = await res.json()
+
+            if (!res.ok) {
+              ask(
+                "❌ Impossible de récupérer les statistiques.\n\n" +
+                "**Autre chose que je peux faire pour toi ?**",
+                ['📧 Inviter un membre', '👤 Gérer les rôles', '✅ Terminer']
+              )
+              setPhase('team_action')
+              return
+            }
+
+            let statsMsg = "📊 **Statistiques de l'équipe**\n\n"
+            statsMsg += `• **${data.totalActive}** membre${data.totalActive > 1 ? 's' : ''} actif${data.totalActive > 1 ? 's' : ''}\n`
+            statsMsg += `• **${data.totalManagers}** manager${data.totalManagers > 1 ? 's' : ''} / **${data.totalEmployees}** employé${data.totalEmployees > 1 ? 's' : ''}\n`
+            statsMsg += `• **${data.totalOnline}** en ligne maintenant\n`
+            if (data.totalDisabled > 0) {
+              statsMsg += `• **${data.totalDisabled}** membre${data.totalDisabled > 1 ? 's' : ''} désactivé${data.totalDisabled > 1 ? 's' : ''}\n`
+            }
+
+            if (data.recentMembers && data.recentMembers.length > 0) {
+              statsMsg += "\n**Derniers arrivés :**\n"
+              for (const m of data.recentMembers) {
+                const roleLabel = m.role === 'manager' || m.role === 'admin' ? '👔 Manager' : '👤 Employé'
+                const date = new Date(m.joinedAt).toLocaleDateString('fr-FR')
+                statsMsg += `• ${m.name} — ${roleLabel} (${date})\n`
+              }
+            }
+
+            statsMsg += "\n**Autre chose que je peux faire pour toi ?**"
+            ask(statsMsg, ['📧 Inviter un membre', '👤 Gérer les rôles', '✅ Terminer'])
+          } catch {
+            ask(
+              "❌ Erreur lors de la récupération des statistiques.\n\n" +
+              "**Autre chose que je peux faire pour toi ?**",
+              ['📧 Inviter un membre', '👤 Gérer les rôles', '✅ Terminer']
+            )
+          }
           setPhase('team_action')
         } else {
           ask(
@@ -2259,18 +2324,125 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           `• **Manager** : Accès complet (gérer stock, équipe, etc.)`,
           ['Employé', 'Manager']
         )
-        // Store email for later use
-        setStockCtx({ ...stockCtx, supplier: trimmed })
+        // Store email in teamCtx
+        setTeamCtx(prev => ({ ...prev, inviteEmail: trimmed }))
         setPhase('team_manage')
         break
       }
 
       case 'team_manage': {
         const isEmployee = lowerInput.includes('employé') || lowerInput.includes('employee')
-        const isManager = lowerInput.includes('manager') || lowerInput.includes('promouvoir')
-        const isRoleInfo = lowerInput.includes('permission') || lowerInput.includes('voir')
+        const isManager = lowerInput.includes('manager')
+        const isPromote = lowerInput.includes('promouvoir')
+        const isDemote = lowerInput.includes('rétrograder') || lowerInput.includes('retrograder')
+        const isRoleInfo = (lowerInput.includes('permission') || lowerInput.includes('voir')) && !isPromote
 
-        if (isRoleInfo) {
+        if (isPromote) {
+          // Flow Promouvoir: fetch employees
+          try {
+            const res = await fetch('/api/presence')
+            const data = await res.json()
+
+            if (!res.ok || !data.members) {
+              ask("❌ Impossible de récupérer la liste de l'équipe.", ['✅ Retour'])
+              setPhase('team_action')
+              return
+            }
+
+            const employees = data.members.filter(
+              (m: TeamMemberInfo) => m.role === 'employee' && m.is_active !== false
+            )
+
+            if (employees.length === 0) {
+              ask(
+                "ℹ️ Il n'y a aucun employé à promouvoir.\n\n" +
+                "Tous les membres sont déjà managers.\n\n" +
+                "**Autre chose ?**",
+                ['📧 Inviter un membre', '👤 Gérer les rôles', '✅ Terminer']
+              )
+              setPhase('team_action')
+              return
+            }
+
+            setTeamCtx(prev => ({ ...prev, teamMembers: employees }))
+
+            const memberList = employees.map((m: TeamMemberInfo, i: number) => {
+              const name = `${m.first_name || ''} ${m.last_name || ''}`.trim() || 'Sans nom'
+              const onlineStatus = m.is_online ? '🟢' : '⚪'
+              return `${i + 1}. ${onlineStatus} **${name}**`
+            }).join('\n')
+
+            const memberOptions = employees.map((m: TeamMemberInfo) =>
+              `${m.first_name || ''} ${m.last_name || ''}`.trim() || 'Sans nom'
+            )
+
+            ask(
+              "⬆️ **Promouvoir un employé en Manager**\n\n" +
+              "Voici les employés de ton équipe :\n\n" +
+              memberList + "\n\n" +
+              "**Quel employé veux-tu promouvoir ?**",
+              [...memberOptions, '❌ Annuler']
+            )
+            setPhase('team_promote_list')
+          } catch {
+            ask("❌ Erreur lors de la récupération de l'équipe.", ['✅ Retour'])
+            setPhase('team_action')
+          }
+        } else if (isDemote) {
+          // Flow Rétrograder: fetch managers (exclude self)
+          try {
+            const res = await fetch('/api/presence')
+            const data = await res.json()
+
+            if (!res.ok || !data.members) {
+              ask("❌ Impossible de récupérer la liste de l'équipe.", ['✅ Retour'])
+              setPhase('team_action')
+              return
+            }
+
+            const managers = data.members.filter(
+              (m: TeamMemberInfo) =>
+                m.role === 'manager' &&
+                m.is_active !== false &&
+                m.id !== currentUser?.id
+            )
+
+            if (managers.length === 0) {
+              ask(
+                "ℹ️ Il n'y a aucun autre manager à rétrograder.\n\n" +
+                "Tu es le seul manager de l'établissement.\n\n" +
+                "**Autre chose ?**",
+                ['📧 Inviter un membre', '👤 Gérer les rôles', '✅ Terminer']
+              )
+              setPhase('team_action')
+              return
+            }
+
+            setTeamCtx(prev => ({ ...prev, teamMembers: managers }))
+
+            const memberList = managers.map((m: TeamMemberInfo, i: number) => {
+              const name = `${m.first_name || ''} ${m.last_name || ''}`.trim() || 'Sans nom'
+              const onlineStatus = m.is_online ? '🟢' : '⚪'
+              return `${i + 1}. ${onlineStatus} **${name}**`
+            }).join('\n')
+
+            const memberOptions = managers.map((m: TeamMemberInfo) =>
+              `${m.first_name || ''} ${m.last_name || ''}`.trim() || 'Sans nom'
+            )
+
+            ask(
+              "⬇️ **Rétrograder un manager en Employé**\n\n" +
+              "Voici les managers de ton équipe :\n\n" +
+              memberList + "\n\n" +
+              "**Quel manager veux-tu rétrograder ?**",
+              [...memberOptions, '❌ Annuler']
+            )
+            setPhase('team_demote_list')
+          } catch {
+            ask("❌ Erreur lors de la récupération de l'équipe.", ['✅ Retour'])
+            setPhase('team_action')
+          }
+        } else if (isRoleInfo) {
           ask(
             "📋 **Permissions par rôle :**\n\n" +
             "**👤 Employé :**\n" +
@@ -2288,8 +2460,8 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
           )
           setPhase('team_action')
         } else if (isEmployee || isManager) {
-          const role = isManager ? 'manager' : 'employee'
-          const email = stockCtx.supplier
+          // Invite flow: assigning role to invited email
+          const email = teamCtx.inviteEmail
 
           if (email) {
             ask(
@@ -2300,14 +2472,15 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
               `**Autre chose que je peux faire ?**`,
               ['📧 Inviter un autre membre', '✅ Terminer']
             )
+            setTeamCtx(prev => ({ ...prev, inviteEmail: null }))
             setPhase('team_action')
           } else {
             ask(
-              `Pour modifier le rôle d'un membre existant, va directement dans la liste de l'équipe et clique sur le membre.\n\n` +
-              `**Autre chose que je peux faire ?**`,
-              ['📧 Inviter un membre', '✅ Terminer']
+              `Pour modifier le rôle d'un membre existant, utilise les options Promouvoir ou Rétrograder.\n\n` +
+              `**Que veux-tu faire ?**`,
+              ['Promouvoir', 'Rétrograder', '📧 Inviter un membre', '✅ Terminer']
             )
-            setPhase('team_action')
+            setPhase('team_manage')
           }
         } else if (lowerInput.includes('terminer') || lowerInput.includes('✅')) {
           ask(
@@ -2318,8 +2491,207 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
         } else {
           ask(
             "Je n'ai pas compris. Que veux-tu faire ?",
-            ['Employé', 'Manager', 'Voir les permissions', '✅ Terminer']
+            ['Promouvoir', 'Rétrograder', 'Voir les permissions', '✅ Terminer']
           )
+        }
+        break
+      }
+
+      case 'team_promote_list': {
+        if (lowerInput.includes('annuler') || lowerInput.includes('❌')) {
+          ask(
+            "Promotion annulée.\n\n**Que veux-tu faire ?**",
+            ['📧 Inviter un membre', '👤 Gérer les rôles', '✅ Terminer']
+          )
+          setPhase('team_action')
+          return
+        }
+
+        // Find selected member by name match
+        const selected = teamCtx.teamMembers.find(m => {
+          const name = `${m.first_name || ''} ${m.last_name || ''}`.trim().toLowerCase()
+          return name === lowerInput || lowerInput.includes(name)
+        })
+
+        if (!selected) {
+          ask(
+            "❌ Je n'ai pas trouvé ce membre. Choisis dans la liste :",
+            [...teamCtx.teamMembers.map(m =>
+              `${m.first_name || ''} ${m.last_name || ''}`.trim() || 'Sans nom'
+            ), '❌ Annuler']
+          )
+          return
+        }
+
+        const selectedName = `${selected.first_name || ''} ${selected.last_name || ''}`.trim()
+        setTeamCtx(prev => ({
+          ...prev,
+          selectedMemberId: selected.id,
+          selectedMemberName: selectedName,
+          selectedMemberRole: selected.role,
+          newRole: 'manager',
+        }))
+
+        ask(
+          `⬆️ **Confirmer la promotion**\n\n` +
+          `Tu veux promouvoir **${selectedName}** de Employé à **Manager** ?\n\n` +
+          `Il aura accès à :\n` +
+          `• Gestion du stock\n` +
+          `• Gestion de l'équipe\n` +
+          `• Modification du menu\n` +
+          `• Statistiques\n\n` +
+          `**Confirmer ?**`,
+          ['✅ Confirmer', '❌ Annuler']
+        )
+        setPhase('team_promote_confirm')
+        break
+      }
+
+      case 'team_promote_confirm': {
+        if (lowerInput.includes('annuler') || lowerInput.includes('❌')) {
+          ask(
+            "Promotion annulée.\n\n**Que veux-tu faire ?**",
+            ['📧 Inviter un membre', '👤 Gérer les rôles', '✅ Terminer']
+          )
+          setPhase('team_action')
+          return
+        }
+
+        if (lowerInput.includes('confirmer') || lowerInput.includes('✅')) {
+          try {
+            const res = await fetch('/api/team/change-role', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                memberId: teamCtx.selectedMemberId,
+                newRole: 'manager',
+              }),
+            })
+            const data = await res.json()
+
+            if (res.ok && data.success) {
+              ask(
+                `🎉 **${teamCtx.selectedMemberName}** a été promu **Manager** avec succès !\n\n` +
+                `Son accès sera mis à jour automatiquement.\n\n` +
+                `**Autre chose ?**`,
+                ['📧 Inviter un membre', '👤 Gérer les rôles', '✅ Terminer']
+              )
+            } else {
+              ask(
+                `❌ ${data.error || 'Erreur lors de la promotion.'}\n\n` +
+                `**Autre chose ?**`,
+                ['👤 Gérer les rôles', '✅ Terminer']
+              )
+            }
+          } catch {
+            ask(
+              "❌ Erreur de connexion. Réessaie plus tard.\n\n**Autre chose ?**",
+              ['👤 Gérer les rôles', '✅ Terminer']
+            )
+          }
+          setPhase('team_action')
+        } else {
+          ask("Confirme ou annule la promotion.", ['✅ Confirmer', '❌ Annuler'])
+        }
+        break
+      }
+
+      case 'team_demote_list': {
+        if (lowerInput.includes('annuler') || lowerInput.includes('❌')) {
+          ask(
+            "Rétrogradation annulée.\n\n**Que veux-tu faire ?**",
+            ['📧 Inviter un membre', '👤 Gérer les rôles', '✅ Terminer']
+          )
+          setPhase('team_action')
+          return
+        }
+
+        // Find selected member by name match
+        const selected = teamCtx.teamMembers.find(m => {
+          const name = `${m.first_name || ''} ${m.last_name || ''}`.trim().toLowerCase()
+          return name === lowerInput || lowerInput.includes(name)
+        })
+
+        if (!selected) {
+          ask(
+            "❌ Je n'ai pas trouvé ce membre. Choisis dans la liste :",
+            [...teamCtx.teamMembers.map(m =>
+              `${m.first_name || ''} ${m.last_name || ''}`.trim() || 'Sans nom'
+            ), '❌ Annuler']
+          )
+          return
+        }
+
+        const selectedName = `${selected.first_name || ''} ${selected.last_name || ''}`.trim()
+        setTeamCtx(prev => ({
+          ...prev,
+          selectedMemberId: selected.id,
+          selectedMemberName: selectedName,
+          selectedMemberRole: selected.role,
+          newRole: 'employee',
+        }))
+
+        ask(
+          `⬇️ **Confirmer la rétrogradation**\n\n` +
+          `Tu veux rétrograder **${selectedName}** de Manager à **Employé** ?\n\n` +
+          `Il perdra l'accès à :\n` +
+          `• Gestion du stock\n` +
+          `• Gestion de l'équipe\n` +
+          `• Modification du menu\n` +
+          `• Statistiques\n\n` +
+          `**Confirmer ?**`,
+          ['✅ Confirmer', '❌ Annuler']
+        )
+        setPhase('team_demote_confirm')
+        break
+      }
+
+      case 'team_demote_confirm': {
+        if (lowerInput.includes('annuler') || lowerInput.includes('❌')) {
+          ask(
+            "Rétrogradation annulée.\n\n**Que veux-tu faire ?**",
+            ['📧 Inviter un membre', '👤 Gérer les rôles', '✅ Terminer']
+          )
+          setPhase('team_action')
+          return
+        }
+
+        if (lowerInput.includes('confirmer') || lowerInput.includes('✅')) {
+          try {
+            const res = await fetch('/api/team/change-role', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                memberId: teamCtx.selectedMemberId,
+                newRole: 'employee',
+              }),
+            })
+            const data = await res.json()
+
+            if (res.ok && data.success) {
+              ask(
+                `✅ **${teamCtx.selectedMemberName}** a été rétrogradé **Employé** avec succès !\n\n` +
+                `Son accès sera mis à jour automatiquement.\n\n` +
+                `**Autre chose ?**`,
+                ['📧 Inviter un membre', '👤 Gérer les rôles', '✅ Terminer']
+              )
+            } else {
+              const errorMsg = data.error || 'Erreur lors de la rétrogradation.'
+              ask(
+                `❌ ${errorMsg}\n\n` +
+                `**Autre chose ?**`,
+                ['👤 Gérer les rôles', '✅ Terminer']
+              )
+            }
+          } catch {
+            ask(
+              "❌ Erreur de connexion. Réessaie plus tard.\n\n**Autre chose ?**",
+              ['👤 Gérer les rôles', '✅ Terminer']
+            )
+          }
+          setPhase('team_action')
+        } else {
+          ask("Confirme ou annule la rétrogradation.", ['✅ Confirmer', '❌ Annuler'])
         }
         break
       }
@@ -3394,6 +3766,10 @@ export function AIAssistant({ isOpen, onClose, mode }: AIAssistantProps) {
     })
     setCurrentIngredient({})
     setMenuAnalysisIndex(0)
+    setTeamCtx({
+      selectedMemberId: null, selectedMemberName: null, selectedMemberRole: null,
+      newRole: null, teamMembers: [], inviteEmail: null,
+    })
 
     // Re-initialize after a tick
     setTimeout(() => {

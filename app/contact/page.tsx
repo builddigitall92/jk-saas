@@ -373,8 +373,8 @@ function ContactForm() {
                 className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8"
               >
                 {[
-                  { icon: Mail, label: "Email", value: "contact@stockguard.app", href: "mailto:contact@stockguard.app" },
-                  { icon: Phone, label: "Téléphone", value: "+33 1 23 45 67 89", href: "tel:+33123456789" },
+                  { icon: Mail, label: "Email", value: "contact.builddigitall@gmail.com", href: "mailto:contact.builddigitall@gmail.com" },
+                  { icon: Phone, label: "Téléphone", value: "+33 6 22 40 60 83", href: "tel:+33622406083" },
                   { icon: Building2, label: "Adresse", value: "Paris, France", href: null }
                 ].map((item, i) => (
                   <motion.div

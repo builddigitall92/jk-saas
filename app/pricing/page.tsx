@@ -192,7 +192,7 @@ function PricingContent() {
     },
     {
       question: "Comment fonctionne l'essai gratuit ?",
-      answer: "Vous avez 14 jours pour tester toutes les fonctionnalités Premium. Aucune carte bancaire requise pour commencer. Vous ne serez facturé qu'à la fin de l'essai si vous décidez de continuer."
+      answer: "Vous avez 14 jours pour tester toutes les fonctionnalités Premium. Une carte bancaire est requise pour démarrer l'essai. Vous ne serez facturé qu'à la fin de l'essai si vous décidez de continuer."
     },
     {
       question: "Quels moyens de paiement acceptez-vous ?",
@@ -460,7 +460,7 @@ function PricingContent() {
                     </SlideInButton>
 
                     <p className="text-center text-white/30 text-xs mt-4">
-                      14 jours d'essai gratuit • Aucune carte requise
+                      14 jours d'essai gratuit • Carte bancaire requise
                     </p>
                   </div>
                 </div>
@@ -582,7 +582,7 @@ function PricingContent() {
             Prêt à reprendre le <span className="text-[#00d4ff]">contrôle</span> ?
           </h2>
           <p className="text-xl text-white/50 mb-8">
-            Commencez gratuitement pendant 14 jours. Sans carte bancaire.
+            Commencez gratuitement pendant 14 jours. Carte bancaire requise.
           </p>
           <SlideInButton
             variant="secondary"
