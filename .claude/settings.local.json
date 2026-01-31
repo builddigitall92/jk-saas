@@ -5,7 +5,8 @@
       "Bash(git add:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Refonte complète de la page billing/block avec design moderne\n\nDesign inspiré de la landing page avec :\n- Animations Framer Motion \\(floating orbs, particles, stagger\\)\n- Glass morphism et effets de glow dynamiques\n- Layout 2 colonnes responsive \\(statut + fonctionnalités verrouillées\\)\n- 6 cartes de fonctionnalités avec hover effects et lock icons\n- Boutons CTA avec wave fill et scale animations\n- Badge de statut avec ping animé et couleur contextuelle\n- Loading state élégant avec logo pulsant\n- Background avec grille subtile, vignette et orbes flottantes\n- Stats en bas de carte \\(9+ fonctionnalités, 24/7, IA\\)\n\nDirection esthétique : Dark cinematic avec palette cyan/blue \\(#00d4ff\\)\nTous les états gérés : no_subscription, expired, canceled, payment_failed\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git push:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }

@@ -20,7 +20,7 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
-  const { profile } = useAuth()
+  const { profile, loading: authLoading } = useAuth()
   const supabase = createClient()
   
   // Utiliser useRef pour éviter les dépendances circulaires
@@ -61,7 +61,13 @@ export function useNotifications() {
 
   // Générer les notifications basées sur les données réelles
   const fetchNotifications = useCallback(async () => {
+    // Attendre que l'auth soit chargé avant de faire des requêtes
+    if (authLoading) {
+      return
+    }
+    
     if (!profile?.establishment_id) {
+      setNotifications([])
       setLoading(false)
       return
     }
@@ -79,8 +85,10 @@ export function useNotifications() {
         .eq('establishment_id', profile.establishment_id)
 
       if (error) {
-        console.error('Erreur récupération stocks pour notifications:', error)
-        throw error
+        // Ne pas bloquer si la récupération échoue, juste log et continuer avec une liste vide
+        console.warn('Notifications: impossible de récupérer les stocks', error.message || error)
+        setNotifications([])
+        return
       }
 
       const newNotifications: Notification[] = []
@@ -196,30 +204,32 @@ export function useNotifications() {
 
       setNotifications(newNotifications)
     } catch (err) {
-      console.error('Erreur lors du chargement des notifications:', err)
+      // Erreur silencieuse pour ne pas bloquer l'UX - les notifications ne sont pas critiques
+      console.warn('Notifications: erreur lors du chargement', err instanceof Error ? err.message : err)
+      setNotifications([])
     } finally {
       setLoading(false)
     }
-  }, [profile?.establishment_id, supabase, formatRelativeTime])
+  }, [profile?.establishment_id, authLoading, supabase, formatRelativeTime])
 
-  // Charger les notifications au démarrage
+  // Charger les notifications au démarrage (attendre que l'auth soit chargé)
   useEffect(() => {
-    if (profile?.establishment_id) {
+    if (!authLoading && profile?.establishment_id) {
       fetchNotifications()
     }
-  }, [profile?.establishment_id, fetchNotifications])
+  }, [authLoading, profile?.establishment_id, fetchNotifications])
 
   // Rafraîchir périodiquement
   useEffect(() => {
-    if (!profile?.establishment_id) return
+    if (authLoading || !profile?.establishment_id) return
 
     const interval = setInterval(fetchNotifications, 30000)
     return () => clearInterval(interval)
-  }, [profile?.establishment_id, fetchNotifications])
+  }, [authLoading, profile?.establishment_id, fetchNotifications])
 
   // Écouter les changements en temps réel sur les stocks
   useEffect(() => {
-    if (!profile?.establishment_id) return
+    if (authLoading || !profile?.establishment_id) return
 
     const channel = supabase
       .channel('stock-notifications')
@@ -241,7 +251,7 @@ export function useNotifications() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [profile?.establishment_id, supabase, fetchNotifications])
+  }, [authLoading, profile?.establishment_id, supabase, fetchNotifications])
 
   // Marquer une notification comme lue
   const markAsRead = useCallback((notificationId: string) => {

@@ -1999,6 +1999,56 @@ html:not(.dark) .landing-pricing-card-featured {
   animation: glass-slide-in 0.4s ease-out backwards;
 }
 
+/* ========================================
+   NUCLEUS DESIGN SYSTEM (PRD Redesign)
+   ======================================== */
+
+:root {
+  /* Colors */
+  --bg-primary-nucleus: #0a0e27;
+  --bg-secondary-nucleus: #141829;
+  
+  /* Gradients */
+  --gradient-primary-nucleus: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+  --gradient-success-nucleus: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+  --gradient-warning-nucleus: linear-gradient(135deg, #F59E0B 0%, #F97316 100%);
+
+  /* Glassmorphism */
+  --glass-bg-nucleus: rgba(255, 255, 255, 0.03);
+  --glass-border-nucleus: rgba(255, 255, 255, 0.1);
+  --glass-hover-nucleus: rgba(255, 255, 255, 0.06);
+
+  /* Shadows */
+  --shadow-glow-violet: 0 8px 32px rgba(139, 92, 246, 0.3);
+  --shadow-glow-pink: 0 8px 32px rgba(236, 72, 153, 0.3);
+}
+
+.nucleus-bg {
+  background-color: var(--bg-primary-nucleus);
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.08), transparent 25%), 
+    radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.08), transparent 25%);
+}
+
+.glass-card-nucleus {
+  background: var(--glass-bg-nucleus);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border-nucleus);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.glass-card-nucleus:hover {
+  background: var(--glass-hover-nucleus);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 12px 48px rgba(139, 92, 246, 0.2);
+}
+
+.text-gradient-nucleus {
+  background: var(--gradient-primary-nucleus);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 .glass-nav-item-enhanced:hover {
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(255, 255, 255, 0.06);
