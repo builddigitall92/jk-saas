@@ -693,7 +693,7 @@ export default function BillingBlockPage() {
             className="text-center mt-12"
           >
             <a
-              href="mailto:support@stockguard.fr"
+              href="mailto:stockguard.digital@gmail.com"
               className="inline-flex items-center gap-2 text-sm text-white/25 hover:text-white/50 transition-colors"
             >
               <HelpCircle className="h-4 w-4" />

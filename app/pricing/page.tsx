@@ -9,7 +9,6 @@ import {
   Shield, 
   Loader2,
   Sparkles,
-  Crown,
   Zap,
   Clock,
   HelpCircle,
@@ -384,14 +383,6 @@ function PricingContent() {
                   ? "bg-gradient-to-b from-[#00d4ff]/50 via-[#00d4ff]/20 to-transparent shadow-2xl shadow-[#00d4ff]/30" 
                   : "bg-gradient-to-b from-white/20 via-white/10 to-transparent"
               }`}>
-                {/* Best value badge */}
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
-                  <span className="px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 text-white text-xs font-bold shadow-lg shadow-emerald-500/30 flex items-center gap-1.5">
-                    <Crown className="w-3.5 h-3.5" />
-                    Meilleur rapport qualité-prix
-                  </span>
-                </div>
-
                 {/* Animated border for selected */}
                 {billingPeriod === "annual" && (
                   <motion.div 
@@ -422,18 +413,18 @@ function PricingContent() {
                         Premium Annuel
                       </p>
                       <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-semibold border border-emerald-500/30">
-                        Économisez 995€
+                        {199 * 12 - 1393}€ économisés
                       </span>
                     </div>
                     
                     <div className="mb-4">
-                      <span className="text-white/40 text-lg line-through mr-2">2388€</span>
-                      <span className="text-5xl font-normal text-white">1393€</span>
-                      <span className="text-white/40 text-lg">/an</span>
+                      <span className="text-5xl font-normal text-white">{Math.round(1393 / 12)}€</span>
+                      <span className="text-white/40 text-lg">/mois</span>
+                      <span className="text-white/30 text-sm ml-1">(1393€/an)</span>
                     </div>
                     
                     <p className="text-white/50 text-sm mb-8 leading-relaxed">
-                      Le meilleur rapport qualité-prix. 4 mois offerts !
+                      Le meilleur rapport qualité-prix pour piloter votre stock toute l’année, sans compromis.
                     </p>
 
                     <div className="space-y-3 mb-8">

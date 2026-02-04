@@ -1103,14 +1103,15 @@ export default function LandingPage() {
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-[#00d4ff] text-sm font-semibold">Premium</p>
                       <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-semibold border border-emerald-500/30">
-                        -41% économisé
+                        {199 * 12 - 1393}€ économisés
                       </span>
                     </div>
                     
-                    {/* Price */}
+                    {/* Price: 1393€/an en équivalent /mois */}
                     <div className="mb-4">
-                      <span className="text-5xl font-normal text-white">1393€</span>
-                      <span className="text-white/40 text-lg font-normal">/an</span>
+                      <span className="text-5xl font-normal text-white">{Math.round(1393 / 12)}€</span>
+                      <span className="text-white/40 text-lg font-normal">/mois</span>
+                      <span className="text-white/30 text-sm font-normal ml-1">(1393€/an)</span>
                     </div>
                     
                     {/* Description */}

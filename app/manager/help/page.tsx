@@ -40,8 +40,8 @@ const helpCategories = [
   {
     icon: Mail,
     title: "Email",
-    description: "support@stockguard.fr",
-    href: "mailto:support@stockguard.fr",
+    description: "stockguard.digital@gmail.com",
+    href: "mailto:stockguard.digital@gmail.com",
     color: "purple"
   },
 ]
