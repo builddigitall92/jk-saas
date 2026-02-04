@@ -1385,7 +1385,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="py-12 px-4 border-t border-white/5 relative z-10">
         <div className="max-w-7xl mx-auto">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
             <div>
               <Link href="/" className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-[#0a1929]">
@@ -1398,27 +1398,29 @@ export default function LandingPage() {
               </p>
             </div>
             
-            {[
-              { title: "Produit", links: ["Fonctionnalités", "Tarifs", "Intégrations", "Changelog"] },
-              { title: "Entreprise", links: ["À propos", "Blog", "Carrières", "Contact"] },
-              { title: "Légal", links: ["Mentions légales", "Confidentialité", "CGU", "Cookies"] }
-            ].map((col, i) => (
-              <div key={i}>
-                <h4 className="font-semibold text-white mb-4 text-sm">{col.title}</h4>
-                <ul className="space-y-3">
-                  {col.links.map((link, j) => (
-                    <li key={j}>
-                      <a href="#" className="text-white/40 hover:text-white/70 transition-colors text-sm font-normal">{link}</a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {/* Produit */}
+            <div>
+              <h4 className="font-semibold text-white mb-4 text-sm">Produit</h4>
+              <ul className="space-y-3">
+                <li><a href="#features" className="text-white/40 hover:text-white/70 transition-colors text-sm font-normal">Fonctionnalités</a></li>
+                <li><a href="#tarifs" className="text-white/40 hover:text-white/70 transition-colors text-sm font-normal">Tarifs</a></li>
+                <li><Link href="/contact" className="text-white/40 hover:text-white/70 transition-colors text-sm font-normal">Contact</Link></li>
+              </ul>
+            </div>
+            
+            {/* Légal */}
+            <div>
+              <h4 className="font-semibold text-white mb-4 text-sm">Légal</h4>
+              <ul className="space-y-3">
+                <li><Link href="/legal" className="text-white/40 hover:text-white/70 transition-colors text-sm font-normal">Mentions légales</Link></li>
+                <li><Link href="/privacy" className="text-white/40 hover:text-white/70 transition-colors text-sm font-normal">Confidentialité</Link></li>
+                <li><Link href="/cgu" className="text-white/40 hover:text-white/70 transition-colors text-sm font-normal">CGU</Link></li>
+              </ul>
+            </div>
           </div>
 
-          <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="pt-8 border-t border-white/5">
             <p className="text-white/30 text-xs font-normal">© {new Date().getFullYear()} StockGuard. Tous droits réservés.</p>
-            <p className="text-white/30 text-xs font-normal">Fait avec ❤️ en France</p>
           </div>
         </div>
       </footer>

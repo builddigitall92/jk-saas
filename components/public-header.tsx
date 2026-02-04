@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { createClient } from "@/utils/supabase/client"
 import Link from "next/link"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import {
   Shield,
@@ -137,8 +136,8 @@ export function PublicHeader({ variant = "solid" }: PublicHeaderProps) {
           <Link href="/" className="flex items-center gap-2.5">
             {variant === "transparent" ? (
               <>
-                <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-[#0a1929]">
-                  <Image src="/icon.svg" alt="StockGuard" width={32} height={32} className="w-full h-full" />
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#0a1929]">
+                  <Shield className="w-5 h-5 text-white" />
                 </div>
                 <span className="text-lg font-normal tracking-tight text-white">StockGuard</span>
               </>
